@@ -1,0 +1,12 @@
+#pragma prefix "rogatkin.app.remote"
+module app {
+	exception naming_exception {};
+	struct bind {string name; Object o;};
+	typedef sequence <bind> bind_list;
+	interface simple_naming {
+	void bind1(in string name, in Object o) raises (naming_exception);
+	void unbind1(in string name) raises (naming_exception);
+	Object lookup1(in string name) raises (naming_exception);
+	void list1(in string filter, out bind_list bindings) raises (naming_exception);
+	};
+};

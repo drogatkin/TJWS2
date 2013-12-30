@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Name: webserver.jar
+Main-Class: Acme.Serve.Main
+Java-Bean: False
+Class-Path: 
+ servlet.jar

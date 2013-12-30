@@ -1,0 +1,10 @@
+# menu item labels in Русский
+label_stop=Остановить
+label_exit=Выйти
+label_opening=Открываем\u0020
+label_stopping=Сервер останавливается
+label_changeport=Изменить порт
+label_newport=Укажите новый порт
+label_porterr=Этот порт не может быть использован
+label_open=Открыть /
+title_control_panel=\u0020панель управления

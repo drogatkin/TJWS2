@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Name: webapplauncher.jar
+Main-Class: rogatkin.web.WebApp
+Java-Bean: False
+SplashScreen-Image: rogatkin/resource/splash.gif
+Class-Path: webapplauncher.jar
