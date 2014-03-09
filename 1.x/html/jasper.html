@@ -1,0 +1,104 @@
+<html>
+<head><title>How to connect Jasper</title>
+<!-- $Id: jasper.html,v 1.14 2012/04/04 05:19:11 dmitriy Exp $ -->
+</head>
+<body bgcolor="#D1E9FE">
+These are basic steps you need to do for integration with Jasper JSP provider
+    <h3>
+    Tomcat 5.5.x</h3>
+<ol>
+	<li>Download Apache Tomcat <b>sources</b> from
+	<a href="http://tomcat.apache.org/download-55.cgi">
+	http://tomcat.apache.org/download-55.cgi</a></li>
+	<li>Extract <i>jasper</i> subdirectory from a <b>source</b> archive</li>
+	<li>Download Apache commons
+	<a href="http://jakarta.apache.org/site/downloads/downloads_commons-el.cgi">
+	EL</a> and
+	<a href="http://jakarta.apache.org/site/downloads/downloads_commons-logging.cgi">
+	Logging</a> unless you have them already. Only binaries are required. If you 
+	do not use commons for something else, then you can copy <i>commons-el.jar</i> 
+	and <i>commons-logging-1.1.jar</i> under <i>dependlib</i> directory inside
+	<i>jasper</i> (the directory needs to be created) </li>
+	<li>Copy .java files under TJWS distribution which are in <i>src/jasper</i> 
+	directory to corresponding place of <i>jasper/src/share</i> directory 
+	(accordingly package name)</li>
+	<li>Remove or rename with different extension <i>AntCompiler.java</i>, 
+	and <i>JDTCompiler.java </i>in <i>jasper/src/share</i> under package <u>org.apache.jasper.compiler</u></li>
+	<li>Copy .xml files from TJWS distribution <i>src/jasper</i> to <i>jasper</i> 
+	directory</li>
+	<li>Edit copied <i>env.xml</i> providing correct paths for variables SERVLET_HOME, JSP_HOME, 
+	and commons libraries (7Bee expression 'CUSTOM CP')</li>
+	<li><a name="beebuild"></a>Download and install <a href="http://knitknot.info/download/7bee/bee-1.1.1.zip">
+	7Bee</a> unless you already have it (it's worth to check for a fresh version 
+	though)</li>
+	<li>Launch <kbd>bee</kbd> and get <i>jasper.jar</i> built. You will find it in <i>build</i> 
+	directory.</li>
+	<li>Distribution of TJWS is already pre-configured to be integrated with 
+	Jasper, so if you provide correct paths in <i>env.xml</i> of TJWS to Jasper 
+	libraries, then you can start using it out of the box. Check with TJWS 
+	documentation how to specify additional init parameters for JSP servlets, 
+	like Jasper. If you use a start script for launching TJWS, then the 
+	following Jasper parameters you may add:<br>
+	<kbd>-j org.apache.jasper.servlet.JspServlet -org.apache.jasper.servlet.JspServlet.classpath 
+	%classpath% -org.apache.jasper.servlet.JspServlet.scratchdir %deploydir%/WEB-INF</kbd></li>
+</ol>
+    <h3>
+        Using Jasper from Tomcat 6.0.x (JSP 2.1)</h3>
+    <ol>
+    <li>Download Apache Tomcat <b>sources</b> from <a href="http://tomcat.apache.org/download-60.cgi#6.0.7-beta">
+            here</a>. Sources only.</li>
+        <li>Extract downloaded archive in some directory.</li>
+        <li>Prune Tomcat and JSDK related classes in apache-tomcat-6.0.x-src/java folder, the
+            following packages have to remain<br />
+            <ul><li>javax.el</li>
+                <li>javax.servlet.jsp</li>
+                <li>javax.servlet.resources</li>
+                <li><span style="color: #cc3300">javax.servlet and all subpackages of it (optional unless
+                    you do not have a separate JSDK)</span></li>
+                <li>org.apache</li>
+                <li>org.apache.el and all subpackages of it</li>
+                <li>org.apache.juli and all subpackages of it</li>
+                <li>org.apache.jasper and all packages of it<br />
+                </li>
+            </ul>
+        </li>
+        <li>Remove or rename with different extension <i>AntCompiler.java</i>, and <i>
+            JDTCompiler.java </i>in <i>apache-tomcat-6.0.x-src/java</i> under package o<u>rg.apache.jasper.compiler</u></li>
+        <li>Copy *.java files under TJWS distribution which are in <i>src/jasper6</i> directory
+            to corresponding place of <i>apache-tomcat-6.0.x-src/java</i> directory (accordingly package
+            name). The files may overwrite existing Jasper classes.</li>
+        <li>Copy .xml files from TJWS distribution <i>src/jasper6</i> to <i>tomcat-6.0.x-src
+        </i>directory</li>
+        <li>Edit  <i>env.xml</i> providing correct paths for variables SERVLET_HOME
+            unless you preserved all subpackages of <span style="color: #cc3300">javax.servlet</span></li><li>Follow steps 8-10 of the <a href="#beebuild">previous section</a>. Note that extra EL and LOG libraries
+            are not required for build and use Jasper from Tomcat 6.x.</li>
+    </ol>
+    <h3>
+        Using Jasper from Tomcat 7.0.x (JSP 2.3)</h3>
+    <ol>
+    <p>Unfortunately Tomcat team did worse job and tied Jasper more with rest of Tomcat code.
+       So generally you should follow Jasper 6.0.x instructions with the following changes:</p>
+      <ul>
+      <li>The following files have to be preserved in org.apache.tomcat package in additions to files listed for Jasper 6:<br>
+          <pre>
+tomcat/
+tomcat/InstanceManager.java
+tomcat/JarScanner.java
+tomcat/JarScannerCallback.java
+tomcat/PeriodicEventListener.java
+tomcat/util/
+tomcat/util/file/
+tomcat/util/file/Constants.java
+tomcat/util/file/Matcher.java
+tomcat/util/file/LocalStrings.properties
+tomcat/util/res/
+tomcat/util/res/StringManager.java
+tomcat/util/scan/
+tomcat/util/scan/ entire package content
+</pre>
+      </li>
+      <li>You need also copy  files from <i>src/jasper7</i> of the distribution <i>src</i> directory over existing target files. Please note that 
+      <i>SimpleInstanceManager.java</i> belongs to a new package, so its (e.g. tjws) directory has to be added in source tree.</li>
+     </ul> 
+</body>
+</html>

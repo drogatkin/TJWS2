@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Setup Arch, Java 8, and TJWS guide + Pidora</title>
+<style>
+  .title_hdr {font-size:24;font-family:sans-Serif;font-weight:bold;margin-top:2em}
+  .section_hdr {font-family:sans-Serif;margin-top:1em;font-size:18}
+  .terminal {font-family:courier;font-size:12;color:white;background-color:black;margin-top:0.5em;margin-bottom:0.5em}
+  .norm_text {font:15px arial,sans-serif;}
+  .nano {font-family:courier;font-size:12;color:#555;background-color:#ccc}
+</style>
+</head>
+<body style="background-color:#efe;width:80%;margin:auto">
+<div class="title_hdr">TJWS, Arch Linux, Pidora, and Raspberry Pi</div>
+<ol>
+<li class="section_hdr">Preparing SD card</li>
+
+<div class="norm_text">Download the <a target="_blank" href="http://archlinuxarm.org/platforms/armv6/raspberry-pi#qt-platform_tabs-ui-tabs2">latest Arch ARM</a> Linux zipped image, and then open it  using:</div>
+<div class="terminal">$tar -xzf &lt;file&gt;</div>
+<div class="norm_text">or</div> 
+<div class="terminal">$gunzip &lt;file&gt;</div>
+<div class="norm_text">Copy image to SD card using command</div>
+<div class="terminal">$sudo dd bs=4M if=~/archlinux-hf-2013-02-11.img of=/dev/sdX</div>
+<div class="norm_text">Replace sdX with your SD card drive, like <strong>sdc</strong></div>
+<li class="section_hdr">Initial setup
+<div class="norm_text">
+Unfortunately here is no single resource  covering all steps of Arch Linux setup for Raspberry Pi, so follow the resources:<br/>
+<a href="http://elinux.org/ArchLinux_Install_Guide" target="_blank">Initial common setup guide</a><br/>
+<a href="https://wiki.archlinux.org/index.php/Raspberry_Pi" target="_blank">Raspberry Pi specific</a><br/>
+<a href="https://wiki.archlinux.org/index.php/Time" target="_blank">For timezone</a><br/>
+<a href="https://wiki.archlinux.org/index.php/Locale" target="_blank">For locale</a>
+</div></li>
+<li class="section_hdr">Network / wireless setup
+<div class="norm_text">
+<a href="https://wiki.archlinux.org/index.php/Netcfg" target="_blank">This</a> resource provides good coverage of network setup including wireless.
+</div></li>
+<li class="section_hdr">Resize SD
+<div class="norm_text">
+More likely size of SD card is greater than 2Gb, so you need to resize the card to utilize all capacity.
+Follow the <a href="http://apcmag.com/guide-to-raspberry-pi-part-3-resizing-your-sd-card.htm" target="_blank">resource</a> for resize guide. 
+<br/>You can also follow the steps below:</div>
+<div class="terminal">
+#fdisk -c -u /dev/mmcblk0
+<br/>
+>p<br/>
+>d<br/>
+>2<br/>
+>n<br/>
+>p<br/>
+>2<br/>
+><br/>
+><br/>
+>W<br/>
+
+#shutdown -r now
+</div>
+<div class="norm_text">note that you need two times press enter to confirm default answers.<br/>
+And then you write changes back and do reboot. Now you need expand file system to allocated partition.
+</div>
+<div class="terminal">#resize2fs /dev/mmcblk0p2</div>
+<div class="norm_text">The command will take some time to complete processing.</div>
+</li>
+<li class="section_hdr">Java install
+<div class="norm_text">
+Download Java 8 preview from <a href="https://jdk8.java.net/download.html" target="_blank">here</a>. Select <strong>Linux ARMv6/7 VFP,
+HardFP ABI</strong><br/>
+And then extract content
+<div class="terminal">#tar -xzf jdk-8-fcs-b132-linux-arm-vfp-hflt-03_mar_2014.tar.gz -C /opt</div>
+Note also that Java 7 ARM HardFP is available for download from the official Oracle JDK download page, so if you use Raspberry Pi in production
+environment you may stick with JDK 7 for some time.
+</div></li>
+<li class="section_hdr">TJWS install
+<div class="norm_text">
+The <a href="http://www.pathname.com/fhs/pub/fhs-2.3.html" target="_blank">standard</a> was taken in consideration to
+install TJWS. The following directories were used:<br/>
+/opt/tjws<br/>
+/opt/tjws/lib<br/>
+/opt/tjws/webapps<br/>
+/var/log/tjws
+<br/>Just create the directories and copy TJWS components in corresponding locations. <a href="htttp://webfolder.sf.net" target="_blank">WebFolder</a>
+is a convenient tool for copying TJWS components to Raspberry Pi. Open browser to WebFolder
+and terminal window to Raspberry Pi. Select links to TJWS components in WebFolder and then
+copy the links to Raspberry Pi <i>wget</i> command arguments. 
+</div></li>
+<li class="section_hdr">TJWS as service
+<div class="norm_text">
+create file /usr/lib/systemd/system/tjwserv.service 
+with content:</div>
+<div class="nano">
+[Unit]<br/>
+Description=TJWS Daemon<br/>
+After=network.target<br/>
+<br/>
+[Service]<br/>
+ExecStart=/opt/tjws/tjwserv start<br/>
+Type=simple<br/>
+ExecStop=/opt/tjws/tjwserv stop<br/>
+ExecReload=/opt/tjws/tjwserv restart<br/>
+<br/>
+[Install]<br/>
+WantedBy=multi-user.target
+</div>
+<div class="norm_text">Script <a href="tjwserv"><i>tjwserv</i></a> can be download from TJWS download page. You may need edit the file to reflect
+actual TJWS installation placement. Enable service</div>
+
+<div class="terminal">#systemctl enable tjwserv</div>
+
+<div class="norm_text">For disabling</div>
+<div class="terminal">#systemctl disable tjwserv</div>
+<div class="norm_text">For start and stop the enabled service</div>
+<div class="terminal">#systemctl [start|stop] tjwserv</div>
+</li>
+<li class="section_hdr">Enabling Audio
+<div class="norm_text">It seems Java runtime is using Alsa, however it doesn't come installed out of the box.
+Use the <a href="http://wp.dejvino.com/2012/11/raspberry-pi-sound-how-to/" target="_blank">resource</a> to
+install Alsa and configure audio output analog or digital (HDMI).</div></li>
+<li class="section_hdr">Install and run MySQL
+<div class="norm_text">
+install</div>
+<div class="terminal">#pacman -S mysql</div>
+<div class="norm_text">
+run</div>
+<div class="terminal">#systemctl start mysqld</div>
+<div class="norm_text">Now you can deploy and enjoy your favorite web applications on Raspberry Pi.</div>
+<div>&nbsp;</div>
+<div class="norm_text">Do not miss the <a href="http://sourceforge.net/projects/musicbarrel/?source=directory" target="_blank">Music Barrel</a> as 
+first useful web application on your Raspberry Pi</div>
+</li>
+<li class="section_hdr">MySQL Java connector for Java 8
+<div class="norm_text">Standard MySQL Java connector will fail to initialize under Java 8 (JDK1.8).
+Solution is obtaining Java 8 port of the driver from GitHub <input size="42" type="text" value="https://github.com/drogatkin/music-barrel.git"/>.<br/>
+A download link to prebuilt version will be available soon.</div>
+</li>
+<li class="section_hdr">Other maintainance tips
+<div class="norm_text">Use the command for checking integrity file system. Can be required at frequent crashes.</div>
+    <div class="terminal">shutdown -rF now</div>
+    <div class="norm_text">Use the command to upgrade all installed packages. Do not do it frequently
+    especialy if not observing any problems</div>
+    <div class="terminal">pacman -Syu</div>
+    </li>
+</ol>
+<div class="title_hdr">Pidora and Raspberry Pi</div>
+<div class="norm_text">Recently Fedora branch created Raspberry Pi version named Pidora. The OS has
+certain similarity in setup and use with Arch Linux, so I decided to add few points helping
+to setup Pidora and TJWS on it</div>
+<ol>
+<li class="section_hdr">Firewall setup
+<div class="norm_text">Pidora is coming with firewall on, so after installing and
+running TJWS similarly to Arch Linux, you need open firewall to acess the server from
+network. Pidora introduces several firewall profiles, so perhaps any
+knowledge of managing iptables will be useless unless applied for currently active profile.
+ But good news is that you can just select suitable profile and avoid direct modification
+ of iptables rules. Run command for interactive firewall configuration:</div>
+  <div class="terminal">#setup</div>
+  <div class="norm_text">And then follow screen guides to configure firewall. If you didn't succeed for some reason,
+  then you can simplify the task if you want Raspberry Pi was accessed just inside your local network</div>
+  <div class="terminal">#firewall-cmd --set-default-zone=trusted</div>
+</li>
+<li class="section_hdr">NTP setup
+<div class="norm_text">Raspberry PI doesn't have internal hardware clock so NTP synchronization is really important.
+Unfortunatelly current Pidora messed up with NTP services, perhaps they are trying to migrade from
+NTPD deamon to chrono. So if time synchronization didn't happen you need manually configure and enable NTP service.
+Edit <strong>/etc/ntp.config</strong> first. Use Nano, VIM or WebFolder web text editor for the task.
+<ol>
+<li>Add <code>server pool.ntp.org</code> (other server entries can be commented out)</li>
+<li>Uncomment line <code>restrict 192.168.1.0 mask 255.255.255.0 nomodify notrap</code> (you may need to change IP) to your network base)</li>
+</ol>
+Now you can enable NTP service</div>
+<div class="terminal">#systemctl enable ntpd.service</div>
+<div class="norm_text">And then start it</div>
+<div class="terminal">#systemctl start ntpd.service</div>
+<div class="norm_text">And check configuration </div>
+<div class="terminal">#ntpq -p</div>
+</li>
+<li class="section_hdr">Using external hard USB drive
+<div class="norm_text">If you plan use Raspberry Pi as media server then it can be valuable to connect some 
+high capicity storage as WD Passport HD drive. It is recommended to format it to ext3
+using gParted first. Connect the drive to a powered USB port of your Raspberry Pi and do the following:
+</div>
+<div class="terminal">#mkdir /media/exhdd</div>
+<div class="norm_text">You can select an arbitrary name of your mount point in your convenience. Now do mount:</div>
+<div class="terminal">#mount /dev/sda1 /media/exhdd</div>
+<div class="norm_text">Edit <code>/etc/fstab</code> to automatic mounting the drive at boot time.
+Add a line as below:<br>
+<code>/dev/sda1	/media/exhdd	auto	auto</code><br>Note that if you use any GUI, then
+more likely automatic mount will be assured by GUI underline functionality. And finally if you connect
+several devices and do not want to mess up which one is which especially if you do remount, then you
+can use UUID of the disk instead of <code>/dev/sdaX</code>, e.g. UUID=f46df6fd-d541-441c-b2a5-29f8e4af2aa4.
+UUID and other disk identifications can be found under <code>/dev/disk</code>.
+</div></li>
+</ol>
+<div class="norm_text">Note that all commands started from  <code>#</code> have to executed from root, or use <code>sudo</code></div>
+insserv tjwserv
+<div>&copy; 2014 Dmitriy Rogatkin</div><!--  $Id: arch-raspi-java8.html,v 1.16 2013/06/08 21:57:34 cvs Exp $ -->
+<a href="http://info.flagcounter.com/HbFH"><img src="http://s10.flagcounter.com/count/HbFH/bg_C2EDFF/txt_000000/border_CCCCCC/columns_2/maxflags_12/viewers_0/labels_0/pageviews_0/flags_0/" alt="Flag Counter" border="0"></a>
+</body>
+</html>

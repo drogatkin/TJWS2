@@ -1,0 +1,90 @@
+<html>
+<body>
+<h2>Introducing Atjeews</h2>
+<h3>What is Atjeews?</h3>
+<p>
+Atjeews is a full blown application server is capable to run on mobile devices as phones and tablets powered by Android. It is
+100% based on TJWS. So far Atjeews is the first product of such class available. There are several products looking similarly including
+Jetty, but after close look they do not provide all functionality given by Atjeews.
+<h3>Why Application Server for mobile platform?</h3>
+<p>
+Application Server tremendously extends capabilities of the mobile platform for all levels of  users. It gives also an opportunity to application vendors
+launching a new line of web interfaced products targeting mobile platforms.
+Just out of the box it is possible managing content of a mobile device, install applications from
+SD card, share music and video, install certificates and much more. The possibilities
+get extended after installing first web application taking the role of a web interfaced file manager with
+such useful functionality as file exchange with mobile device over wi-fi.
+Since Atjeews is capable to deploy standardly packaged web applications, nothing specific is required
+for development such applications.
+Say more the applications do not need to be designed specifically to run on a particular
+mobile platform and it is a great way for portability of mobile applications. 
+<p>Google have already made one important step in this direction, just read the following quote 
+"On the mobile team, we strive to produce web apps which look and feel just like installed apps." It means a
+whole revolution in mobile application development, no needs to learn a particular mobile platform and
+have a separate team porting applications there. Adobe is also persuading same approach. Read the following quote:
+"Taking an app to multiple devices no longer requires writing separate code for each platform. Watch how Flex and Adobe® Flash® Builder® 4.5 software let you develop dynamic, high performance apps for multiple platforms".
+<p> Another revolutionary step provided by Atjeews is migrating to a new approach named as <strong>Cloud in pocket</strong>.
+Cloud computing is very popular nowadays, but not many people realize that cloud can be just in your pocket. So be first who entered in the new era.
+<h3>What do I need to get started with Atjeews?</h3>
+<p>
+You need to download Atjeews.apk. (It can be done from SorceForge site as a standalone application archive, or download it from TJWS installation).
+Android will take care of installing the archive. Server isn't enabled after launch to safety reason. Enable it first checking off 
+corresponding box. The server comes with pre installed <strong>Settings</strong> servlet. 
+You can access it after launch and manipulate with Atjeews settings, enable HTTPD servlet, deploy web applications and manage
+serviced IP addresses. 
+
+<p>Note that if you'd like to password protect <strong>settings</strong> servlet access (good idea), user name will be empty string, so
+leave this filed blank (not filled), when browser request your access credentials.
+There is youtube video helping to get started with Atjeews, especially for people not having any computer background.
+<h3>How can I create web application to deploy under Atjeews?</h3>
+<p> 
+Nothing is specific to develop and package web applications running on Android. Just follow web UI guide for
+mobile device browsers if you plan to use application from Android itself. You can develop also multi faced
+applications using WebBee framework allowing to use it as from mobile device browsers as from desktop
+ browsers. Since Android devices may have limited hardware resources, it is recommended to use
+small footprint web application frameworks as Aldan3 and WebBee for web application development. You are not
+restricted to use any standard Java web application development techniques. JSP are completely supported.
+JDBC connection pool is available, so SQLite JDBC driver can be used. Android specific JNDI will be available since next version.
+<h3>Is my web application .war file ready to be deployed? </h3>
+<p>
+Actually not. Android JVM can't understand standard Java bytecode, so all Java binaries have to be converted in
+Dalvik format first. However you do not need to do that manually, just use <a href="http://knitknot.info/download/atjeews/bee-dexwar.xml">7Bee script</a> to do that. The script
+will also precompile all JSP, since no Java compiler is available on Android platform to do so. TJWS, Jasper (TJWS version) and
+Android SDK have to be installed on computer where such conversion happens.
+</p>
+<h3>How run Atjeews using SSL</h3>
+<p>First step is obtaining web server certificate. It has to carry host name of Android device and be signed by CA.
+However for testing or personal purpose, certificate can be generated using <i>gencert</i> target of 7Bee script. The certificate keystore file
+has to be uploaded to server and placed in directory /sdcard/atjeews/key. (Atjeews home directory is actually configurable)and can be set to external-sdcard.) 
+Most convenient way is using <strong>webfolder</strong> application for that.
+However when emulator is used and upload capabilities can't be used,  keystore location URL can be specified in deployment URL to make the file transfer under
+emulator file system. Since file isn't .war, actual
+deployment won't happen, however keystore file will be uploaded in /sdcard/atjeews/webapps directory of Android device.
+And now again <strong>webfolder</strong> can be used to move keystore file in required location doing the following steps:</p>
+<ol>
+  <li>Create directory <strong>key</strong> in /sdcard/atjeews directory</li>
+  <li>Copy and paste uploaded keystore file in /sdcard/atjeews/key directory</li>
+  <li>Delete keystore from /sdcard/atjeews/webapps</li>
+</ol><p>
+Since Android doesn't support JKS keystore format, the file has to be generated in BKS format. So 7Bee environment
+variable BC_PROVIDER_LIB has to point to Bouncy Castle provider jar file corresponding to your JDK version. Unlimited key policy
+file has to be downloaded and applied when JDK is used from Oracle site. The link to unlimited key policy file is on
+bottom of JDK download page. Instead of using 7Bee
+script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password is hardcoded in Atjeews to <i>changeme</i>.
+Android and any other browser will warn you about not CA signed certificate, so eventually it is recommended to get it signed by CA.
+</p>
+<p>Since certificate carries device host name as CN attribute, Android device host name has to be fixed somehow, for example in DHCP.</p>
+<h2>Quick guide how to start web applications development for Android</h2>
+<p>I receive many requests how to develop web applications for Android. As it was stated nothing specific
+required for development such applications. However I would provide a good starting point as a small "Hello world" application.
+Please download the guide from <a href="http://knitknot.info/download/atjeews/Creation web application for Atrjeews.pdf">here</a>.
+</p>
+<p>If you access Atjeews application from a desktop and use Internet Explorer then make sure you do not use 
+Android assigned host name as android_&lt;8 bytes hex number&gt;. Internet Explorer has a bug preventing
+sending cookies to such named hosts. Other browsers work well with this type of names. As a work around can be
+either use IP address, or root Android and change default host name, or provide DNS alias, or the best one as
+switch to a browser of other vendor.</p>
+
+<a href="index.html">Back to TJWS</a>
+</body>
+</html>
