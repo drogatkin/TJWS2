@@ -716,9 +716,9 @@ without an expensive and heavy weight application server.
 <a href="http://webbee.sf.net">WebBee library</a> will 
 take care of SOA registry, MVC servlet framework with template based 
 presentation layer, data persistence and 
-much more. Check out <a href="http://www.travelspal.com/">a demo</a> 
+much more. Check out <a href="http://resumefair.knitknot.info/">a demo</a> 
 of a real application based on this approach. New generation of web application building blocks WebBee 
-with annotated JDO and forms makes creation of rich application possible even for Android platfrom.</p>
+with annotated JDO and forms makes creation of rich application possible even for Android platform.</p>
 <a name="embedded"></a><h4>
     Embedded usage</h4>
     <p>
@@ -789,6 +789,9 @@ System.setProperty("tjws.webappdir", newDeployDirectory);
 </code>
 <p>
 prior of calling addWarDeployer() </p>
+<p>TJWS works perfectly on Android platform as embedded server enriching your Android application by
+ a capability to receive uploads, check
+ <a href="https://play.google.com/store/apps/details?id=rogatkin.mobile.app.lialichka" target="_blank">Kamerton</a> application using TJWS for uploading music to Android device.</p>
     
 <a name="mobile"></a><h4>
     Mobile and appliance usage</h4>
@@ -796,53 +799,27 @@ prior of calling addWarDeployer() </p>
     gives great portability of TJWS between different mobile devices.
     <h5>
         Run it on Zaurus</h5>
-<p>Zaurus version of the web server is JDK 1.1 compatible and distributed in a
-separate archive. Unzip distributive to CF card. Directory <i> ws</i> should be created.
-Insert the card to Zaurus and run a terminal window. Type <b> cd /mnt/cf/ws</b>, then
-<b>./ws.sh</b>.
-After few second you can see message on screen that the server is running on
-port 8080. Run Opera and select URL <a href="http://localhost:8080">http://localhost:8080</a>.
-You should see a web page delivered by TJWS. Select URL <a href="http://localhost:8080/app/">http://localhost:8080/app/</a>,
-then you should be able to browse your Zaurus file system. When your Zaurus
-connected to host PC over USB cradle or Wi-Fi card, you should be able to access
-this server remotely from PC browser using your Zaurus IP address. Mark this
-page for upcoming cool servlets. You can also try .ipk installation package,
-however it isn't tested well and no way to stop it unless using kill. You can
-try also the not Zaurus adopted version of the server on Zaurus, since Zaurus'
-Java has support of collection classes introduced in JDK 1.2. More information about Zaurus run<a href="zaurus.html"> is here</a>.</p>
-<h5>Run it on WindowsCE based PDA</h5>
-<p>A base TJWS runs perfectly on PDAs under IBM's J9 VM. Make sure that you 
-installed Personal Profile 1.1 VM to your PDA following IBM's instruction. In 
-this case you can run TJWS out of the box, just copying webserver.jar and 
-servlet.jat to your PDA. Use tjws.lnk for starting a server. You may need to 
-edit it first to accommodate with J9 installation and location of .jar files. <u>
-Note</u> that J2EE deployment requires Java 5, when Personal Profile 1.1 is JDK 
-1.4.2 compatible. So J2EE deployment can't be used with J9 and you can exclude 
-war.jar from copying to PDA. You should edit manually servlet.properties and 
-classpath to deploy servlets. I recommend to use command line option -Xoptionsfile 
-of J9 to place class path in a separate file, otherwise you can have 
-difficulties to start VM properly with long names in class path. I do not 
-recommend to use ex Jeode VM with the latest TJWS, since Jeode is Personal 
-Profile 1.0 compatible. </p>
+<p>Zaurus version is currently retired, since Zaurus has been replaced by Android.</p>
+<h5>Run it on Windows Mobile</h5>
+<p>Since Microsoft dropped Java and allow to install only products from mobile store on Windows surface tablets, here is
+no good possibility to run TJWS. So here is a plan to create Objective C and C++ library supporting core
+functionality of TJWS to be able to run it on iOS and Windows Mobile platforms. </p>
 <h5>Run it on Raspberry Pi</h5>
 <p>TJWS is naturally created for running web applications on Raspbery Pi. It will outperform most of other application
 servers on the platfrom including Jetty,  JBOSS and Tomcat. Start time for it is just around 11 seconds, when you can
  observe times close to 1 minute with 
 other application servers. Here are few notes helping to start using it:</p>
 <ul>
-  <li>Make sure to use <strong>Soft-float</strong> Debian “wheezy”</li>
-  <li>Download Oracle JRE marked as <strong>ARMv6/7 Linux - Headless EABI, VFP, SoftFP ABI, Little Endian</strong></li>
+  <li>Debian “wheezy” is preferred as OS for Raspberry Pi and TJWS</li>
+  <li>Download Oracle JRE marked as <strong>Linux ARM v6/v7 Hard Float ABI</strong></li>
   <li>If you use Linux "dd" utility on Ubuntu to transfer Debian image to SD card, then keep it mounted and
   use device name as <strong>/dev/sd</strong>c (last letter can be "b" for some systems)</li>
   <li>There <a href="http://www.savagehomeautomation.com/pi-jdk">is</a> a good resource for beatifying JRE installation</li>
 </ul>
 <p>If you plan to use Raspberry Pi mostly as server operating 24/7, then I recommend to install Arch Linux especially if your network connection is wireless.
-Since Arch Linux is hard float supporting, you need to install Java 8 early access. It works stable enough so I would recommend to 
-use it. Since Arch Linux specific is less covered on net, I prepared my own <a target="_blank" href="arch-raspi-java8.html">guide</a> which can help you start using
+Since Arch Linux specific is less covered on net, I prepared my own <a target="_blank" href="arch-raspi-java8.html">guide</a> which can help you start using
 TJWS faster.<br>
-I also sell all popular Raspberry Pi OSes SD card images with preinstalled TJWS and bunch of applications 
-as jAddressbook, Goofier, Music-Barrel, WebFolder and other. I have images of 16Gb, 32Gb, and 64Gb cards. Contact me 
-using e-mail in contact section. I charge only $5 for image plus card cost plus shipping.
+Raspberry Pi development is certainly addicting, so if you are on same boat feel free to drop me a note.
 </p>
 <h5>Run it on Android devices</h5>
 <p>TJWS provides Android packaging for run the server on Android devices. This packaging got name
@@ -867,7 +844,7 @@ bundled with Jasper to run JSP. See more about Atjeews <a href="atjeews.html">he
 </p>
 <h4>Run it on iPhone?</h4>
   <p> There are several options to run Java applications on iPhone and iPad. You will need to jail break your iPhone though.
-  Since Steeve isn't with Apple anymore, there is a good chance for porting Davlik to iOS platfrom. I heard that iOS 7.0 (current is 6.0) will have Java included</p>
+  Since Steeve isn't with Apple anymore, there is a good chance for porting Davlik to iOS platfrom. I heard that iOS 8.0 (current is 7.0) will have Java included</p>
 
 <a name="proxy"></a>
 <h3>Use TJWS as proxied</h3>
@@ -927,10 +904,11 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
 The version is also available for separate download so you can install it directly to your phone or tablet. I am
 preparing a video helping to use Atjeews on your mobile devices.
 </p>
+<p><a href="https://github.com/drogatkin/TJWS2/tree/master/1.x" target="_blank">Sources</a>  of TJWS are available on GitHub</p>
 <p><font color="#800000">Note:</font> Base TJWS is Java 2 (JDK 1.2) compatible, SSL 
 module requires extra classes introduced in JDK 1.3-1.4. Base TJWS runs also on servlet specification 2.3, when
 the rest of server is 3.0 version compatible. It makes building of TJWS a bit tricky. Some methods originally introduced in
-TJWS are conflicting with JSR 315, so the author is looking how to eiminate this conflict with a minimal impact
+TJWS are conflicting with JSR 315, so the author is looking how to eliminate this conflict with a minimal impact
 of backward compatibility. J2EE war deployment 
 requires Java 5 (JDK 1.5, 1.6, 1.7, or 1.8). If you would like to make own build, then you will need to download <a href="http://knitknot.info/download/7bee/bee-1.1.1.zip">7Bee</a> Java
 based build tool. The env.xml assumes target 1.4 for TJWS and 
@@ -1022,7 +1000,7 @@ popular web applications. Here are just few of them:</p>
 </ol>
 <a name="build"></a><h4>Build Tool</h4>
 <p>
-    TJWS is proudly built using most <u>sophisticated</u>Java build tool <b>7Bee</b>.
+    TJWS is proudly built using most <u>sophisticated</u> Java build tool <b>7Bee</b>.
 The tool is available in sources at <a href="https://github.com/drogatkin/7Bee" target="_blank">GitHub</a>. Another build tools can be used as well, although I support 7Bee only. 
  There is also no way to convert .war files to be deployed on Android, than using 7Bee. The following values needed to be provided in env.xml to build TJWS:</p>
     <ol>
@@ -1051,7 +1029,7 @@ as stated in the license you can find in any source file.</p>
 code, check any source file for details.</p>
 <a name="support"></a><h4>Support</h4>
 <p>I provide support of the server on voluntary basis. Feel free to send bug report on enhancement request. I also provide consulting service
-related to creation of web 2.0 J2EE scalable applications. See an example <a href="http://www.travelspal.com">TravelsPal</a></p>
+related to creation of web 2.0 J2EE scalable applications. See an example <a href="http://resumefair.knitknot.info">ResumeFair</a></p>
 <h5>Discussion forum</h5>
 <p>Feel free also to share your concerns, questions, and discoveries in 
 <a href="http://sourceforge.net/projects/tjws/forums" target="discuss">the Discussion forum</a>.</p>
@@ -1080,7 +1058,7 @@ a music jukebox remote controllable from your phone or tablet.</p>
 <a name="contact"></a><h4>Contact</h4>
 <p>Bugs, questions, and enhancement requests you can send to 
 <a href="mailto:jAddressBook@gmail.com">Dmitriy
-Rogatkin</a>.Happy web servicing!.</p>
+Rogatkin</a>.Happy web servicing!</p>
 <p>
 
 </body>
