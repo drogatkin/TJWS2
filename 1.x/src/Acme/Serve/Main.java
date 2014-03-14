@@ -42,6 +42,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import Acme.Utils;
@@ -550,10 +551,18 @@ public class Main extends Serve {
 								} else if (lt.equalsIgnoreCase("initArgs")) {
 									Hashtable initparams = new Hashtable();
 									while (dsctokenzr.hasMoreTokens()) {
-										String key = dsctokenzr.nextToken("=,");
-										if (dsctokenzr.hasMoreTokens())
-											initparams.put(key, dsctokenzr.nextToken(",="));
+										String key = dsctokenzr.nextToken("=");
+										if (key.startsWith(","))
+											key = key.substring(1);
+										//System.err.println("Key:"+key);
+										try {
+										   initparams.put(key, dsctokenzr.nextToken(",").substring(1));
+										} catch(NoSuchElementException nse) {
+											initparams.put(key,"");
+											break;
+										}
 									}
+									//System.err.println("init:"+initparams);
 									parameterstbl.put(servletname, initparams);
 								} else
 									serve
