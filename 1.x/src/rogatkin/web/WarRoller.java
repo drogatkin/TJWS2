@@ -96,7 +96,7 @@ public class WarRoller implements WarDeployer {
 		    } catch (Throwable t) {
 			if (t instanceof ThreadDeath)
 			    throw (ThreadDeath) t;
-			server.log("Unexpected problem in deployment of aplication  " + file.getName(), t);
+			server.log("Unexpected problem in deployment of application  " + file.getName(), t);
 		    }
 		return false;
 	    }
