@@ -2807,8 +2807,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			@Override
 			public Map getParameterMap() {
 				HashMap<String, String[]> result = new HashMap<String, String[]>();
-				result.putAll(createParameters());
 				result.putAll(super.getParameterMap());
+				result.putAll(createParameters());
 				return result;
 			}
 

@@ -1397,6 +1397,8 @@ public class Serve implements ServletContext, Serializable {
 	String dispatchQuery;
 
 	int dispatchLen;
+	
+	Map parameters;
 
 	SimpleRequestDispatcher(String path) {
 	    PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
@@ -1439,6 +1441,8 @@ public class Serve implements ServletContext, Serializable {
 		    return getRequest().getRealPath(getPathInfo());
 		}
 
+		// TODO implement getPathInfo
+
 		public String getServletPath() {
 		    return dispatchLen <= 0 ? "" : dispatchPath.substring(0, dispatchLen);
 		}
@@ -1458,6 +1462,45 @@ public class Serve implements ServletContext, Serializable {
 		    getAttributeNames(); // here is some overhead
 		    return super.getAttribute(name);
 		}
+
+				public String[] getParameterValues(String name) {
+					Map params = createParameters();
+					String[] result = (String[]) params.get(name);
+					if (result != null)
+						return result;
+					return super.getParameterValues(name);
+				}
+				public String getParameter(String name) {
+					Map params = createParameters();
+					String[] result = (String[]) params.get(name);
+					if (result != null)
+						return result[0];
+					return super.getParameter(name);
+				}
+
+				public Map getParameterMap() {
+					HashMap result = new HashMap();
+					result.putAll(super.getParameterMap());
+					result.putAll(createParameters());
+					return result;
+				}
+				
+				public Enumeration getParameterNames() {
+					Map params = getParameterMap();
+					Hashtable result = new Hashtable();
+					result.putAll(params);
+					return result.keys();
+				}
+				synchronized protected Map createParameters() {
+					if (parameters == null) {
+						String query = getQueryString();
+						if (query != null)
+							parameters = Acme.Utils.parseQueryString(query, null);
+						else
+							parameters = new Hashtable();
+					}
+					return parameters;
+				}
 
 	    }, _response);
 	    // TODO think when response isn't actual response ServeConnection
