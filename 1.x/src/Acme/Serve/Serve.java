@@ -1661,7 +1661,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface Identification {
 	public static final String serverName = "D. Rogatkin's TJWS with Android support (aka Acme.Serve)";
 
-	public static final String serverVersion = "Version 1.106, $Revision: 1.269 $";
+	public static final String serverVersion = "Version 1.106, GitHub master+";
 
 	public static final String serverUrl = "http://tjws.sourceforge.net";
 
@@ -3859,10 +3859,18 @@ public class Serve implements ServletContext, Serializable {
 			}
 		    } else if (o instanceof String[]) {
 			String[] values = (String[]) o;
-			out.print(name + ": " + values[0]);
-			for (int i = 1; i < values.length; i++)
-			    out.print("," + values[i]);
-			out.println();
+			if ("set-cookie".equals(name)) {
+				for (int i = 0; i < values.length; i++) {
+					out.print(name);
+					out.print(": ");
+					out.println(values[i]);
+				}
+						} else {
+							out.print(name + ": " + values[0]);
+							for (int i = 1; i < values.length; i++)
+								out.print("," + values[i]);
+							out.println();
+						}
 		    }
 		}
 
