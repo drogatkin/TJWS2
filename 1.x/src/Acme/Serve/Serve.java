@@ -222,6 +222,8 @@ public class Serve implements ServletContext, Serializable {
     public static final String ARG_WORK_DIRECTORY = "workdirectory";
 
     public static final String ARG_SESSION_SEED = "SessionSeed";
+    
+    public static final String ARG_SESSION_SEED_SIZE = "SessionAutoSeedSize";
 
     public static final String ARG_HTTPONLY_SC = "sessionhttponly";
     
@@ -347,8 +349,18 @@ public class Serve implements ServletContext, Serializable {
 
 	expiredIn = arguments.get(ARG_SESSION_TIMEOUT) != null ? ((Integer) arguments.get(ARG_SESSION_TIMEOUT))
 		.intValue() : DEF_SESSION_TIMEOUT;
-	srandom = new SecureRandom((arguments.get(ARG_SESSION_SEED) == null ? "TJWS" + new Date()
-		: (String) arguments.get(ARG_SESSION_SEED)).getBytes());
+	String seed = (String) arguments.get(ARG_SESSION_SEED);
+	if (seed != null)
+		srandom = new SecureRandom(seed.getBytes());
+	else {
+		seed = (String) arguments.get(ARG_SESSION_SEED);
+		int seedLen = seed != null?Integer.parseInt(seed):100;
+		srandom = new SecureRandom();
+		byte bseed[] = srandom.generateSeed(seedLen);
+		srandom = new SecureRandom( bseed );
+		srandom.nextBytes(bseed);
+		srandom = new SecureRandom( bseed );
+	}
 	httpSessCookie = arguments.get(ARG_HTTPONLY_SC) != null;
 	secureSessCookie = arguments.get(ARG_SECUREONLY_SC) != null;
 	try {
