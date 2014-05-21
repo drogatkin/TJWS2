@@ -27,7 +27,7 @@
 // fine Java utilities: http://www.acme.com/java/
 //
 
-// All enhancements Copyright (C)1998-2013 by Dmitriy Rogatkin
+// All enhancements Copyright (C)1998-2014 by Dmitriy Rogatkin
 // This version is compatible with JSDK 2.5
 // http://tjws.sourceforge.net
 // $Id: Serve.java,v 1.269 2013/08/20 04:11:09 cvs Exp $
@@ -1673,7 +1673,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface Identification {
 	public static final String serverName = "D. Rogatkin's TJWS (+Android) https://github.com/drogatkin/TJWS2.git ";
 
-	public static final String serverVersion = "Version 1.106";
+	public static final String serverVersion = "Version 1.107";
 
 	public static final String serverUrl = "http://tjws.sourceforge.net";
 
@@ -2179,11 +2179,15 @@ public class Serve implements ServletContext, Serializable {
 		keepAlive = false;
 
 	    // Split off query string, if any.
-	    int qmark = reqUriPathUn.indexOf('?');
-	    if (qmark > -1) {
-		if (qmark < reqUriPathUn.length() - 1)
-		    reqQuery = reqUriPathUn.substring(qmark + 1);
-		reqUriPathUn = reqUriPathUn.substring(0, qmark);
+	    int mark = reqUriPathUn.indexOf('?');
+	    if (mark > -1) {
+		if (mark < reqUriPathUn.length() - 1)
+		    reqQuery = reqUriPathUn.substring(mark + 1);
+		reqUriPathUn = reqUriPathUn.substring(0, mark);
+	    } else {
+	    	mark = reqUriPathUn.indexOf('#');
+	    	if (mark > -1) 
+	    		reqUriPathUn = reqUriPathUn.substring(0, mark);
 	    }
 	    reqUriPath = Utils.decode(reqUriPathUn, UTF8);
 	    // TDOD check if reqUriPathUn starts with http://host:port

@@ -2566,8 +2566,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 						&& "/".equals(path))
 					return path;
 				int qp = path.indexOf('?');
-				if (qp < 0)
-					qp = path.indexOf('#');
+				//if (qp < 0)
+					//qp = path.indexOf('#');
 				int sp = servletPath == null ? -1 : path.indexOf(servletPath);
 				if (sp >= 0) {
 					sp += servletPath.length()
@@ -3327,7 +3327,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				return path.substring(qp + 1);
 			return null;
 		}
-		int hp = path.indexOf('#');
+		int hp = -1;//path.indexOf('#');
 		if (qp >= 0) {
 			if (hp >= 0 && hp < qp)
 				return path.substring(0, hp);
@@ -3369,7 +3369,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			sp = cl;
 		}
 		int pp = uri.indexOf('?', sp); // + sl
-		int ph = uri.indexOf('#', sp); // + sl
+		int ph = -1;// uri.indexOf('#', sp); // + sl
 		if (ph >= 0 && ((pp >= 0 && ph < pp) || pp < 0))
 			pp = ph;
 		int ip = uri.indexOf('/', sp + sl - (servlet.endsWith("/") ? 1 : 0));
