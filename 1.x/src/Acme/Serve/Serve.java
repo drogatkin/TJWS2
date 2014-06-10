@@ -2714,7 +2714,12 @@ public class Serve implements ServletContext, Serializable {
 	// / Returns the size of the request entity data, or -1 if not known.
 	// Same as the CGI variable CONTENT_LENGTH.
 	public int getContentLength() {
-	    return getIntHeader(CONTENTLENGTH);
+		try {
+			return getIntHeader(CONTENTLENGTH);
+		} catch(NumberFormatException nfe) {
+			
+		}
+		return -1;
 	}
 
 	// / Returns the MIME type of the request entity data, or null if
