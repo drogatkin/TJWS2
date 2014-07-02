@@ -226,9 +226,11 @@ public class FileServlet extends HttpServlet {
 		res.setStatus(HttpServletResponse.SC_OK);
 		long lastMod = file.lastModified();
 		long ifModSince = req.getDateHeader("If-Modified-Since");
+                boolean noContLen = false;
 		if (ifModSince != -1 && ifModSince >= lastMod) {
 			res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			headOnly = true;
+			noContLen = true;
 		}
 		// TODO add processing If-None-Match, If-Unmodified-Since and If-Match
 		String contentType = getServletContext().getMimeType(file.getName());
@@ -285,7 +287,7 @@ public class FileServlet extends HttpServlet {
 				doCompress = true;
 			}
 		}
-		if (doCompress == false || headOnly) {
+		if ((doCompress == false || headOnly) && !noContLen) {
 			if (clen < Integer.MAX_VALUE)
 				res.setContentLength((int) clen);
 			else

@@ -4010,7 +4010,7 @@ public class Serve implements ServletContext, Serializable {
 		if (chunked_out == false ) {
 			if (contentLen < 0 ) 
 		    if (serve.isKeepAlive() && oneOne ) {
-		    	if (resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) {
+		    	if ((resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != HttpServletResponse.SC_NOT_MODIFIED) {
 		    		out.println(TRANSFERENCODING + ": " + CHUNKED);
 		    		chunked_out = true;
 		    	}
@@ -4036,7 +4036,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		out.println();
 		out.flush();
-		if (resCode == HttpServletResponse.SC_NO_CONTENT)
+		if (resCode == HttpServletResponse.SC_NO_CONTENT || resCode == HttpServletResponse.SC_NOT_MODIFIED)
 			out.close();
 		else 
 			((ServeOutputStream) out).setChunked(chunked_out);
