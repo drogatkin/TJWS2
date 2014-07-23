@@ -112,7 +112,7 @@ site</a> hosted on this server on Amazon EC2. This web server also works on PDA 
 		top, this is gold! Thanks! </p>
 		<p class="quotes">I've downloaded
 		TJWS and it looks like 
-		exactly what I’ve been looking for to use as a local web server to 
+		exactly what Iï¿½ve been looking for to use as a local web server to 
 		generate a web application. 
 		<p class="quotes">I'm using the miniature java webserver on<br>
 		my zaurus.<br>
@@ -619,9 +619,9 @@ TJWS includes app server services module. It takes some usable shape from versio
 <li>Data source with connection pooling
 <li>JNDI
 </ul>
-<p>For using these services app.jar has to be in class path, or/and used for starting the server. The bin directory includes an example of starting TJWS with app server services on. Data sources get configured from properties files specified as <strong>–dataSource</strong> command line option. JNDI properties as context factory and JNDI URL get pre-populated as 
+<p>For using these services app.jar has to be in class path, or/and used for starting the server. The bin directory includes an example of starting TJWS with app server services on. Data sources get configured from properties files specified as <strong>ï¿½dataSource</strong> command line option. JNDI properties as context factory and JNDI URL get pre-populated as 
     <i>rogatkin.app.SimpleJndi</i> and <span class="style1">http://localhost:1221
-    </span>correspondingly, unless they are defined as system properties. JNDI is capable to register local and CORBA objects. First running JNDI takes care of JNDI master repository, and all following JNDI starts will be registered in the master repository. If the master repository's gone, then all clients won’t be capable to register own CORBA objects or access them, until the repository is back. There is no persistence for stored references, so you should 
+    </span>correspondingly, unless they are defined as system properties. JNDI is capable to register local and CORBA objects. First running JNDI takes care of JNDI master repository, and all following JNDI starts will be registered in the master repository. If the master repository's gone, then all clients wonï¿½t be capable to register own CORBA objects or access them, until the repository is back. There is no persistence for stored references, so you should 
  do a defended programming and reregister references in case of crashing the master repository. </p>
 <h5>context.xml</h5>
 <p>Data source definition can be specified in context.xml placed under META-INF directory of .war structure. (since 1.98)</p>
@@ -723,7 +723,7 @@ with annotated JDO and forms makes creation of rich application possible even fo
         TJWS can be successfully used as a part of another Java application. Acme.Serve.Serve
         can be instantiated as a Java bean with following setting parameters in its public member
         <em>arguments</em> and log print stream in its public member <em>logStream</em>.
-        Use method a<strong>addServlet(..)</strong> for adding servlets. Note that
+        Use method <strong>addServlet(..)</strong> for adding servlets. Note that
         server will do nothing without servlets. Default file (HTTPD) and cgi servlets can be added
         calling <strong>addDefaultServlets(...)</strong>. Server can be started calling
         method <strong>serve()</strong> and stopped calling <strong>notifyStop()</strong>.
@@ -808,7 +808,7 @@ servers on the platfrom including Jetty,  JBOSS and Tomcat. Start time for it is
  observe times close to 1 minute with 
 other application servers. Here are few notes helping to start using it:</p>
 <ul>
-  <li>Debian “wheezy” is preferred as OS for Raspberry Pi and TJWS</li>
+  <li>Debian ï¿½wheezyï¿½ is preferred as OS for Raspberry Pi and TJWS</li>
   <li>Download Oracle JRE marked as <strong>Linux ARM v6/v7 Hard Float ABI</strong></li>
   <li>If you use Linux "dd" utility on Ubuntu to transfer Debian image to SD card, then keep it mounted and
   use device name as <strong>/dev/sd</strong>c (last letter can be "b" for some systems)</li>
@@ -895,7 +895,7 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.106)
+(version 1.107)
 </p>
 
 <p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
@@ -943,7 +943,7 @@ version</a> (use kill to stop)</p><a name="version"></a>
 	Martin Egholm Nielsen</li>
 	<li>fixes in web app servlet most reported by Nicolas Prochazka</li>
 	<li>supporting HTTP and HTTPS transports in the same instance</li>
-	<li>exit out of serve() by André Kischkel</li>
+	<li>exit out of serve() by Andrï¿½ Kischkel</li>
 	<li>thread pooling for servicing requests</li>
 	<li>unavailable, and path pattern related fixes</li>
 	<li>web app launcher including embedded .war</li>
@@ -962,7 +962,7 @@ version</a> (use kill to stop)</p><a name="version"></a>
     <li>virtual host by ganesan</li>
     <li>closing all connections at stop requestedd by Weinan Li@redhat</li>
     <li>JSR 315 <a href="http://www.slideshare.net/ALDAN3/server-side-push-in-aldan-3" target="_blank">Comet</a> support requested by Ivan Voronov</li>
-    <li>Base server vulnerability related directory transversal using '..' pointed by João Sampaio</li>
+    <li>Base server vulnerability related directory transversal using '..' pointed by Joï¿½o Sampaio</li>
     <li>Android compatibility of war deployment requested by Alex Xin</li>
     <li>Adjustung behavior matching to servlet specification done by Andreas</li> 
     <li>Using servlets mapping URL patterns matching to servlet specification including extensions mapping, by Bruno B </li>
@@ -983,7 +983,7 @@ popular web applications. Here are just few of them:</p>
         <li>Apache Axis2 1.0</li>
     <li>JASIG - single sign on service</li>
     <li>SimpleCaptcha </li>
-    <li>Quercus™ (PHP engine)</li>
+    <li>Quercusï¿½ (PHP engine)</li>
     <li>Apache Myfaces</li>
     <li>MetricStream EGRCP</li>
     <li>Google Web Toolkit (GWT)</li>
