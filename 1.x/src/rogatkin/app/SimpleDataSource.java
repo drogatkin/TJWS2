@@ -345,7 +345,7 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 	try {
 	    return driver.connect(dataSourceProperties.getProperty("url"), conectionProperties);
 	} catch (SQLException e) {
-	    log("Can't create conection for %s%n", e, dataSourceProperties.getProperty("url"));
+	    log("Can't create connection for %s%n", e, dataSourceProperties.getProperty("url"));
 	    throw new IllegalArgumentException(
 		    "Can't create connection, check connection parameters and class path for JDBC driver", e);
 	}
