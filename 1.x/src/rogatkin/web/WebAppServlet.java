@@ -2362,7 +2362,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			attributeListeners.clear();
 		if (appContextDelegator != null) {
 			if (appContextDelegator.remove(contextName) == null)
-				log(String.format("Context data for %s noot found and not released from app container", contextName));
+				log(String.format("Context data for %s not found and not released from app container", contextName));
 		}
 		// log("Destroy");
 	}
