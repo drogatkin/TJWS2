@@ -63,6 +63,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
+import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -1941,6 +1943,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			throw new MalformedURLException("Path: " + path
 					+ " has to start with '/'");
 		path = extractQueryAnchor(path, false);
+		int ji = path.indexOf(".jar!/");
 		try {
 			File resFile = new File(getRealPath(path)).getCanonicalFile();
 			if (resFile.exists())
@@ -1956,10 +1959,46 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			throw new IllegalArgumentException(
 					"getResourcePaths: path parameters must begin with '/'");
 		path = extractQueryAnchor(path, false);
+		int ji = path.indexOf(".jar!/");
+		String jarpath = "";
+		if (ji > 0) {
+			if (path.length() > ji+".jar!/".length())
+				jarpath = path.substring(ji+".jar!/".length());
+			path = path.substring(0, ji+4);			
+		}
 		File dir = new File(getRealPath(path));
-		if (dir.exists() == false || dir.isDirectory() == false)
+		if (dir.exists() == false) 
 			return null;
-		Set<String> set = new TreeSet<String>();
+		log("Path:"+path+" dir "+dir+" jar p "+jarpath);
+		Set<String> set = null;
+		if (dir.isDirectory() == false) {			
+			if (ji > 0) {
+				set = new TreeSet<String>();
+				try {
+				JarFile jarFile = new JarFile(dir);
+				int cp = jarpath.endsWith("/") ?jarpath.length():jarpath.length()+1;				
+			      for (Enumeration entries = jarFile.entries(); entries.hasMoreElements();) {
+			        JarEntry entry = (JarEntry) entries.nextElement();
+			        String entryPath = entry.getName();
+			        
+			        if (cp == 1 || entryPath.startsWith(jarpath)) {
+			        	if (entryPath.length() == cp)
+			        		continue;
+			        	int ns = entryPath.indexOf('/', cp+1);
+			        	//log("e Path:"+entryPath+", ns "+ns);
+			        	if (ns > 0)
+			        		entryPath = entryPath.substring(0, ns+1);
+			        		set.add(new URL("jar:file:/"+dir.getPath()+"!/"+entryPath).toString());			        	
+			        }
+			      }
+	        	} catch(Exception e) {
+	        		log("Problem: "+e);
+	        	}
+
+			}
+			return set;
+		}
+		set = new TreeSet<String>();
 		String[] els = dir.list();
 		for (String el : els) {
 			String fp = path + "/" + el;
