@@ -4036,7 +4036,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		out.println();
 		out.flush();
-		if (resCode == HttpServletResponse.SC_NO_CONTENT || resCode == HttpServletResponse.SC_NOT_MODIFIED)
+		if (resCode == HttpServletResponse.SC_NO_CONTENT || resCode == HttpServletResponse.SC_NOT_MODIFIED || "HEAD".equals(reqMethod))
 			out.close();
 		else 
 			((ServeOutputStream) out).setChunked(chunked_out);
