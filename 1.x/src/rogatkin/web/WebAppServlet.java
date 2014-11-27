@@ -2618,7 +2618,11 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				}
 				if (_DEBUG)
 					System.err.printf("FORWARD get pathinfo ret: %s%n", path);
-				return path;
+				int qp = path.indexOf('?');
+				if (qp > sp)
+					return path.substring(sp, qp);
+				else
+					return path.substring(sp);
 			}
 
 			@Override
