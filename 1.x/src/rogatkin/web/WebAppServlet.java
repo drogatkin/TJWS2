@@ -2604,7 +2604,6 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				if (servletPath != null && servletPath.length() == 0
 						&& "/".equals(path))
 					return path;
-				int qp = path.indexOf('?');
 				//if (qp < 0)
 					//qp = path.indexOf('#');
 				int sp = servletPath == null ? -1 : path.indexOf(servletPath);
@@ -2613,13 +2612,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							- (servletPath.endsWith("/") ? 1 : 0);
 					if (_DEBUG)
 						System.err
-								.printf("FORWARD getPathinfo() path %s, servlet %s, sp %d, qp %d, res %s%n",
-										path, servletPath, sp, qp,
+								.printf("FORWARD getPathinfo() path %s, servlet %s, sp %d, res %s%n",
+										path, servletPath, sp,
 										path.substring(sp));
-					if (qp > sp)
-						return path.substring(sp, qp);
-					else
-						return path.substring(sp);
 				}
 				if (_DEBUG)
 					System.err.printf("FORWARD get pathinfo ret: %s%n", path);
@@ -2686,7 +2681,12 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			public String getQueryString() {
 				if (forward)
 					return getQueryString1();
-				return super.getQueryString();
+				String q = super.getQueryString();
+				if (q == null || q.isEmpty())
+					q = getQueryString1();
+				else 
+					q += "&"+getQueryString1();
+				return q;
 			}
 
 			@Override
@@ -3362,7 +3362,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	public static String extractQueryAnchor(String path, boolean query) {
 		int qp = path.indexOf('?');
 		if (query) {
-			if (qp >= 0)
+			if (qp >= 0 && path.length() > qp + 1)
 				return path.substring(qp + 1);
 			return null;
 		}
