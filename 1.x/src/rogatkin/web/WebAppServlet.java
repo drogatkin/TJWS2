@@ -2604,6 +2604,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				if (servletPath != null && servletPath.length() == 0
 						&& "/".equals(path))
 					return path;
+				int qp = path.indexOf('?');
 				//if (qp < 0)
 					//qp = path.indexOf('#');
 				int sp = servletPath == null ? -1 : path.indexOf(servletPath);
@@ -2615,14 +2616,16 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 								.printf("FORWARD getPathinfo() path %s, servlet %s, sp %d, res %s%n",
 										path, servletPath, sp,
 										path.substring(sp));
+					if (qp > sp)
+						return path.substring(sp, qp);
+					else
+						return path.substring(sp);
 				}
 				if (_DEBUG)
 					System.err.printf("FORWARD get pathinfo ret: %s%n", path);
-				int qp = path.indexOf('?');
-				if (qp > sp)
-					return path.substring(sp, qp);
-				else
-					return path.substring(sp);
+				if (qp > 0)
+					return path.substring(0, qp);
+				return path;
 			}
 
 			@Override
