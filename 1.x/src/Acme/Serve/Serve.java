@@ -913,7 +913,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface WebsocketProvider {
     	public void init(Map properties);
     	
-    	public void handshake(Socket socket, Servlet servlet) throws ServletException;
+    	public void handshake(Socket socket, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
     }
 
     protected Acceptor createAcceptor() throws IOException {
@@ -2262,7 +2262,7 @@ public class Serve implements ServletContext, Serializable {
 		if (websocketUpgrade) {
 			if (serve.websocketProvider != null)
 				try {
-					serve.websocketProvider.handshake(socket, (HttpServlet) os[0]);
+					serve.websocketProvider.handshake(socket, (HttpServlet) os[0], this, this);
 				} catch(Exception wse) {
 					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR  );
 				}
