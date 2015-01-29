@@ -381,6 +381,7 @@ public class Main extends Serve {
 				serve.log("Problem reading throttles file: " + e, e);
 				System.exit(1);
 			}
+		serve.addWebsocketProvider((String) arguments.get(ARG_WEBSOCKET));
 		serve.addWarDeployer((String) arguments.get(ARG_WAR), throttles);
 		if (arguments.get(ARG_NOHUP) == null)
 			new Thread(new Runnable() {

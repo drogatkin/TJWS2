@@ -131,6 +131,10 @@
         <value>&build_directory;</value>
         <value variable="PATH SEPARATOR"/>
         <value variable="SERVLET_LIB_30"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="WEBSOCKETS_CLIENT_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="WEBSOCKETS_SERVER_LIB"/>
      </operator>
   </expression>
   
@@ -421,6 +425,25 @@
     </task>
   </target>
 
+
+  <target name="wskt" dir="TJWS_HOME" comment="creation jar of websocket supporter">
+    <echo>Jarring wskt...</echo>
+    <dependency target="compile j2ee"/>
+    <dependency>
+           <function name="allnewer">
+              <parameter value="&build_directory;/rogatkin/wskt" type="dir"/>
+              <parameter value="&build_directory;/wskt.jar" type="file"/>
+           </function>
+    </dependency>
+    <task name="jar_do" code="sun.tools.jar.Main">
+       <parameter value="-cf"/>
+       <parameter value="&build_directory;/wskt.jar" type="file"/>
+       <parameter value="-C"/>
+       <parameter value="&build_directory;" type="dir"/>
+       <parameter value="rogatkin/wskt" type="dir"/>
+    </task>
+  </target>
+
   <target name="app" dir="TJWS_HOME" comment="creation jar of J2EE app server tools, like JNDI, DataSource, and other">
     <echo>Jarring app...</echo>
     <dependency target="compile j2ee"/>
@@ -614,6 +637,7 @@
   <target name="launcher" dir="TJWS_HOME" comment="build one jar web app launcher">
     <dependency target="jar"/>
     <dependency target="war"/>
+    <dependency target="wskt"/>
     <dependency target="conv res"/>
     <dependency>
            <function name="allnewer">
@@ -1172,6 +1196,9 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
         <value variable="TJWS_HOME"/>
         <value>/&build_directory;/war.jar</value>
         <value variable="PATH SEPARATOR"/>
+        <value variable="TJWS_HOME"/>
+        <value>/&build_directory;/wskt.jar</value>
+        <value variable="PATH SEPARATOR"/>
         <value variable="SERVLET_LIB_30"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="JAVA_HOME"/>
@@ -1228,6 +1255,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
     <dependency target="jar"/>
     <dependency target="app"/>
     <dependency target="war"/>
+    <dependency target="wskt"/>
     <dependency value="true"/>
     <!-- TODO add check if android is set  -->
     <task name="main" code="rogatkin.app.Main" path="run app class path">
@@ -1263,6 +1291,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
     <echo>Running...</echo>
     <dependency target="jar"/>
     <dependency target="war"/>
+    <dependency target="wskt"/>
     <dependency value="true"/>
     <task name="main" code="Acme.Serve.Main" path="run class path">
        <parameter name="rogatkin.webapp.debug" value="no"/>

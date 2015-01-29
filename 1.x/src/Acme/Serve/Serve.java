@@ -198,6 +198,8 @@ public class Serve implements ServletContext, Serializable {
     public static final String ARG_JSP = "JSP";
 
     public static final String ARG_WAR = "war-deployer";
+    
+    public static final String ARG_WEBSOCKET = "WEBSOCKET-PROVIDER";
 
     public static final String ARG_KEEPALIVE = "keep-alive";
 
@@ -312,6 +314,8 @@ public class Serve implements ServletContext, Serializable {
     public Map arguments;
 
     public Properties mime;
+    
+    WebsocketProvider websocketProvider;
 
     // / Constructor.
     public Serve(Map arguments, PrintStream logStream) {
@@ -698,6 +702,21 @@ public class Serve implements ServletContext, Serializable {
 	    log("TJWS: Problem in war(s) deployment", t);
 	}
     }
+    
+    protected void addWebsocketProvider(String provider) {
+    	if (provider == null)
+    		provider = "rogatkin.wskt.SimpleProvider";
+    	
+    	try {
+    	    websocketProvider = (WebsocketProvider) Class.forName(provider).newInstance();    	   
+    	} catch (ClassNotFoundException cnf) {
+    	    log("TJWS: Problem finding websocket provider: " + cnf);
+    	} catch (Throwable t) {
+    	    if (t instanceof ThreadDeath)
+    		throw (ThreadDeath) t;
+    	    log("TJWS: Problem initializing websocket provider", t);
+    	}
+    }
 
     protected File getPersistentFile() {
 	return getPersistentFile(null);
@@ -889,6 +908,12 @@ public class Serve implements ServletContext, Serializable {
 	public void notifyTimeout();
 
 	public long getTimeout();
+    }
+    
+    public static interface WebsocketProvider {
+    	public void init(Map properties);
+    	
+    	public void handshake(Socket socket, Servlet servlet) throws ServletException;
     }
 
     protected Acceptor createAcceptor() throws IOException {
@@ -1758,6 +1783,10 @@ public class Serve implements ServletContext, Serializable {
 	public final static String HOST = "Host".toLowerCase();
 
 	public final static String COOKIE = "Cookie".toLowerCase();
+	
+	public final static String UPGRADE = "Upgrade".toLowerCase();
+	
+	public final static String WEBSOCKET = "websocket".toLowerCase();
 
 	public final static String ACCEPT_LANGUAGE = "Accept-Language".toLowerCase();
 
@@ -2088,6 +2117,7 @@ public class Serve implements ServletContext, Serializable {
 	    byte[] lineBytes = new byte[4096];
 	    int len;
 	    String line;
+	    boolean websocketUpgrade = false;
 	    // / TODO put time mark here for start waiting for receiving
 	    // requests
 	    lastWait = System.currentTimeMillis();
@@ -2165,6 +2195,8 @@ public class Serve implements ServletContext, Serializable {
 		    return;
 		}
 		s = getHeader(CONNECTION);
+
+		websocketUpgrade = UPGRADE.equalsIgnoreCase(s) && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
 		keepAlive = "close".equalsIgnoreCase(s) == false;
 		if (keepAlive) {
 		    s = getHeader(KEEPALIVE);
@@ -2221,12 +2253,22 @@ public class Serve implements ServletContext, Serializable {
 	    socket.setSoTimeout(0);
 	    serve.setHost(getHeader(HOST));
 	    PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
-	    lastRun = System.currentTimeMillis();
+	    lastRun = System.currentTimeMillis();	    
 	    try {
 		// TODO new
 		// SimpleRequestDispatcher(reqUriPathUn).forward((ServletRequest)
 		// this, (ServletResponse) this);
 		Object[] os = registry.get(reqUriPath);
+		if (websocketUpgrade) {
+			if (serve.websocketProvider != null)
+				try {
+					serve.websocketProvider.handshake(socket, (HttpServlet) os[0]);
+				} catch(Exception wse) {
+					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR  );
+				}
+			else
+				problem("Websockets are not configured to support", SC_NOT_IMPLEMENTED );
+		} else {
 		if (os[0] != null) { // note, os always not null
 		    // / TODO put time mark here to monitor actual servicing
 
@@ -2235,6 +2277,7 @@ public class Serve implements ServletContext, Serializable {
 		    runServlet((HttpServlet) os[0]);
 		} else {
 		    problem("No any servlet found for serving " + reqUriPath, SC_BAD_REQUEST);
+		}
 		}
 	    } finally {
 		currentRegistry.set(null); // remove

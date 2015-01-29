@@ -1287,6 +1287,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			for (ServletRequestListener rlistener : requestListeners)
 				rlistener.requestInitialized(e);
 		}
+		
 		try {
 			String path = hreq.getPathInfo();
 			// TODO: wrap request to implement methods like
