@@ -53,6 +53,12 @@
       ANDROID_RT (optional for android compilation)
                     =</value>
         <value variable="ANDROID_RT"/> 
+        <value>
+      WEBSOCKET API (optional)
+                    =</value>
+        <value variable="WEBSOCKETS_CLIENT_LIB"/> 
+        <value> </value>
+        <value variable="WEBSOCKETS_SERVER_LIB"/> 
        <value>
      =============================================</value>
      </operator>
@@ -1201,6 +1207,10 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
         <value variable="PATH SEPARATOR"/>
         <value variable="SERVLET_LIB_30"/>
         <value variable="PATH SEPARATOR"/>
+        <value variable="WEBSOCKETS_CLIENT_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="WEBSOCKETS_SERVER_LIB"/>
+        <value variable="PATH SEPARATOR"/>
         <value variable="JAVA_HOME"/>
         <value>/lib/tools.jar</value>
         <value variable="PATH SEPARATOR"/>
@@ -1402,8 +1412,8 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
                 <expression>
                   <operator name="array">
                       <value>-acceptorImpl</value>
-                      <!--value>Acme.Serve.SelectorAcceptor</value-->
-                      <value>Acme.Serve.SimpleAcceptor</value>
+                      <value>Acme.Serve.SelectorAcceptor</value>
+                      <!--value>Acme.Serve.SimpleAcceptor</value-->
                   </operator>
                 </expression>
              </block>

@@ -708,7 +708,8 @@ public class Serve implements ServletContext, Serializable {
     		provider = "rogatkin.wskt.SimpleProvider";
     	
     	try {
-    	    websocketProvider = (WebsocketProvider) Class.forName(provider).newInstance();    	   
+    	    websocketProvider = (WebsocketProvider) Class.forName(provider).newInstance();
+    	    websocketProvider.init(this);
     	} catch (ClassNotFoundException cnf) {
     	    log("TJWS: Problem finding websocket provider: " + cnf);
     	} catch (Throwable t) {
@@ -911,9 +912,13 @@ public class Serve implements ServletContext, Serializable {
     }
     
     public static interface WebsocketProvider {
-    	public void init(Map properties);
+    	public void init(Serve serve);
     	
-    	public void handshake(Socket socket, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
+    	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
+       
+    	public void upgrade(Socket socket) throws ServletException;
+    	
+    	public void destroy();
     }
 
     protected Acceptor createAcceptor() throws IOException {
@@ -1835,6 +1840,8 @@ public class Serve implements ServletContext, Serializable {
 	private boolean oneOne; // HTTP/1.1 or better
 
 	private boolean reqMime;
+	
+	private boolean websocketUpgrade;
 
 	private Vector reqHeaderNames = new Vector();
 
@@ -2049,6 +2056,7 @@ public class Serve implements ServletContext, Serializable {
 	    resMessage = null;
 	    resHeaderNames.clear();
 	    headersWritten = false;
+	    websocketUpgrade = false;
 	    postCache = null;
 	    if (asyncMode != null) {
 		serve.log("TJWS: debug", new Exception("Restarting without clean async mode"));
@@ -2077,6 +2085,15 @@ public class Serve implements ServletContext, Serializable {
 			    asyncTimeout += System.currentTimeMillis();
 			return;
 		    }
+		    if (websocketUpgrade) {
+		    	out.flush();
+		    	try {
+		    	serve.websocketProvider.upgrade(socket);
+		    	return;
+		    	}catch(Exception e) {
+		    		websocketUpgrade = false;
+		    	}
+		    }
 		    finalizerequest();
 		} while (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse());
 	    } catch (IOException ioe) {
@@ -2099,7 +2116,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 		} //ioe.printStackTrace();
 	    } finally {
-		if (asyncMode == null)
+		if (asyncMode == null && !websocketUpgrade)
 		    close();
 	    }
 	}
@@ -2117,7 +2134,6 @@ public class Serve implements ServletContext, Serializable {
 	    byte[] lineBytes = new byte[4096];
 	    int len;
 	    String line;
-	    boolean websocketUpgrade = false;
 	    // / TODO put time mark here for start waiting for receiving
 	    // requests
 	    lastWait = System.currentTimeMillis();
@@ -2198,7 +2214,7 @@ public class Serve implements ServletContext, Serializable {
 
 		websocketUpgrade = UPGRADE.equalsIgnoreCase(s) && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
 		keepAlive = "close".equalsIgnoreCase(s) == false;
-		if (keepAlive) {
+		if (keepAlive && !websocketUpgrade) {
 		    s = getHeader(KEEPALIVE);
 		    // FF specific ?
 		    // parse value to extract the connection
@@ -2260,11 +2276,13 @@ public class Serve implements ServletContext, Serializable {
 		// this, (ServletResponse) this);
 		Object[] os = registry.get(reqUriPath);
 		if (websocketUpgrade) {
+			websocketUpgrade = false;
 			if (serve.websocketProvider != null)
 				try {
-					serve.websocketProvider.handshake(socket, (HttpServlet) os[0], this, this);
-				} catch(Exception wse) {
-					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR  );
+					serve.websocketProvider.handshake(socket, reqUriPath, (HttpServlet) os[0], this, this);
+					websocketUpgrade = true;
+				} catch(Exception wse) {					
+					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR, wse  );
 				}
 			else
 				problem("Websockets are not configured to support", SC_NOT_IMPLEMENTED );
@@ -2418,13 +2436,17 @@ public class Serve implements ServletContext, Serializable {
 	    return false;
 	}
 
-	private void problem(String logMessage, int resCode) {
-	    serve.log("TJWS: " + logMessage);
+	private void problem(String logMessage, int resCode, Throwable t) {
+	    serve.log("TJWS: " + logMessage, t);
 	    try {
 		sendError(resCode, logMessage);
 	    } catch (IllegalStateException e) { /* ignore */
 	    } catch (IOException e) { /* ignore */
-	    }
+	    }		
+	}
+	
+	private void problem(String logMessage, int resCode) {
+		problem(logMessage, resCode, null);
 	}
 
 	public void setInInclude(boolean set) {
@@ -4050,7 +4072,9 @@ public class Serve implements ServletContext, Serializable {
 		    out.println(sb2.toString());
 		    // System.err.println("We sent cookies 2: " + sb2);
 		}
-		if (chunked_out == false ) {
+		if (websocketUpgrade)
+			setHeader(KEEPALIVE, null);
+		else if (chunked_out == false) {
 			if (contentLen < 0 ) 
 		    if (serve.isKeepAlive() && oneOne ) {
 		    	if ((resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != HttpServletResponse.SC_NOT_MODIFIED) {
