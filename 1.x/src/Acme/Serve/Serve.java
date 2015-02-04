@@ -2217,11 +2217,11 @@ public class Serve implements ServletContext, Serializable {
 		s = getHeader(CONNECTION);
 		if (s != null)
 			s = s.toLowerCase();
-		//serve.log("upgrading protocol "+s);
 		websocketUpgrade = s != null && s.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
 		keepAlive = "close".equalsIgnoreCase(s) == false;
-		if (keepAlive && !websocketUpgrade) {
+		if (keepAlive) {
 		    s = getHeader(KEEPALIVE);
+		    //serve.log("upgrading protocol "+s);
 		    // FF specific ?
 		    // parse value to extract the connection
 		    // specific timeoutKeepAlive and
@@ -4079,9 +4079,9 @@ public class Serve implements ServletContext, Serializable {
 		    out.println(sb2.toString());
 		    // System.err.println("We sent cookies 2: " + sb2);
 		}
-		if (websocketUpgrade)
-			setHeader(KEEPALIVE, null);
-		else if (chunked_out == false) {
+		if (!websocketUpgrade)
+			//setHeader(KEEPALIVE, null);
+		 if (chunked_out == false) {
 			if (contentLen < 0 ) 
 		    if (serve.isKeepAlive() && oneOne ) {
 		    	if ((resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != HttpServletResponse.SC_NOT_MODIFIED) {

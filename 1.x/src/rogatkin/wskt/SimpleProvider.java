@@ -80,6 +80,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		SocketChannel sc = socket.getChannel();
 		try {
+			//socket.setKeepAlive(true);
 			sc.configureBlocking(false);
 			SimpleSession ss = new SimpleSession(sc);
 			if (servlet instanceof WebAppServlet) {
@@ -153,6 +154,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						}
 					} else if (key.isWritable()) {
 						// a channel is ready for writing
+						// TODO perhaps trigger flag in session
 					}
 
 					keyIterator.remove();
