@@ -80,8 +80,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		SocketChannel sc = socket.getChannel();
 		try {
+			//socket.setKeepAlive(true);
 			sc.configureBlocking(false);
-			//selector.wakeup();
 			SimpleSession ss = new SimpleSession(sc);
 			if (servlet instanceof WebAppServlet) {
 				List<Object> eps = ((WebAppServlet)servlet).endpoints;
@@ -93,6 +93,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			if (req.getSession(false) != null)
 			ss.id = req.getSession(false).getId(); 
 			sc.register(selector, SelectionKey.OP_READ, ss);
+			//selector.wakeup();
 		} catch (/*ClosedChannelException */ IOException cce) {
 			// TODO call onError
 			throw new ServletException("Can't register channel", cce);
@@ -153,6 +154,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						}
 					} else if (key.isWritable()) {
 						// a channel is ready for writing
+						// TODO perhaps trigger flag in session
 					}
 
 					keyIterator.remove();

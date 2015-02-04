@@ -33,7 +33,7 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws://localhost/echoserver/echo");
+                webSocket = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/echoserver/echo");
                  
                 /**
                  * Binds functions to the listeners for the websocket.

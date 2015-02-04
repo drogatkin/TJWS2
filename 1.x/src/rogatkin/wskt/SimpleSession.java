@@ -81,7 +81,7 @@ public class SimpleSession implements Session {
 		int lim = buf.position();
 		buf.reset();
 		buf.limit(lim);
-		//buf.flip();
+		// buf.flip();
 		int avail;
 		boolean forceOp = false;
 		readmore: while (buf.hasRemaining() || forceOp) {
@@ -105,7 +105,8 @@ public class SimpleSession implements Session {
 					state = FrameState.length64;
 				state = masked ? FrameState.mask : FrameState.data;
 				forceOp = !masked;
-				System.err.printf("len %d st %s avail %d%n", len, state, buf.limit() - buf.position());
+				System.err.printf("len %d st %s avail %d%n", len, state,
+						buf.limit() - buf.position());
 				break;
 			case length32:
 				avail = buf.limit() - buf.position();
@@ -121,7 +122,8 @@ public class SimpleSession implements Session {
 				if (avail >= 8) {
 					len = buf.getLong();
 					if (len > Integer.MAX_VALUE)
-						throw new IllegalArgumentException("Frame length is too long");
+						throw new IllegalArgumentException(
+								"Frame length is too long");
 					state = masked ? FrameState.mask : FrameState.data;
 					break;
 				} else
@@ -131,7 +133,7 @@ public class SimpleSession implements Session {
 				if (avail >= 4) {
 					mask = buf.getInt();
 					state = FrameState.data;
-					//break;
+					// break;
 				} else
 					break readmore;
 			case data:
@@ -139,7 +141,7 @@ public class SimpleSession implements Session {
 				switch (oper) {
 				case 0:
 					// TODO provide accum content flag
-					//break; 
+					// break;
 
 				case 1:
 					avail = buf.limit() - buf.position();
@@ -154,14 +156,14 @@ public class SimpleSession implements Session {
 							dataLen = avail;
 						}
 					} else {
-						//if (dataLen+avail >= len) {
+						// if (dataLen+avail >= len) {
 						int sl = (int) Math.min(avail, len - dataLen);
 						data = Arrays.copyOf(data, dataLen + sl);
 						buf.get(data, dataLen, sl);
 						dataLen += sl;
-						//} else {
-						//data = Arrays.copyOf(data, avail);
-						//}
+						// } else {
+						// data = Arrays.copyOf(data, avail);
+						// }
 					}
 					if (dataLen == len) { // all data
 						state = FrameState.header;
@@ -174,8 +176,8 @@ public class SimpleSession implements Session {
 						String message = null;
 						try {
 							message = new String(data, "UTF-8");
-							System.err.printf("text (%s) %d fl: %b%n", message, buf.limit() - buf.position(),
-									frameFinal);
+							System.err.printf("text (%s) %d fl: %b%n", message,
+									buf.limit() - buf.position(), frameFinal);
 						} catch (UnsupportedEncodingException e) {
 							message = new String(data);
 						}
@@ -230,7 +232,8 @@ public class SimpleSession implements Session {
 	}
 
 	@Override
-	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
+	public void addMessageHandler(MessageHandler arg0)
+			throws IllegalStateException {
 		addMessageHandler((Object) arg0);
 	}
 
@@ -400,7 +403,8 @@ public class SimpleSession implements Session {
 			Class<?> epc = ep.getClass();
 			sepa = epc.getAnnotation(ServerEndpoint.class);
 			if (sepa == null)
-				throw new IllegalArgumentException("No annotation ServerEndpoint");
+				throw new IllegalArgumentException(
+						"No annotation ServerEndpoint");
 			endpoint = ep;
 			Method[] ms = epc.getDeclaredMethods();
 			for (Method m : ms) {
@@ -476,13 +480,15 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
+		public void sendPing(ByteBuffer arg0) throws IOException,
+				IllegalArgumentException {
 			// TODO Auto-generated method stub
 
 		}
 
 		@Override
-		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
+		public void sendPong(ByteBuffer arg0) throws IOException,
+				IllegalArgumentException {
 			// TODO Auto-generated method stub
 
 		}
@@ -512,7 +518,8 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendBinary(ByteBuffer arg0, boolean arg1) throws IOException {
+		public void sendBinary(ByteBuffer arg0, boolean arg1)
+				throws IOException {
 			// TODO Auto-generated method stub
 
 		}
@@ -538,7 +545,8 @@ public class SimpleSession implements Session {
 		ByteBuffer createFrame(String text) {
 			byte[] mb = null;
 			try {
-				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes("UTF-8");
+				mb = text == null || text.length() == 0 ? new byte[0] : text
+						.getBytes("UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				mb = text.getBytes();
 			}
@@ -567,8 +575,8 @@ public class SimpleSession implements Session {
 			}
 			bb.put(mb);
 			bb.flip();
-			System.err.printf("Send frame %s of %d %s 0%x%x%x%x%x%x%n", text, bb.remaining(), bb, bb.get(0), bb.get(1),
-					bb.get(2), bb.get(3), bb.get(4), bb.get(5));
+			System.err.printf("Send frame %s of %d %s 0%x%xn", text,
+					bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
 
