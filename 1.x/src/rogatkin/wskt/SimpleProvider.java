@@ -81,7 +81,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		SocketChannel sc = socket.getChannel();
 		try {
 			sc.configureBlocking(false);
-			//selector.wakeup();
 			SimpleSession ss = new SimpleSession(sc);
 			if (servlet instanceof WebAppServlet) {
 				List<Object> eps = ((WebAppServlet)servlet).endpoints;
@@ -93,6 +92,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			if (req.getSession(false) != null)
 			ss.id = req.getSession(false).getId(); 
 			sc.register(selector, SelectionKey.OP_READ, ss);
+			//selector.wakeup();
 		} catch (/*ClosedChannelException */ IOException cce) {
 			// TODO call onError
 			throw new ServletException("Can't register channel", cce);

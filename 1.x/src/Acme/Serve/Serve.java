@@ -2088,17 +2088,17 @@ public class Serve implements ServletContext, Serializable {
 			    asyncTimeout += System.currentTimeMillis();
 			return;
 		    }
+		    finalizerequest();
 		    if (websocketUpgrade) {
 		    	out.flush();
-		    	try {
+		    	try {		    		
 		    	serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 		    	return;
 		    	}catch(Exception e) {
-		    		e.printStackTrace();
+		    		serve.log("TJWS: websocket upgrade protocol error: "+e, e);
 		    		websocketUpgrade = false;
 		    	}
 		    }
-		    finalizerequest();
 		} while (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse());
 	    } catch (IOException ioe) {
 		// System.err.println("Drop "+ioe);
@@ -2215,8 +2215,10 @@ public class Serve implements ServletContext, Serializable {
 		    return;
 		}
 		s = getHeader(CONNECTION);
-
-		websocketUpgrade = UPGRADE.equalsIgnoreCase(s) && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
+		if (s != null)
+			s = s.toLowerCase();
+		//serve.log("upgrading protocol "+s);
+		websocketUpgrade = s != null && s.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
 		keepAlive = "close".equalsIgnoreCase(s) == false;
 		if (keepAlive && !websocketUpgrade) {
 		    s = getHeader(KEEPALIVE);
@@ -2335,6 +2337,7 @@ public class Serve implements ServletContext, Serializable {
 	    }
 	    lastRun = 0;
 	    timesRequested++;
+	    if (!websocketUpgrade)
 	    closeStreams();
 	}
 

@@ -1249,7 +1249,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
         				webApp.endpoints =  new ArrayList<Object>();
 				try {
 					webApp.endpoints.add(matchingClass.newInstance());
-					server.log("Deployed ServerEndpoit " + matchingClass);
+					server.log("Deployed ServerEndpoint " + matchingClass);
 				} catch (Exception /*InstantiationException | IllegalAccessException*/ ie) {
 					server.log("Can't instantiate ServerEndpoint", ie);
 				}
