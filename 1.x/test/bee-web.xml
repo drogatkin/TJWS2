@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
+    "http://knitknot.info/DTD/bee.dtd" [
+      <!ENTITY env SYSTEM "./env.xml">
+      <!ENTITY project "echoserver">
+      <!ENTITY build_directory "lib">
+      <!ENTITY source_directory "java"> <!-- change if differs -->
+      <!ENTITY build_file "&project;.jar"> <!-- change if differs -->
+      <!ENTITY domain "tjws">
+      <!ENTITY manifestf "">  <!-- type relative path to manifest -->
+      <!ENTITY main_class "&domain;.&project;.Main">  <!-- type main class for run -->
+      <!ENTITY webapp_file "&project;.war"> <!-- change if differs -->
+      ]>
+<!-- $Id: bee-web.xml,v 1.13 2012/04/17 22:52:48 dmitriy Exp $
+   make file used for "generic" project
+   Copyright (c) 2004-2007 Dmitriy Rogatkin    -->
+
+<bee name="&project;" type="project">
+  &env;
+
+  <expression variable="javac">
+     <operator name="append">
+        <value variable="JAVA_HOME"/>
+        <value>/bin/javac</value>
+     </operator>
+  </expression>
+
+  <target name="check build" dir="PROJECT_HOME">
+     <dependency>
+        <expression>
+          <operator name="eq">
+            <function name ="timestamp">
+               <parameter value="&build_directory;" type="path"/>
+            </function>
+            <value></value>
+          </operator>
+        </expression>
+     </dependency>
+     <block>
+       <function name="mkd">
+         <parameter value="&build_directory;"/>
+       </function>
+     </block>
+  </target>
+
+  <!-- reconsider in case of not project root build script -->
+  <expression variable="java sources">
+        <function name="newerwithdependency">
+           <parameter value="&source_directory;/&domain;/.java"/>
+           <parameter value="&build_directory;/&domain;/.class"/>
+	   <parameter/>
+	   <parameter value="&domain;"/>
+        </function>
+  </expression>
+
+  <expression variable="class path">
+     <operator name="append">
+        <value variable="PROJECT_HOME"/>
+        <value>/&build_directory;</value>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="CUSTOM CP"/>
+     </operator>
+  </expression>
+
+  <target name="compile" dir="PROJECT_HOME">
+    <dependency target="check build"/>
+    <dependency variable="java sources"/>
+    <echo>Compiling...</echo>
+    <task exec="javac">
+       <parameter value="-classpath"/>
+       <parameter variable="class path"/>
+       <parameter value="-source"/>
+       <parameter variable="comp target"/>
+       <parameter value="-target"/>
+       <parameter variable="comp target"/>
+       <parameter value="-d"/>comp target
+       <parameter value="&build_directory;" type="path"/>
+       <parameter variable="java sources"/>>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation</echo>
+                 <function name="stop">
+			<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+	<block>
+                 <echo>Exception at compilation</echo>
+                 <function name="stop">
+			<parameter value="-1"/>
+                 </function>
+	</block>
+      </onexception>
+    </task>
+  </target>
+
+  <expression variable="manifest file">
+     <value type="path">&manifestf;</value>
+  </expression>
+
+  <target name="jar" dir="PROJECT_HOME">
+    <echo>Jarring...</echo>
+    <dependency target="compile"/>
+    <dependency>
+           <function name="allnewer">
+              <parameter value="&build_directory;/&domain;" type="dir"/>
+              <parameter value="&build_directory;/&build_file;" type="path"/>
+           </function>
+    </dependency>
+    <dependency>
+           <function name="allnewer">
+              <parameter value="bee-web.xml" type="dir"/>
+              <parameter value="&build_directory;/&build_file;" type="path"/>
+           </function>
+    </dependency>
+
+    <task name="jar_do" code="sun.tools.jar.Main">
+       <parameter>
+          <expression>
+            <if>
+              <expression>
+                <operator name="eq">
+                  <value/>
+                  <value variable="manifest file"/>
+                </operator>
+              </expression>
+              <block type="then">
+                <value>-cf</value>
+              </block>
+              <block type="else">
+                <operator name="array">
+	           <value>-cmf</value>
+                   <value variable="manifest file"/>
+                 </operator>
+              </block>
+            </if>
+          </expression>
+       </parameter>   
+       <parameter value="&build_directory;/&build_file;" type="path"/>
+       <parameter value="-C"/>
+       <parameter value="&build_directory;" type="path"/>
+       <parameter value="&domain;"/>
+      <onexception>
+	<block>
+                 <echo>Exception at jarring</echo>
+                 <function name="stop">
+			<parameter value="-1"/>
+                 </function>
+	</block>
+      </onexception>
+    </task>
+  </target>
+
+  <target name="clean" dir="PROJECT_HOME">
+    <dependency>
+       <expression>
+         <operator name="eq">
+            <value>y</value>  
+            <function name="ask">
+               <parameter value="Are you sure to remove all files in &build_directory; [n]?"/>
+               <parameter value="n"/>
+            </function>
+        </operator>
+      </expression>
+    </dependency>
+    <block>
+      <echo>Cleaning...</echo>
+      <function name="rm">
+         <parameter value="&build_directory;/*/*/*/*/*.class" type="path"/>
+         <parameter value="&build_directory;/&build_file;" type="path"/>
+         <parameter value="&build_directory;/&webapp_file;" type="path"/>
+      </function>
+    </block>
+  </target>
+
+  <target name="deploy" dir="PROJECT_HOME">
+      <dependency target="war"/>
+      <dependency>
+          <function name="anynewer">
+              <parameter value="&build_directory;/&webapp_file;" type="path"/>
+              <parameter variable="APP DEPLOY DROP" type="path"/>
+          </function>
+      </dependency>
+      <block>
+        <echo>Deploying &build_directory;/&webapp_file;</echo>
+        <function name="cp">
+           <parameter value="&build_directory;/&webapp_file;" type="path"/>
+           <parameter variable="APP DEPLOY DROP"/>
+        </function>
+      </block>
+  </target>
+  
+  <target name="war" dir="PROJECT_HOME">
+    <dependency target="jar"/>
+    <dependency>
+       <expression>
+          <operator name="not">
+             <function name ="timestamp">
+                <parameter value="&build_directory;/&webapp_file;" type="path"/>
+             </function>
+          </operator>
+       </expression>
+    </dependency>
+    <!-- add more resource change dependencies
+     -->
+    <block>
+      <echo value="...->&build_directory;/&webapp_file;"/>
+      <function name="warit">
+         <parameter value="&build_directory;/&webapp_file;" type="path"/>
+         <parameter>
+         &lt;web-app&gt;
+&lt;welcome-file-list&gt;
+    &lt;welcome-file&gt;wsk-chat.html&lt;/welcome-file&gt;
+&lt;/welcome-file-list&gt;
+         &lt;/web-app&gt;
+</parameter>
+         <parameter>C &domain;</parameter>
+         <parameter type="path">&build_directory;/&domain;</parameter>
+         <parameter/>
+         <parameter>L</parameter>
+         <parameter type="path">&build_directory;/&build_file;</parameter>
+         <parameter/>
+         <parameter>A</parameter>
+         <parameter>html-js/wsk-chat.html</parameter>
+      </function>
+    </block>
+  </target>
+</bee>
+

@@ -916,7 +916,7 @@ public class Serve implements ServletContext, Serializable {
     	
     	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
        
-    	public void upgrade(Socket socket) throws ServletException;
+    	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
     	
     	public void destroy();
     }
@@ -1850,6 +1850,8 @@ public class Serve implements ServletContext, Serializable {
 	private Locale locale; // = java.util.Locale.getDefault();
 
 	private int uriLen;
+	
+	private HttpServlet servlet;
 
 	protected boolean keepAlive = true;
 
@@ -2023,6 +2025,7 @@ public class Serve implements ServletContext, Serializable {
 	    charEncoding = null;
 	    remoteUser = null;
 	    authType = null;
+	    servlet = null;
 	    oneOne = false;
 	    reqMime = false;
 	    // considering that clear() works faster than new
@@ -2088,9 +2091,10 @@ public class Serve implements ServletContext, Serializable {
 		    if (websocketUpgrade) {
 		    	out.flush();
 		    	try {
-		    	serve.websocketProvider.upgrade(socket);
+		    	serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 		    	return;
 		    	}catch(Exception e) {
+		    		e.printStackTrace();
 		    		websocketUpgrade = false;
 		    	}
 		    }
@@ -2279,7 +2283,7 @@ public class Serve implements ServletContext, Serializable {
 			websocketUpgrade = false;
 			if (serve.websocketProvider != null)
 				try {
-					serve.websocketProvider.handshake(socket, reqUriPath, (HttpServlet) os[0], this, this);
+					serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, this);
 					websocketUpgrade = true;
 				} catch(Exception wse) {					
 					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR, wse  );

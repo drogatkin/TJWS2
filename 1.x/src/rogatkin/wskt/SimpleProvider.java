@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.nio.channels.ClosedChannelException;
@@ -23,13 +24,15 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
+import rogatkin.web.WebAppServlet;
+
 public class SimpleProvider implements WebsocketProvider, Runnable {
 	public static final String WSKT_KEY = "Sec-WebSocket-Key";
 	public static final String WSKT_ORIGIN = "Origin";
 	public static final String WSKT_PROTOCOL = "Sec-WebSocket-Protocol";
 	public static final String WSKT_VERSION = "Sec-WebSocket-Version";
 	public static final String WSKT_ACEPT = "Sec-WebSocket-Accept";
-	public static final String WSKT_EXTS = "Sec-WebSocket-Extensions";
+	public static final String WSKT_EXTS = "Sec-WebSocket-Extensions"; // HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS
 
 	public static final String WSKT_RFC4122 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -74,13 +77,24 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	}
 
 	@Override
-	public void upgrade(Socket socket) throws ServletException {
+	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		SocketChannel sc = socket.getChannel();
 		try {
 			sc.configureBlocking(false);
 			//selector.wakeup();
-			sc.register(selector, SelectionKey.OP_READ, new SimpleSession(sc));
+			SimpleSession ss = new SimpleSession(sc);
+			if (servlet instanceof WebAppServlet) {
+				List<Object> eps = ((WebAppServlet)servlet).endpoints;
+				System.err.printf("Adding handlers %s%n", eps);
+				if (eps != null) 
+					for(Object ep:eps)
+						ss.addMessageHandler(ep);
+			}
+			if (req.getSession(false) != null)
+			ss.id = req.getSession(false).getId(); 
+			sc.register(selector, SelectionKey.OP_READ, ss);
 		} catch (/*ClosedChannelException */ IOException cce) {
+			// TODO call onError
 			throw new ServletException("Can't register channel", cce);
 		}
 	}
@@ -134,8 +148,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						// a channel is ready for reading
 						if (key.channel().isOpen())
 							((SimpleSession) key.attachment()).run();
-						else
+						else {
 							key.cancel();
+						}
 					} else if (key.isWritable()) {
 						// a channel is ready for writing
 					}

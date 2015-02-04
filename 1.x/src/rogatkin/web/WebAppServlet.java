@@ -122,6 +122,9 @@ import Acme.Utils;
 import Acme.Serve.FileServlet;
 import Acme.Serve.Serve;
 
+import io.github.lukehutch.fastclasspathscanner.*;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.*;
+
 /**
  * @author dmitriy
  * 
@@ -146,6 +149,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	List<ServletAccessDescr> servlets;
 
 	List<FilterAccessDescriptor> filters;
+	
+	public List<Object> endpoints; // TODO declare getter 
 
 	URL[] cpUrls;
 
@@ -1211,8 +1216,47 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		}  finally {
 		}
 		result.scc = new SessionCookieConfigImpl(result);
-		return result;
+		return fromAnnot(result, deployDir, context, server, virtualHost);
 	}
+        
+        public static WebAppServlet fromAnnot(final WebAppServlet webApp, final File deployDir, String context, final Serve server, String virtualHost)
+        	    throws ServletException {
+        	// TODO migrate code to websocket provider to release dependency
+        	new FastClasspathScanner("") {
+        		@Override
+        		public List<File> getUniqueClasspathElements() {
+        			File file = new File(deployDir, "WEB-INF/lib");
+        			ArrayList <File> result = file.exists() && file.isDirectory()?new ArrayList<File>(Arrays.asList(file.listFiles(new FileFilter() {
+
+						@Override
+						public boolean accept(File pathname) {
+							String name = pathname.getName().toLowerCase();
+							return pathname.isFile()  && (name.endsWith(".jar") || name.endsWith(".zip"));
+						}}))):new ArrayList<File>();
+        			file = new File(deployDir, "WEB-INF/classes");
+        			if (file.exists() && file.isDirectory())
+        				result.add(file);
+        			return result;
+        		}
+        		@Override
+        	    public ClassLoader getClassLoader() {
+        	    	return webApp.ucl;
+        	    }
+        	}.matchClassesWithAnnotation(javax.websocket.server.ServerEndpoint.class,
+        			new ClassAnnotationMatchProcessor() {
+        		public void processMatch(Class<?> matchingClass) {
+        			if (webApp.endpoints == null)
+        				webApp.endpoints =  new ArrayList<Object>();
+				try {
+					webApp.endpoints.add(matchingClass.newInstance());
+					server.log("Deployed ServerEndpoit " + matchingClass);
+				} catch (Exception /*InstantiationException | IllegalAccessException*/ ie) {
+					server.log("Can't instantiate ServerEndpoint", ie);
+				}
+        		}
+        	}).scan();
+        	return webApp;
+        }
         
     static String toNormalizedString(Object o) {
     	if (o == null)

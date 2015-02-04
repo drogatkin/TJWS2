@@ -141,6 +141,8 @@
         <value variable="WEBSOCKETS_CLIENT_LIB"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="WEBSOCKETS_SERVER_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="CLASS_SCAN_LIB"/>
      </operator>
   </expression>
   
@@ -1210,6 +1212,8 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
         <value variable="WEBSOCKETS_CLIENT_LIB"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="WEBSOCKETS_SERVER_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="CLASS_SCAN_LIB"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="JAVA_HOME"/>
         <value>/lib/tools.jar</value>
