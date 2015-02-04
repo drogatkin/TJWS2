@@ -1,4 +1,8 @@
-/bin
-1.x/lib
-1.x/webapps
-1.x/test/lib
+/bin/
+.project
+.classpath
+1.x/lib/
+1.x/*.log
+1.x/test/lib/
+1.x/webapps/
+
