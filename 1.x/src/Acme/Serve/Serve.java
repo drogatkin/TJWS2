@@ -1425,7 +1425,7 @@ public class Serve implements ServletContext, Serializable {
 	return null;
     }
 
-    synchronized String generateSessionId() {
+    public synchronized String generateSessionId() {
 	srandom.nextBytes(uniqer);
 	// TODO swap randomly bytes
 	return Utils.base64Encode(uniqer);
@@ -4080,8 +4080,8 @@ public class Serve implements ServletContext, Serializable {
 		    // System.err.println("We sent cookies 2: " + sb2);
 		}
 		if (!websocketUpgrade)
-			//setHeader(KEEPALIVE, null);
-		 if (chunked_out == false) {
+			//setHeader(KEEPALIVE, "timeout=30000");
+		if (chunked_out == false) {
 			if (contentLen < 0 ) 
 		    if (serve.isKeepAlive() && oneOne ) {
 		    	if ((resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != HttpServletResponse.SC_NOT_MODIFIED) {

@@ -15,7 +15,7 @@ import javax.websocket.server.ServerEndpoint;
  * "EchoChamber" is the name of the package
  * and "echo" is the address to access this class from the server
  */
-@ServerEndpoint("/echo") 
+@ServerEndpoint("/echo/{room}") 
 public class EchoServer {
     /**
      * @OnOpen allows us to intercept the creation of a new session.
@@ -38,13 +38,15 @@ public class EchoServer {
      * and allow us to react to it. For now the message is read as a String.
      */
     @OnMessage
-    public void onMessage(String message, Session session){
-        System.out.println("Message from " + session.getId() + ": " + message);
-        try {
+    public String onMessage(Session session, String message){
+        System.out.printf("Message from %s/%dms : %s (%s)%n", session.getId(), session.getMaxIdleTimeout(),  message, session.getPathParameters().get("room"));
+        /*try {
             session.getBasicRemote().sendText(message);
+
         } catch (IOException ex) {
             ex.printStackTrace();
-        }
+        }*/
+        return message;
     }
  
     /**

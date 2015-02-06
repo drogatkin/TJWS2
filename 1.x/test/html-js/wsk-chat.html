@@ -33,7 +33,7 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/echoserver/echo");
+                webSocket = new WebSocket("ws://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/echo"+"/room-234");
                  
                 /**
                  * Binds functions to the listeners for the websocket.
