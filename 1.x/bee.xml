@@ -449,6 +449,9 @@
        <parameter value="-C"/>
        <parameter value="&build_directory;" type="dir"/>
        <parameter value="rogatkin/wskt" type="dir"/>
+       <parameter value="-C"/>
+       <parameter value="resources" type="dir"/>
+       <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig.Configurator" type="dir"/>
     </task>
   </target>
 

@@ -2,6 +2,8 @@ package rogatkin.wskt;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 
 import javax.websocket.ClientEndpointConfig;
@@ -10,46 +12,74 @@ import javax.websocket.Endpoint;
 import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+/** The container is created one per web application and one for default application
+ * 
+ * @author Dmitriy
+ *
+ */
 public class SimpleServerContainer implements ServerContainer {
+
+	HashMap<String, ServerEndpointConfig> endpoints;
+	SimpleProvider provider;
+	
+	SimpleServerContainer(SimpleProvider simpleProvider) {
+		provider = simpleProvider;
+		endpoints = new HashMap<String, ServerEndpointConfig>();
+	}
 
 	@Override
 	public void addEndpoint(Class<?> arg0) throws DeploymentException {
-		// TODO Auto-generated method stub
+		if (arg0.isAssignableFrom(ServerEndpointConfig.class)) {
+			try {
+				addEndpoint((ServerEndpointConfig)arg0.newInstance());
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			ServerEndpoint sep = arg0.getAnnotation(ServerEndpoint.class);
+			String path = sep.value();
+			if (path == null || path.startsWith("/") == false)
+					throw new DeploymentException("Invalid path "+path);
+			//addEndpoint(ServerEndpointConfig.Builder.create(arg0, path).build());
+			addEndpoint(new SimpleServerEndpointConfig(arg0));
+		}
 		
 	}
 
 	@Override
 	public void addEndpoint(ServerEndpointConfig arg0) throws DeploymentException {
-		// TODO Auto-generated method stub
-		
+		if (endpoints.containsKey(arg0.getPath()))
+			throw new DeploymentException("More than one end points use same path "+arg0.getPath());
+		endpoints.put(arg0.getPath(), arg0);
 	}
 
 	@Override
 	public Session connectToServer(Object arg0, URI arg1) throws DeploymentException, IOException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("No client websocket support");
 	}
 
 	@Override
 	public Session connectToServer(Class<?> arg0, URI arg1) throws DeploymentException, IOException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("No client websocket support");
 	}
 
 	@Override
 	public Session connectToServer(Endpoint arg0, ClientEndpointConfig arg1, URI arg2) throws DeploymentException,
 			IOException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("No client websocket support");
 	}
 
 	@Override
 	public Session connectToServer(Class<? extends Endpoint> arg0, ClientEndpointConfig arg1, URI arg2)
 			throws DeploymentException, IOException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("No client websocket support");
 	}
 
 	@Override

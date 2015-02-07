@@ -315,7 +315,7 @@ public class Serve implements ServletContext, Serializable {
 
     public Properties mime;
     
-    WebsocketProvider websocketProvider;
+    public WebsocketProvider websocketProvider;
 
     // / Constructor.
     public Serve(Map arguments, PrintStream logStream) {
@@ -919,6 +919,8 @@ public class Serve implements ServletContext, Serializable {
     	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
     	
     	public void destroy();
+    	
+    	public void deploy(HttpServlet servlet, List classpathFiles);
     }
 
     protected Acceptor createAcceptor() throws IOException {

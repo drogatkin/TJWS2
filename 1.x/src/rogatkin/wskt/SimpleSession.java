@@ -25,6 +25,7 @@ import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
@@ -63,8 +64,9 @@ public class SimpleSession implements Session {
 	Map<String, String> pathParamsMap;
 	String query;
 	URI uri;
+	Principal principal;
 
-	SimpleSession(SocketChannel sc) {
+	SimpleSession(SocketChannel sc, SimpleServerContainer container) {
 		channel = sc;
 		buf = ByteBuffer.allocate(binBufSize);
 		buf.mark();
@@ -243,13 +245,13 @@ public class SimpleSession implements Session {
 		}
 	}
 
-	void addMessageHandler(Object arg0) throws IllegalStateException {
+	void addMessageHandler(ServerEndpointConfig arg0) throws IllegalStateException {
 		handlers.add(new SimpleMessageHandler(arg0));
 	}
 
 	@Override
 	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
-		addMessageHandler((Object) arg0);
+		handlers.add(new SimpleMessageHandler(arg0));
 	}
 
 	@Override
@@ -354,8 +356,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public Principal getUserPrincipal() {
-		// TODO Auto-generated method stub
-		return null;
+		return principal;
 	}
 
 	@Override
@@ -402,16 +403,23 @@ public class SimpleSession implements Session {
 	class SimpleMessageHandler implements MessageHandler {
 		Method onText;
 		int[] mapOnText;
-		ServerEndpoint sepa;
+	
 		Object endpoint;
 		Object result;
 
-		SimpleMessageHandler(Object ep) {
-			Class<?> epc = ep.getClass();
-			sepa = epc.getAnnotation(ServerEndpoint.class);
-			if (sepa == null)
-				throw new IllegalArgumentException("No annotation ServerEndpoint");
-			endpoint = ep;
+		SimpleMessageHandler(ServerEndpointConfig sepc) {
+			
+			Class<?> epc = sepc.getEndpointClass();
+			
+			try {
+				endpoint = epc.newInstance();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			Method[] ms = epc.getDeclaredMethods();
 			for (Method m : ms) {
 				if (m.getAnnotation(OnMessage.class) != null) {
@@ -435,6 +443,10 @@ public class SimpleSession implements Session {
 				}
 			}
 
+		}
+		
+		SimpleMessageHandler(MessageHandler mh) {
+			
 		}
 		
 		PathParam getFromList(Annotation[] annots) {

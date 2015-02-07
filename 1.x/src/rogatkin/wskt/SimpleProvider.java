@@ -1,11 +1,14 @@
 package rogatkin.wskt;
 
+import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,10 +31,15 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import rogatkin.web.WebAppServlet;
+import io.github.lukehutch.fastclasspathscanner.*;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.*;
 
 public class SimpleProvider implements WebsocketProvider, Runnable {
 	public static final String WSKT_KEY = "Sec-WebSocket-Key";
@@ -91,41 +99,55 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			throws ServletException {
 		SocketChannel sc = socket.getChannel();
 		try {
-			//socket.setKeepAlive(true);
-			sc.configureBlocking(false);
-			SimpleSession ss = new SimpleSession(sc);
-			if (servlet instanceof WebAppServlet) {
-				List<Object> eps = ((WebAppServlet) servlet).endpoints;
-				System.err.printf("Adding handlers %s%n", eps);
-				if (eps != null)
-					for (Object ep : eps) {
-						// https://tools.ietf.org/html/rfc6570
-						
-						ServerEndpoint sepa = ep.getClass().getAnnotation(ServerEndpoint.class);
-						Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath()+sepa.value());
-						if (varMap != null) {
-							ss.pathParamsMap = varMap;
-							ss.addMessageHandler(ep);
+
+			if (servlet != null) {
+				SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig()
+						.getServletContext().getAttribute("tjws.websocket.server.container");
+				if (container == null)
+					throw new ServletException("No end points associated with path " + path);
+				String found = null;
+				int hops = -1;
+				Map<String, String> foundVarMap = null;
+				for (String p : container.endpoints.keySet()) {
+					Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
+					if (varMap != null) {
+						if (found == null || hops > varMap.size()) {
+							found = p;
+							hops = varMap.size();
+							foundVarMap = varMap;
 						}
 					}
-			}
-			if (req.getSession(false) != null)
-				ss.id = req.getSession(false).getId();
-			else
-				ss.id = "wskt-" + serve.generateSessionId();
-			ss.soTimeout = socket.getSoTimeout();
-			ss.paramsMap = new HashMap<String, List<String>>();
-			for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
-				ss.paramsMap.put(e.getKey(), Arrays.asList(e.getValue()));
-			}
-			ss.query = req.getQueryString();
-			try {
-				ss.uri = new URI(req.getRequestURL().toString());
-			} catch (URISyntaxException e) {
+				}
+				if (found == null)
+					throw new ServletException("No matching endpoint found for "+path);
+				sc.configureBlocking(false);
+				ServerEndpointConfig epc = container.endpoints.get(found);
+				if (epc.getConfigurator() != null
+						&& epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false)
+					throw new ServletException("Origin check failed : " + req.getHeader(WSKT_ORIGIN));
+				SimpleSession ss = new SimpleSession(sc, container);
+				ss.addMessageHandler(epc);
+				ss.pathParamsMap = foundVarMap;
+				if (req.getSession(false) != null)
+					ss.id = req.getSession(false).getId();
+				else
+					ss.id = "wskt-" + serve.generateSessionId();
+				ss.soTimeout = socket.getSoTimeout();
+				ss.paramsMap = new HashMap<String, List<String>>();
+				for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
+					ss.paramsMap.put(e.getKey(), Arrays.asList(e.getValue()));
+				}
+				ss.query = req.getQueryString();
+				try {
+					ss.uri = new URI(req.getRequestURL().toString());
+				} catch (URISyntaxException e) {
 
-			}
-			sc.register(selector, SelectionKey.OP_READ, ss);
-			//selector.wakeup();
+				}
+				sc.register(selector, SelectionKey.OP_READ, ss);
+				//selector.wakeup();
+			} else
+				// TODO looks also in default location
+				throw new ServletException("No web application associated with " + path);
 		} catch (/*ClosedChannelException */IOException cce) {
 			// TODO call onError
 			throw new ServletException("Can't register channel", cce);
@@ -139,6 +161,37 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		} catch (IOException e) {
 
 		}
+	}
+
+	@Override
+	public void deploy(final HttpServlet servlet, final List cp) {
+		final SimpleServerContainer ssc = new SimpleServerContainer(this);
+		new FastClasspathScanner("") {
+			@Override
+			public List<File> getUniqueClasspathElements() {
+				return cp;
+			}
+
+			@Override
+			public ClassLoader getClassLoader() {
+				if (servlet instanceof WebAppServlet)
+					return ((WebAppServlet) servlet).getClassLoader();
+				else if (servlet != null)
+					return servlet.getClass().getClassLoader();
+				return null;
+			}
+		}.matchClassesWithAnnotation(javax.websocket.server.ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
+			public void processMatch(Class<?> matchingClass) {
+				try {
+					ssc.addEndpoint(matchingClass);
+					serve.log("Deployed ServerEndpoint " + matchingClass);
+				} catch (DeploymentException de) {
+
+				}
+			}
+		}).scan();
+
+		servlet.getServletConfig().getServletContext().setAttribute("tjws.websocket.server.container", ssc);
 	}
 
 	String getSHA1Base64(String key) {
@@ -161,7 +214,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		if (m.matches()) {
 			HashMap<String, String> result = new HashMap<String, String>();
 			for (int i = 0; i < m.groupCount(); i++)
-				result.put(parsed.get(i+1), m.group(i+1));
+				result.put(parsed.get(i + 1), m.group(i + 1));
 			System.err.printf("Success %s%n", result);
 			return result;
 		}
