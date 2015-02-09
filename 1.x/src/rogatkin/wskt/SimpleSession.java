@@ -422,7 +422,7 @@ public class SimpleSession implements Session {
 
 		Method onText;
 		Method onOpen;
-		Method onlose;
+		Method onClose;
 		Method onError;
 
 		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError;
@@ -455,7 +455,7 @@ public class SimpleSession implements Session {
 					for (Class<?> t : params) {
 						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
-							PathParam pp = getFromList(annots[pi], PathParam.class);
+							PathParam pp = (PathParam)getFromList(annots[pi], PathParam.class);
 							if (pp == null) {
 								pmap[pi].sourceType = TEXT;
 								onText = m;
@@ -488,31 +488,11 @@ public class SimpleSession implements Session {
 					}
 				} else if (m.getAnnotation(OnOpen.class) != null) {
 					onOpen = m;
-					int pi = 0;
-					Annotation[][] annots = m.getParameterAnnotations();
-					Class<?>[] params = m.getParameterTypes();
-					ParameterEntry[] pmap = new ParameterEntry[params.length];
-					paramMapOpen = pmap;
-					for (Class<?> t : params) {
-						pmap[pi] = new ParameterEntry();
-						if (t.isAssignableFrom(Session.class)) {
-							pmap[pi].sourceType = SESSION_PARAM;
-						} else if (t.isAssignableFrom(Session.class)) {
-							pmap[pi].sourceType = ENDPOINTCONFIG_PARAM;
-						} else if (t == String.class) {
-							PathParam pp = getFromList(annots[pi], PathParam.class);
-							if (pp == null)
-								throw new IllegalArgumentException("String parameter isn't supported");
-							//if (pathParamsMap.containsKey(pp.value()) == false)
-								//throw new IllegalArgumentException("Not supported variable " + pp.value());
-							pmap[pi].sourceName = pp.value();
-							pmap[pi].sourceType = PATH_PARAM;
-						} else
-							throw new IllegalArgumentException("Argumnet of " + t + " isn't allowed for parameter");
-						pi++;
-					}
+					paramMapOpen = creatParamMap(onOpen);
 				} else if (m.getAnnotation(OnError.class) != null) {
 				} else if (m.getAnnotation(OnClose.class) != null) {
+					onClose = m;
+					paramMapClose = creatParamMap(onClose);
 				}
 			}
 
@@ -522,12 +502,38 @@ public class SimpleSession implements Session {
 
 		}
 
-		PathParam getFromList(Annotation[] annots, Class<?> targAnnot) {
+		Annotation getFromList(Annotation[] annots, Class<?> targAnnot) {
 			if (annots != null)
 				for (Annotation a : annots)
 					if (a.annotationType() == targAnnot)
-						return (PathParam) a;
+						return a;
 			return null;
+		}
+		
+		ParameterEntry[] creatParamMap(Method m) {
+			Annotation[][] annots = m.getParameterAnnotations();
+			Class<?>[] params = m.getParameterTypes();
+			ParameterEntry[] pmap = new ParameterEntry[params.length];
+			int pi = 0;
+			for (Class<?> t : params) {
+				pmap[pi] = new ParameterEntry();
+				if (t.isAssignableFrom(Session.class)) {
+					pmap[pi].sourceType = SESSION_PARAM;
+				} else if (t.isAssignableFrom(Session.class)) {
+					pmap[pi].sourceType = ENDPOINTCONFIG_PARAM;
+				} else if (t == String.class) {
+					PathParam pp = (PathParam)getFromList(annots[pi], PathParam.class);
+					if (pp == null)
+						throw new IllegalArgumentException("String parameter isn't supported");
+					//if (pathParamsMap.containsKey(pp.value()) == false)
+						//throw new IllegalArgumentException("Not supported variable " + pp.value());
+					pmap[pi].sourceName = pp.value();
+					pmap[pi].sourceType = PATH_PARAM;
+				} else
+					throw new IllegalArgumentException("Argument of " + t + " isn't allowed for a parameter");
+				pi++;
+			}
+			return pmap;
 		}
 
 		void processBinary(byte[] b) {
@@ -581,7 +587,7 @@ public class SimpleSession implements Session {
 							params[pi] = endpointConfig;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
 							break;
 						default:
 							System.err.printf("Unmapped open parameter %d%n", pi);
@@ -599,7 +605,33 @@ public class SimpleSession implements Session {
 		}
 
 		void processClose(CloseReason reason) {
-
+			if (onClose != null) {
+				Class<?>[] paramts = onClose.getParameterTypes();
+				Object[] params = new Object[paramts.length];
+				if (paramMapClose != null)
+					for (int pi = 0; pi < params.length; pi++)
+						switch (paramMapClose[pi].sourceType) {
+						case SESSION_PARAM:
+							params[pi] = SimpleSession.this;
+							break;
+						case ENDPOINTCONFIG_PARAM:
+							params[pi] = endpointConfig;
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapClose[pi].sourceName);
+							break;
+						default:
+							System.err.printf("Unmapped open parameter %d%n", pi);
+							params[pi] = null;
+						}
+				try {
+					System.err.printf("Called %s%n", "on close");
+					result = onClose.invoke(endpoint, params);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 
 		Object getResult() {
