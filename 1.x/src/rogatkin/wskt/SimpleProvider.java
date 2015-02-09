@@ -34,6 +34,8 @@ import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -102,7 +104,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 			if (servlet != null) {
 				SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig()
-						.getServletContext().getAttribute("tjws.websocket.server.container");
+						.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
 				if (container == null)
 					throw new ServletException("No end points associated with path " + path);
 				String found = null;
@@ -119,7 +121,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					}
 				}
 				if (found == null)
-					throw new ServletException("No matching endpoint found for "+path);
+					throw new ServletException("No matching endpoint found for " + path);
 				sc.configureBlocking(false);
 				ServerEndpointConfig epc = container.endpoints.get(found);
 				if (epc.getConfigurator() != null
@@ -144,6 +146,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 				}
 				sc.register(selector, SelectionKey.OP_READ, ss);
+				ss.open();
 				//selector.wakeup();
 			} else
 				// TODO looks also in default location
@@ -163,6 +166,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void deploy(final HttpServlet servlet, final List cp) {
 		final SimpleServerContainer ssc = new SimpleServerContainer(this);
@@ -180,7 +184,14 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					return servlet.getClass().getClassLoader();
 				return null;
 			}
-		}.matchClassesWithAnnotation(javax.websocket.server.ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
+		}.matchClassesImplementing(ServerApplicationConfig.class, new InterfaceMatchProcessor() {
+
+			@Override
+			public void processMatch(Class arg0) {
+				// TODO Auto-generated method stub
+
+			}
+		}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
 			public void processMatch(Class<?> matchingClass) {
 				try {
 					ssc.addEndpoint(matchingClass);
@@ -189,9 +200,16 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 				}
 			}
+		}).matchSubclassesOf(Endpoint.class, new SubclassMatchProcessor() {
+
+			@Override
+			public void processMatch(Class arg0) {
+				// TODO Auto-generated method stub
+
+			}
 		}).scan();
 
-		servlet.getServletConfig().getServletContext().setAttribute("tjws.websocket.server.container", ssc);
+		servlet.getServletConfig().getServletContext().setAttribute("javax.websocket.server.ServerContainer", ssc);
 	}
 
 	String getSHA1Base64(String key) {

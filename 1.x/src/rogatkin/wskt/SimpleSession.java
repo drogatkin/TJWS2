@@ -1,7 +1,9 @@
 package rogatkin.wskt;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -18,9 +20,13 @@ import java.util.Set;
 
 import javax.websocket.CloseReason;
 import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.server.PathParam;
@@ -385,7 +391,7 @@ public class SimpleSession implements Session {
 	@Override
 	public void setMaxBinaryMessageBufferSize(int arg0) {
 		binBufSize = arg0;
-// TODO apply to the buffer
+		// TODO apply to the buffer
 	}
 
 	@Override
@@ -397,22 +403,41 @@ public class SimpleSession implements Session {
 	@Override
 	public void setMaxTextMessageBufferSize(int arg0) {
 		binBufSize = arg0;
-// TODO apply to the buffer
+		// TODO apply to the buffer
+	}
+
+	static class ParameterEntry {
+		int sourceType;
+		String sourceName;
+		javax.websocket.Decoder decoder;
 	}
 
 	class SimpleMessageHandler implements MessageHandler {
+		private static final int TEXT = 1;
+		private static final int BIN = 2;
+		private static final int BOOLEAN = 3;
+		private static final int SESSION_PARAM = 4;
+		private static final int PATH_PARAM = 5;
+		private static final int ENDPOINTCONFIG_PARAM = 6;
+
 		Method onText;
-		int[] mapOnText;
-	
+		Method onOpen;
+		Method onlose;
+		Method onError;
+
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError;
+
 		Object endpoint;
 		Object result;
+		ServerEndpointConfig endpointConfig;
 
 		SimpleMessageHandler(ServerEndpointConfig sepc) {
-			
-			Class<?> epc = sepc.getEndpointClass();
-			
+			endpointConfig = sepc;
+			Class<?> epc = endpointConfig.getEndpointClass();
+
 			try {
 				endpoint = epc.newInstance();
+				endpointConfig.getConfigurator().getEndpointInstance(epc);
 			} catch (InstantiationException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -424,35 +449,83 @@ public class SimpleSession implements Session {
 			for (Method m : ms) {
 				if (m.getAnnotation(OnMessage.class) != null) {
 					int pi = 0;
-					mapOnText = new int[3]; 
-					Annotation[][] annots =m.getParameterAnnotations();
-					for (Class<?> t : m.getParameterTypes()) {
+					Annotation[][] annots = m.getParameterAnnotations();
+					Class<?>[] params = m.getParameterTypes();
+					ParameterEntry[] pmap = new ParameterEntry[params.length];
+					for (Class<?> t : params) {
+						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
-							PathParam pp = getFromList(annots[pi]);
+							PathParam pp = getFromList(annots[pi], PathParam.class);
 							if (pp == null) {
-							mapOnText[0] = pi + 1;
-							onText = m;
-							} else
-								throw new IllegalArgumentException("Not supported variable "+pp.value());
-						} else if (t.isAssignableFrom(Session.class))
-							mapOnText[1] = pi + 1;
-						else if (t == boolean.class)
-							mapOnText[2] = pi + 1;
+								pmap[pi].sourceType = TEXT;
+								onText = m;
+								paramMapText = pmap;
+							} else {
+								//if (pathParamsMap.containsKey(pp.value()) == false)
+									//throw new IllegalArgumentException("Not supported variable " + pp.value());
+								pmap[pi].sourceName = pp.value();
+								pmap[pi].sourceType = PATH_PARAM;
+							}
+						} else if (t.isAssignableFrom(Session.class)) {
+							pmap[pi].sourceType = SESSION_PARAM;
+						} else if (t == boolean.class)
+							pmap[pi].sourceType = BOOLEAN;
+						else if (t == byte[].class) {
+							pmap[pi].sourceType = BIN;
+						} else if (t == Reader.class) {
+						} else if (t == ByteBuffer.class) {
+						} else if (t == InputStream.class) {
+
+						} else {
+							if (endpointConfig.getEncoders() != null) {
+								for (Class<?> e : endpointConfig.getEncoders()) {
+									e.getInterfaces();
+
+								}
+							}
+						}
 						pi++;
 					}
+				} else if (m.getAnnotation(OnOpen.class) != null) {
+					onOpen = m;
+					int pi = 0;
+					Annotation[][] annots = m.getParameterAnnotations();
+					Class<?>[] params = m.getParameterTypes();
+					ParameterEntry[] pmap = new ParameterEntry[params.length];
+					paramMapOpen = pmap;
+					for (Class<?> t : params) {
+						pmap[pi] = new ParameterEntry();
+						if (t.isAssignableFrom(Session.class)) {
+							pmap[pi].sourceType = SESSION_PARAM;
+						} else if (t.isAssignableFrom(Session.class)) {
+							pmap[pi].sourceType = ENDPOINTCONFIG_PARAM;
+						} else if (t == String.class) {
+							PathParam pp = getFromList(annots[pi], PathParam.class);
+							if (pp == null)
+								throw new IllegalArgumentException("String parameter isn't supported");
+							//if (pathParamsMap.containsKey(pp.value()) == false)
+								//throw new IllegalArgumentException("Not supported variable " + pp.value());
+							pmap[pi].sourceName = pp.value();
+							pmap[pi].sourceType = PATH_PARAM;
+						} else
+							throw new IllegalArgumentException("Argumnet of " + t + " isn't allowed for parameter");
+						pi++;
+					}
+				} else if (m.getAnnotation(OnError.class) != null) {
+				} else if (m.getAnnotation(OnClose.class) != null) {
 				}
 			}
 
 		}
-		
+
 		SimpleMessageHandler(MessageHandler mh) {
-			
+
 		}
-		
-		PathParam getFromList(Annotation[] annots) {
+
+		PathParam getFromList(Annotation[] annots, Class<?> targAnnot) {
 			if (annots != null)
-				for(Annotation a:annots)
-					if (a.annotationType() == PathParam.class)
+				for (Annotation a : annots)
+					if (a.annotationType() == targAnnot)
 						return (PathParam) a;
 			return null;
 		}
@@ -466,14 +539,18 @@ public class SimpleSession implements Session {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
 				for (int pi = 0; pi < params.length; pi++)
-					switch (mapOnText[pi] - 1) {
-					case 0:
+					switch (paramMapText[pi].sourceType) {
+					case TEXT:
 						params[pi] = t;
 						break;
-					case 1:
+					case SESSION_PARAM:
 						params[pi] = SimpleSession.this;
 						break;
+					case PATH_PARAM:
+						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
+						break;
 					default:
+						System.err.printf("Unmapped text  parameter %d%n", pi);
 						params[pi] = null;
 					}
 				try {
@@ -483,6 +560,37 @@ public class SimpleSession implements Session {
 						if (result instanceof String)
 							getBasicRemote().sendText(result.toString());
 					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+
+		void processOpen() {
+			if (onOpen != null) {
+				Class<?>[] paramts = onOpen.getParameterTypes();
+				Object[] params = new Object[paramts.length];
+				if (paramMapOpen != null)
+					for (int pi = 0; pi < params.length; pi++)
+						switch (paramMapOpen[pi].sourceType) {
+						case SESSION_PARAM:
+							params[pi] = SimpleSession.this;
+							break;
+						case ENDPOINTCONFIG_PARAM:
+							params[pi] = endpointConfig;
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
+							break;
+						default:
+							System.err.printf("Unmapped open parameter %d%n", pi);
+							params[pi] = null;
+						}
+
+				try {
+					System.err.printf("Called %s%n", "on open");
+					result = onOpen.invoke(endpoint, params);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -611,6 +719,13 @@ public class SimpleSession implements Session {
 			bb.flip();
 			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
+		}
+
+	}
+
+	void open() {
+		for (SimpleMessageHandler mh : handlers) {
+			mh.processOpen();
 		}
 
 	}

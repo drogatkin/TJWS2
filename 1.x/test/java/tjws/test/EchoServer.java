@@ -38,8 +38,8 @@ public class EchoServer {
      * and allow us to react to it. For now the message is read as a String.
      */
     @OnMessage
-    public String onMessage(Session session, String message){
-        System.out.printf("Message from %s/%dms : %s (%s)%n", session.getId(), session.getMaxIdleTimeout(),  message, session.getPathParameters().get("room"));
+    public String onMessage(Session session, String message, @javax.websocket.server.PathParam("room") String room){
+        System.out.printf("Message from %s/%dms : %s (%s)%n", session.getId(), session.getMaxIdleTimeout(),  message, room);
         /*try {
             session.getBasicRemote().sendText(message);
 
