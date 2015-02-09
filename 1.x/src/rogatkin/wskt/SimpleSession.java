@@ -91,6 +91,7 @@ public class SimpleSession implements Session {
 			e.printStackTrace();
 			try {
 				channel.close();
+				close();
 			} catch (IOException e1) {
 
 			}
@@ -224,8 +225,10 @@ public class SimpleSession implements Session {
 				case 8: // close
 					System.err.printf("close() %n");
 					try {
+						// TODO find out reason
+						close();
+						// TODO send close frame as well
 						channel.close();
-						// TODO notify onClose()
 					} catch (IOException e1) {
 
 					}
@@ -419,6 +422,7 @@ public class SimpleSession implements Session {
 		private static final int SESSION_PARAM = 4;
 		private static final int PATH_PARAM = 5;
 		private static final int ENDPOINTCONFIG_PARAM = 6;
+		private static final int CLOSEREASON_PARAM = 7;
 
 		Method onText;
 		Method onOpen;
@@ -521,6 +525,8 @@ public class SimpleSession implements Session {
 					pmap[pi].sourceType = SESSION_PARAM;
 				} else if (t.isAssignableFrom(Session.class)) {
 					pmap[pi].sourceType = ENDPOINTCONFIG_PARAM;
+				} else if (t == CloseReason.class) { // TODO exclude from onOpen
+					pmap[pi].sourceType = CLOSEREASON_PARAM;
 				} else if (t == String.class) {
 					PathParam pp = (PathParam)getFromList(annots[pi], PathParam.class);
 					if (pp == null)
