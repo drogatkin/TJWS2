@@ -2337,10 +2337,11 @@ public class Serve implements ServletContext, Serializable {
 		logPlaceholders[11] = serve.isShowUserAgent() ? getHeader("User-Agent") : "-";
 		serve.logStream.println(accessFmt.format(logPlaceholders));
 	    }
-	    lastRun = 0;
-	    timesRequested++;
-	    if (!websocketUpgrade)
+	    if (!websocketUpgrade) {
+	    	lastRun = 0;
+	    	timesRequested++;
 	    closeStreams();
+	    }
 	}
 
 	private boolean assureHeaders() {
