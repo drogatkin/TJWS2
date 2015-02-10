@@ -56,6 +56,7 @@ public class SimpleSession implements Session {
 	byte[] data;
 	int dataLen;
 	boolean frameText;
+	byte []completeData;
 	///////////////////////////////////
 	SocketChannel channel;
 
@@ -71,9 +72,11 @@ public class SimpleSession implements Session {
 	String query;
 	URI uri;
 	Principal principal;
+	SimpleServerContainer container;
 
-	SimpleSession(SocketChannel sc, SimpleServerContainer container) {
+	SimpleSession(SocketChannel sc, SimpleServerContainer c) {
 		channel = sc;
+		container = c;
 		buf = ByteBuffer.allocate(binBufSize);
 		buf.mark();
 		state = FrameState.prepare;
@@ -159,8 +162,9 @@ public class SimpleSession implements Session {
 					break readmore;
 			case data:
 				System.err.printf("data oper 0%x len %d%n", oper, len);
-				if (oper == 0)
-					oper = frameText ? 1 : 2;
+				boolean contin = oper == 0;
+				if (contin) 
+					oper = frameText ? 1 : 2;				
 				switch (oper) {
 				case 0:
 					// TODO provide accum content flag
@@ -208,11 +212,19 @@ public class SimpleSession implements Session {
 						if (frameFinal) {
 							for (SimpleMessageHandler mh : handlers) {
 								System.err.printf("process text %s%n", mh);
-								mh.processText(message);
+								mh.processText(message, frameFinal);
 								if (mh.getResult() != null) {
 									// TODO send it
 								}
 							}
+						} else {
+							if (!contin)
+								completeData = data;
+							else {
+								completeData = Arrays.copyOf(completeData, completeData.length+data.length);
+								System.arraycopy(data, 0, completeData, completeData.length-data.length, data.length);
+							}
+							//mh.processText(message, contin);
 						}
 					} else
 						break readmore;
@@ -290,8 +302,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public WebSocketContainer getContainer() {
-		// TODO Auto-generated method stub
-		return null;
+		return container;
 	}
 
 	@Override
@@ -410,6 +421,12 @@ public class SimpleSession implements Session {
 	}
 
 	static class ParameterEntry {
+		ParameterEntry(int type) {
+			sourceType = type;
+		}
+		ParameterEntry() {
+			
+		}
 		int sourceType;
 		String sourceName;
 		javax.websocket.Decoder decoder;
@@ -423,8 +440,9 @@ public class SimpleSession implements Session {
 		private static final int PATH_PARAM = 5;
 		private static final int ENDPOINTCONFIG_PARAM = 6;
 		private static final int CLOSEREASON_PARAM = 7;
+		private static final int THROWABLE_PARAM = 8;
 
-		Method onText;
+		Method onText, onBin;
 		Method onOpen;
 		Method onClose;
 		Method onError;
@@ -494,6 +512,8 @@ public class SimpleSession implements Session {
 					onOpen = m;
 					paramMapOpen = creatParamMap(onOpen);
 				} else if (m.getAnnotation(OnError.class) != null) {
+					onError = m;
+					paramMapError = creatParamMap(onError);
 				} else if (m.getAnnotation(OnClose.class) != null) {
 					onClose = m;
 					paramMapClose = creatParamMap(onClose);
@@ -503,7 +523,60 @@ public class SimpleSession implements Session {
 		}
 
 		SimpleMessageHandler(MessageHandler mh) {
+			if (mh instanceof MessageHandler.Partial) {
+				Class<?> mhc = mh.getClass();
+				if (!initPatialText(mhc, mh))
+					if (!initPatialBin2(mhc, mh))
+						initPatialBin1(mhc, mh);
+			} else if (mh instanceof MessageHandler.Whole) {
+				
+			}
 
+		}
+		
+		boolean initPatialText(Class<?> hc, MessageHandler mh) {
+			try {
+				Method m = hc.getDeclaredMethod("onMessage", String.class, boolean.class);
+				onText = m;
+				endpoint = mh;
+				paramMapText = new ParameterEntry[2] ;
+				paramMapText[0] = new ParameterEntry(TEXT);
+				paramMapText[1] = new ParameterEntry(BOOLEAN);
+				return true;
+			} catch (NoSuchMethodException e) {
+			} catch (SecurityException e) {
+			}
+			return false;			
+		}
+
+		boolean initPatialBin1(Class<?> hc, MessageHandler mh) {
+			try {
+				Method m = mh.getClass().getDeclaredMethod("onMessage", byte[].class, boolean.class);
+				onBin = m;
+				endpoint = mh;
+				paramMapText = new ParameterEntry[2] ;
+				paramMapText[0] = new ParameterEntry(BIN);
+				paramMapText[1] = new ParameterEntry(BOOLEAN);
+				return true;
+			} catch (NoSuchMethodException e) {
+			} catch (SecurityException e) {
+			}
+			return false;			
+		}
+
+		boolean initPatialBin2(Class<?> hc, MessageHandler mh) {
+			try {
+				Method m = mh.getClass().getDeclaredMethod("onMessage", ByteBuffer.class, boolean.class);
+				onText = m;
+				endpoint = mh;
+				paramMapText = new ParameterEntry[2] ;
+				paramMapText[0] = new ParameterEntry(BIN);
+				paramMapText[1] = new ParameterEntry(BOOLEAN);
+				return true;
+			} catch (NoSuchMethodException e) {
+			} catch (SecurityException e) {
+			}
+			return false;			
 		}
 
 		Annotation getFromList(Annotation[] annots, Class<?> targAnnot) {
@@ -535,6 +608,8 @@ public class SimpleSession implements Session {
 						//throw new IllegalArgumentException("Not supported variable " + pp.value());
 					pmap[pi].sourceName = pp.value();
 					pmap[pi].sourceType = PATH_PARAM;
+				} else if (t == Throwable.class) {
+					pmap[pi].sourceType = THROWABLE_PARAM;
 				} else
 					throw new IllegalArgumentException("Argument of " + t + " isn't allowed for a parameter");
 				pi++;
@@ -546,7 +621,7 @@ public class SimpleSession implements Session {
 
 		}
 
-		void processText(String t) {
+		void processText(String t, boolean b) {
 			if (onText != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
@@ -560,6 +635,9 @@ public class SimpleSession implements Session {
 						break;
 					case PATH_PARAM:
 						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
+						break;
+					case BOOLEAN:
+						params[pi] = b;
 						break;
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
@@ -633,6 +711,36 @@ public class SimpleSession implements Session {
 				try {
 					System.err.printf("Called %s%n", "on close");
 					result = onClose.invoke(endpoint, params);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		void processError(Throwable error) {
+			if (onError != null) {
+				Class<?>[] paramts = onError.getParameterTypes();
+				Object[] params = new Object[paramts.length];
+				if (paramMapError != null)
+					for (int pi = 0; pi < params.length; pi++)
+						switch (paramMapError[pi].sourceType) {
+						case SESSION_PARAM:
+							params[pi] = SimpleSession.this;
+							break;
+						case THROWABLE_PARAM:
+							params[pi] = error;
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
+							break;
+						default:
+							System.err.printf("Unmapped open parameter %d%n", pi);
+							params[pi] = null;
+						}
+				try {
+					System.err.printf("Called %s%n", "on close");
+					result = onError.invoke(endpoint, params);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
