@@ -3,6 +3,7 @@ package rogatkin.wskt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -37,6 +38,7 @@ import javax.websocket.WebSocketContainer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 
 public class SimpleSession implements Session {
@@ -755,6 +757,8 @@ public class SimpleSession implements Session {
 
 	class SimpleBasic implements Basic {
 		Random rn = new Random();
+		boolean masked;
+		boolean cont;
 
 		@Override
 		public void flushBatch() throws IOException {
@@ -788,14 +792,12 @@ public class SimpleSession implements Session {
 
 		@Override
 		public OutputStream getSendStream() throws IOException {
-			// TODO Auto-generated method stub
-			return null;
+			return  Channels.newOutputStream(channel);
 		}
 
 		@Override
 		public Writer getSendWriter() throws IOException {
-			// TODO Auto-generated method stub
-			return null;
+			return new OutputStreamWriter(getSendStream());
 		}
 
 		@Override
@@ -818,17 +820,18 @@ public class SimpleSession implements Session {
 
 		@Override
 		public void sendText(String arg0) throws IOException {
-			int lc = channel.write(createFrame(arg0));
+			int lc = channel.write(createFrame(arg0, true, true));
 			System.err.printf("%d%n", lc);
 		}
 
 		@Override
 		public void sendText(String arg0, boolean arg1) throws IOException {
-			// TODO Auto-generated method stub
-
+			int lc = channel.write(createFrame(arg0, arg1, !cont));
+			cont = !arg1;
 		}
 
-		ByteBuffer createFrame(String text) {
+		ByteBuffer createFrame(String text, boolean fin, boolean first) {
+			cont = !fin && !first; 
 			byte[] mb = null;
 			try {
 				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes("UTF-8");
@@ -837,7 +840,6 @@ public class SimpleSession implements Session {
 			}
 			mask = rn.nextInt();
 			int bl = 6;
-			boolean masked = false;
 			byte lm = (byte) (masked ? 0x80 : 0x00);
 			if (mb.length > 125) {
 				bl += 2;
@@ -849,7 +851,10 @@ public class SimpleSession implements Session {
 			} else
 				lm |= mb.length;
 			ByteBuffer bb = ByteBuffer.allocate(bl + mb.length);
-			bb.put((byte) 0x81).put(lm);
+			byte hb = (byte) (fin ?0x80:0);
+			if (first)
+				hb |= 1;
+			bb.put(hb).put(lm);
 			if (mb.length > 125)
 				if (mb.length < Short.MAX_VALUE)
 					bb.putShort((short) mb.length);
@@ -862,7 +867,7 @@ public class SimpleSession implements Session {
 					mb[p] = (byte) (mb[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
 			}
 			bb.put(mb);
-			bb.flip();
+			bb.flip();			
 			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}

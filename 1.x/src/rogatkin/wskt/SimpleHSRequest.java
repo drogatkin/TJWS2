@@ -3,8 +3,8 @@ package rogatkin.wskt;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -25,10 +25,7 @@ public class SimpleHSRequest implements HandshakeRequest {
 		HashMap<String, List<String>> headersMap = new HashMap<String, List<String>>();
 		for(Enumeration<String> hn = request.getHeaderNames(); hn.hasMoreElements();) {
 			String name = hn.nextElement();
-			ArrayList<String> rhv = new ArrayList<String>();
-			for(Enumeration<String> hv = request.getHeaders(name); hv.hasMoreElements();)
-				rhv.add(hv.nextElement());
-			headersMap.put(name, rhv);
+			headersMap.put(name, Collections.list(request.getHeaders(name)));
 		}
 		return headersMap;
 	}
