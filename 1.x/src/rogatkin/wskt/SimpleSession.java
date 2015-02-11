@@ -30,6 +30,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+import javax.websocket.PongMessage;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.server.PathParam;
@@ -134,11 +135,10 @@ public class SimpleSession implements Session {
 				else
 					state = masked ? FrameState.mask : FrameState.data;
 				forceOp = !masked;
-				System.err.printf("len %d st %s avail %d%n", len, state,
-						buf.limit() - buf.position());
+				System.err.printf("len %d st %s avail %d%n", len, state, buf.limit() - buf.position());
 				break;
 			case length32:
-				avail = buf.limit() - buf.position();
+				avail = buf.remaining();
 				if (avail >= 2) {
 					// buf.order(ByteOrder.BIG_ENDIAN);
 					len = buf.getShort();
@@ -148,18 +148,17 @@ public class SimpleSession implements Session {
 					break readmore;
 				}
 			case length64:
-				avail = buf.limit() - buf.position();
+				avail = buf.remaining();
 				if (avail >= 8) {
 					len = buf.getLong();
 					if (len > Integer.MAX_VALUE)
-						throw new IllegalArgumentException(
-								"Frame length is too long");
+						throw new IllegalArgumentException("Frame length is too long");
 					state = masked ? FrameState.mask : FrameState.data;
 					break;
 				} else
 					break readmore;
 			case mask:
-				avail = buf.limit() - buf.position();
+				avail = buf.remaining();
 				if (avail >= 4) {
 					mask = buf.getInt();
 					state = FrameState.data;
@@ -206,31 +205,21 @@ public class SimpleSession implements Session {
 							for (int p = 0; p < data.length; p++)
 								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
 						}
-						// TODO send onMessage
-						String message = null;
-						try {
-							message = new String(data, "UTF-8");
-							System.err.printf("text (%s) %d fl: %b%n", message,
-									buf.limit() - buf.position(), frameFinal);
-						} catch (UnsupportedEncodingException e) {
-							message = new String(data);
+						if (!contin)
+							completeData = data;
+						else {
+							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
+						}
+						for (SimpleMessageHandler mh : handlers) {
+							System.err.printf("process text %s%n", mh);
+							mh.processText(bytesToString(data), frameFinal);
 						}
 						if (frameFinal) {
 							for (SimpleMessageHandler mh : handlers) {
 								System.err.printf("process text %s%n", mh);
-								mh.processText(message, frameFinal);
+								mh.processText(bytesToString(completeData));
 							}
-						} else {
-							if (!contin)
-								completeData = data;
-							else {
-								completeData = Arrays.copyOf(completeData,
-										completeData.length + data.length);
-								System.arraycopy(data, 0, completeData,
-										completeData.length - data.length,
-										data.length);
-							}
-							// mh.processText(message, contin);
 						}
 					} else
 						break readmore;
@@ -270,11 +259,8 @@ public class SimpleSession implements Session {
 						if (!contin)
 							completeData = data;
 						else {
-							completeData = Arrays.copyOf(completeData,
-									completeData.length + data.length);
-							System.arraycopy(data, 0, completeData,
-									completeData.length - data.length,
-									data.length);
+							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
 						}
 						for (SimpleMessageHandler mh : handlers) {
 							System.err.printf("process text %s%n", mh);
@@ -283,7 +269,7 @@ public class SimpleSession implements Session {
 						if (frameFinal) {
 							for (SimpleMessageHandler mh : handlers) {
 								System.err.printf("process text %s%n", mh);
-								mh.processBinary(completeData, frameFinal);
+								mh.processBinary(completeData);
 							}
 						}
 					} else
@@ -291,14 +277,12 @@ public class SimpleSession implements Session {
 					break;
 				case 8: // close
 					CloseReason cr = null;
-
 					avail = buf.remaining();
 					state = FrameState.header;
 					if (len >= 2)
 						if (avail >= 2) {
 							short reason = buf.getShort();
-							cr = new CloseReason(
-									CloseCodes.getCloseCode(reason), "");
+							cr = new CloseReason(CloseCodes.getCloseCode(reason), "");
 						}
 					System.err.printf("close(%s) %n", cr);
 					try {
@@ -312,10 +296,39 @@ public class SimpleSession implements Session {
 					state = FrameState.header;
 					break;
 				case 0x9: // ping
-					state = FrameState.header;
+					avail = buf.remaining();
+					if (avail >= len) {
+						state = FrameState.header;
+						data = new byte[(int) len];
+						buf.get(data);
+						dataLen = data.length;
+						// TODO send pong
+					}
 					break;
 				case 0xa: // pong
-					state = FrameState.header;
+					avail = buf.remaining();
+					if (avail >= len) {
+						state = FrameState.header;
+						data = new byte[(int) len];
+						buf.get(data);
+						dataLen = data.length;
+						for (SimpleMessageHandler mh : handlers) {
+							System.err.printf("process text %s%n", mh);
+							mh.processPong(data);
+						}
+					}
+					break;
+				default:
+					System.err.printf(" Invalid frame op 0%x, len %d%n", oper, len);
+					try {
+						close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
+								+ oper));
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					break readmore;
+
 				}
 				forceOp = false;
 			}
@@ -331,14 +344,20 @@ public class SimpleSession implements Session {
 		}
 	}
 
-	void addMessageHandler(ServerEndpointConfig arg0)
-			throws IllegalStateException {
+	String bytesToString(byte[] b) {
+		try {
+			return new String(b, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			return new String(data);
+		}
+	}
+
+	void addMessageHandler(ServerEndpointConfig arg0) throws IllegalStateException {
 		handlers.add(new SimpleMessageHandler(arg0));
 	}
 
 	@Override
-	public void addMessageHandler(MessageHandler arg0)
-			throws IllegalStateException {
+	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
 		handlers.add(new SimpleMessageHandler(arg0));
 	}
 
@@ -510,14 +529,14 @@ public class SimpleSession implements Session {
 		private static final int ENDPOINTCONFIG_PARAM = 6;
 		private static final int CLOSEREASON_PARAM = 7;
 		private static final int THROWABLE_PARAM = 8;
+		private static final int PONG = 9;
 
-		Method onText, onBin;
+		Method onText, onBin, onPong;
 		Method onOpen;
 		Method onClose;
 		Method onError;
 
-		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose,
-				paramMapError;
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong;
 
 		Object endpoint;
 		Object result;
@@ -547,8 +566,7 @@ public class SimpleSession implements Session {
 					for (Class<?> t : params) {
 						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
-							PathParam pp = (PathParam) getFromList(annots[pi],
-									PathParam.class);
+							PathParam pp = (PathParam) getFromList(annots[pi], PathParam.class);
 							if (pp == null) {
 								pmap[pi].sourceType = TEXT;
 								onText = m;
@@ -571,7 +589,10 @@ public class SimpleSession implements Session {
 						} else if (t == Reader.class) {
 						} else if (t == ByteBuffer.class) {
 						} else if (t == InputStream.class) {
-
+						} else if (t == PongMessage.class) {
+							pmap[pi].sourceType = PONG;
+							onPong = m;
+							paramMapPong = pmap;
 						} else {
 							if (endpointConfig.getEncoders() != null) {
 								for (Class<?> e : endpointConfig.getEncoders()) {
@@ -610,8 +631,7 @@ public class SimpleSession implements Session {
 
 		boolean initPatialText(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = hc.getDeclaredMethod("onMessage", String.class,
-						boolean.class);
+				Method m = hc.getDeclaredMethod("onMessage", String.class, boolean.class);
 				onText = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -626,8 +646,7 @@ public class SimpleSession implements Session {
 
 		boolean initPatialBin1(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage",
-						byte[].class, boolean.class);
+				Method m = mh.getClass().getDeclaredMethod("onMessage", byte[].class, boolean.class);
 				onBin = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -642,8 +661,7 @@ public class SimpleSession implements Session {
 
 		boolean initPatialBin2(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage",
-						ByteBuffer.class, boolean.class);
+				Method m = mh.getClass().getDeclaredMethod("onMessage", ByteBuffer.class, boolean.class);
 				onText = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -678,11 +696,9 @@ public class SimpleSession implements Session {
 				} else if (t == CloseReason.class) { // TODO exclude from onOpen
 					pmap[pi].sourceType = CLOSEREASON_PARAM;
 				} else if (t == String.class) {
-					PathParam pp = (PathParam) getFromList(annots[pi],
-							PathParam.class);
+					PathParam pp = (PathParam) getFromList(annots[pi], PathParam.class);
 					if (pp == null)
-						throw new IllegalArgumentException(
-								"String parameter isn't supported");
+						throw new IllegalArgumentException("String parameter isn't supported");
 					// if (pathParamsMap.containsKey(pp.value()) == false)
 					// throw new
 					// IllegalArgumentException("Not supported variable " +
@@ -692,18 +708,55 @@ public class SimpleSession implements Session {
 				} else if (t == Throwable.class) {
 					pmap[pi].sourceType = THROWABLE_PARAM;
 				} else
-					throw new IllegalArgumentException("Argument of " + t
-							+ " isn't allowed for a parameter");
+					throw new IllegalArgumentException("Argument of " + t + " isn't allowed for a parameter");
 				pi++;
 			}
 			return pmap;
+		}
+
+		void processPong(final byte[] b) {
+			if (onPong != null) {
+				Class<?>[] paramts = onText.getParameterTypes();
+				Object[] params = new Object[paramts.length];
+				for (int pi = 0; pi < params.length; pi++)
+					switch (paramMapPong[pi].sourceType) {
+					case PONG:
+						params[pi] = new PongMessage() {
+
+							@Override
+							public ByteBuffer getApplicationData() {
+								// TODO Auto-generated method stub
+								return ByteBuffer.wrap(b);
+							}
+
+						};
+						break;
+					case PATH_PARAM:
+						params[pi] = pathParamsMap.get(paramMapPong[pi].sourceName);
+						break;
+					}
+				try {
+					result = onPong.invoke(endpoint, params);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 
 		void processBinary(byte[] b, boolean f) {
 
 		}
 
+		void processBinary(byte[] b) {
+
+		}
+
 		void processText(String t, boolean f) {
+
+		}
+
+		void processText(String t) {
 			if (onText != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
@@ -716,11 +769,10 @@ public class SimpleSession implements Session {
 						params[pi] = SimpleSession.this;
 						break;
 					case PATH_PARAM:
-						params[pi] = pathParamsMap
-								.get(paramMapText[pi].sourceName);
+						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
 						break;
 					case BOOLEAN:
-						params[pi] = f;
+						params[pi] = null;
 						break;
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
@@ -754,12 +806,10 @@ public class SimpleSession implements Session {
 							params[pi] = endpointConfig;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapOpen[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 
@@ -787,12 +837,10 @@ public class SimpleSession implements Session {
 							params[pi] = endpointConfig;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapClose[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapClose[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 				try {
@@ -819,12 +867,10 @@ public class SimpleSession implements Session {
 							params[pi] = error;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapError[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 				try {
@@ -860,21 +906,17 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendPing(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
-				throw new IllegalArgumentException(
-						"Control fame data length can't exceed 125");
+				throw new IllegalArgumentException("Control fame data length can't exceed 125");
 			int lc = channel.write(createFrame(true, arg0));
 
 		}
 
 		@Override
-		public void sendPong(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
-				throw new IllegalArgumentException(
-						"Control fame data length can't exceed 125");
+				throw new IllegalArgumentException("Control fame data length can't exceed 125");
 			int lc = channel.write(createFrame(false, arg0));
 
 		}
@@ -910,8 +952,7 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendBinary(ByteBuffer arg0, boolean arg1)
-				throws IOException {
+		public void sendBinary(ByteBuffer arg0, boolean arg1) throws IOException {
 			int lc = channel.write(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
@@ -954,21 +995,18 @@ public class SimpleSession implements Session {
 		}
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
-			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin,
-					first);
+			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
 			bb.put(bbp).flip();
 			return bb;
 		}
 
 		ByteBuffer createFrame(boolean ping, ByteBuffer bbp) {
-			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa),
-					bbp.remaining(), true, true);
+			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa), bbp.remaining(), true, true);
 			bb.put(bbp).flip();
 			return bb;
 		}
 
-		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin,
-				boolean first) {
+		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin, boolean first) {
 			if (cmd != 2 && cmd != 2) {
 				fin = first = true;
 			}
@@ -1005,14 +1043,12 @@ public class SimpleSession implements Session {
 			cont = !fin && !first;
 			byte[] mb = null;
 			try {
-				mb = text == null || text.length() == 0 ? new byte[0] : text
-						.getBytes("UTF-8");
+				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes("UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				mb = text.getBytes();
 			}
 
-			ByteBuffer bb = prepreFrameHeader((byte) 1, (long) mb.length, fin,
-					first);
+			ByteBuffer bb = prepreFrameHeader((byte) 1, (long) mb.length, fin, first);
 			if (masked) {
 				bb.putInt(mask);
 				int mp = 0;
@@ -1021,8 +1057,7 @@ public class SimpleSession implements Session {
 			}
 			bb.put(mb);
 			bb.flip();
-			System.err.printf("Send frame %s of %d %s 0%x%xn", text,
-					bb.remaining(), bb, bb.get(0), bb.get(1));
+			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
 

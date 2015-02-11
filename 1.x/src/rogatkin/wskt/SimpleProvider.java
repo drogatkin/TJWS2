@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -145,9 +146,10 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				} catch (URISyntaxException e) {
 
 				}
+				selector.wakeup();
 				sc.register(selector, SelectionKey.OP_READ, ss);
 				ss.open();
-				//selector.wakeup();
+
 			} else
 				// TODO looks also in default location
 				throw new ServletException("No web application associated with " + path);
@@ -170,6 +172,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	@Override
 	public void deploy(final HttpServlet servlet, final List cp) {
 		final SimpleServerContainer ssc = new SimpleServerContainer(this);
+		final HashSet<ServerApplicationConfig> appCfgs = new HashSet<ServerApplicationConfig>();
+		final HashSet<Class<?>> annSeps = new HashSet<Class<?>>();
+		final HashSet<Class<? extends Endpoint>> endps = new HashSet<Class<? extends Endpoint>>();
 		new FastClasspathScanner("") {
 			@Override
 			public List<File> getUniqueClasspathElements() {
@@ -184,31 +189,63 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					return servlet.getClass().getClassLoader();
 				return null;
 			}
-		}.matchClassesImplementing(ServerApplicationConfig.class, new InterfaceMatchProcessor() {
+		}.matchClassesImplementing(ServerApplicationConfig.class,
+				new InterfaceMatchProcessor<ServerApplicationConfig>() {
 
-			@Override
-			public void processMatch(Class arg0) {
-				// TODO Auto-generated method stub
+					@Override
+					public void processMatch(Class<? extends ServerApplicationConfig> arg0) {
+						try {
+							appCfgs.add(arg0.newInstance());
+						} catch (InstantiationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (IllegalAccessException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 
-			}
-		}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
+				}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
 			public void processMatch(Class<?> matchingClass) {
-				try {
-					ssc.addEndpoint(matchingClass);
-					serve.log("Deployed ServerEndpoint " + matchingClass);
-				} catch (DeploymentException de) {
-
-				}
+				annSeps.add(matchingClass);
 			}
-		}).matchSubclassesOf(Endpoint.class, new SubclassMatchProcessor() {
+		}).matchSubclassesOf(Endpoint.class, new SubclassMatchProcessor<Endpoint>() {
 
 			@Override
-			public void processMatch(Class arg0) {
-				// TODO Auto-generated method stub
-
+			public void processMatch(Class<? extends Endpoint> arg0) {
+				endps.add(arg0);
 			}
 		}).scan();
 
+		// TODO build list of all scanned classes
+		// if ServerApplicationConfig exist then use them to filter all found and produce maybe more
+		// if not then just use ServerEndpoint
+		if (appCfgs.size() > 0) {
+			for (ServerApplicationConfig sac : appCfgs) {
+				for (Class<?> se : sac.getAnnotatedEndpointClasses(annSeps))
+					try {
+						ssc.addEndpoint(se);
+						serve.log("Deployed ServerEndpoint " + se);
+					} catch (DeploymentException de) {
+
+					}
+				for (ServerEndpointConfig epc : sac.getEndpointConfigs(endps))
+					try {
+						ssc.addEndpoint(epc);
+						serve.log("Deployed ServerEndpointConfig " + epc);
+					} catch (DeploymentException de) {
+
+					}
+			}
+		} else {
+			for (Class<?> se : annSeps)
+				try {
+					ssc.addEndpoint(se);
+					serve.log("Deployed ServerEndpoint " + se);
+				} catch (DeploymentException de) {
+
+				}
+		}
 		servlet.getServletConfig().getServletContext().setAttribute("javax.websocket.server.ServerContainer", ssc);
 	}
 
