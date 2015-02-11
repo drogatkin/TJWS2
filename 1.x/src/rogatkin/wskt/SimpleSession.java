@@ -216,9 +216,6 @@ public class SimpleSession implements Session {
 							for (SimpleMessageHandler mh : handlers) {
 								System.err.printf("process text %s%n", mh);
 								mh.processText(message, frameFinal);
-								if (mh.getResult() != null) {
-									// TODO send it
-								}
 							}
 						} else {
 							if (!contin)
@@ -235,14 +232,60 @@ public class SimpleSession implements Session {
 				case 2:
 					frameText = false;
 					System.err.printf("bin%n");
-					state = FrameState.header;
+					avail = buf.remaining();//buf.limit() - buf.position();
+					
+					if (dataLen == 0) {
+						if (avail >= len) {
+							data = new byte[(int) len];
+							buf.get(data);
+							dataLen = (int) len;
+						} else {
+							data = new byte[(int) avail];
+							buf.get(data);
+							dataLen = avail;
+						}
+					} else {
+						// if (dataLen+avail >= len) {
+						int sl = (int) Math.min(avail, len - dataLen);
+						data = Arrays.copyOf(data, dataLen + sl);
+						buf.get(data, dataLen, sl);
+						dataLen += sl;
+						// } else {
+						// data = Arrays.copyOf(data, avail);
+						// }
+					}
+					if (dataLen == len) { // all data
+						state = FrameState.header;
+						if (masked) {
+							int mp = 0;
+							for (int p = 0; p < data.length; p++)
+								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
+						}
+						if (!contin)
+							completeData = data;
+						else {
+							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
+						}
+						for (SimpleMessageHandler mh : handlers) {
+							System.err.printf("process text %s%n", mh);
+							mh.processBinary(data, frameFinal);
+						}
+						if (frameFinal) {
+							for (SimpleMessageHandler mh : handlers) {
+								System.err.printf("process text %s%n", mh);
+								mh.processBinary(completeData, frameFinal);
+							}
+						}
+					} else
+						break readmore;
 					break;
 				case 8: // close
 					System.err.printf("close() %n");
 					try {
 						// TODO find out reason
-						close();
 						// TODO send close frame as well
+						close();
 						channel.close();
 					} catch (IOException e1) {
 
@@ -622,11 +665,11 @@ public class SimpleSession implements Session {
 			return pmap;
 		}
 
-		void processBinary(byte[] b) {
+		void processBinary(byte[] b, boolean f) {
 
 		}
 
-		void processText(String t, boolean b) {
+		void processText(String t, boolean f) {
 			if (onText != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
@@ -642,7 +685,7 @@ public class SimpleSession implements Session {
 						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
 						break;
 					case BOOLEAN:
-						params[pi] = b;
+						params[pi] = f;
 						break;
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
@@ -817,14 +860,14 @@ public class SimpleSession implements Session {
 
 		@Override
 		public void sendBinary(ByteBuffer arg0) throws IOException {
-			// TODO Auto-generated method stub
+			int lc = channel.write(createFrame(arg0, true, true));
 
 		}
 
 		@Override
 		public void sendBinary(ByteBuffer arg0, boolean arg1) throws IOException {
-			// TODO Auto-generated method stub
-
+			int lc = channel.write(createFrame(arg0, arg1, !cont));
+			cont = !arg1;
 		}
 
         /**
