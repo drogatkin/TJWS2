@@ -227,7 +227,7 @@
          <parameter type="path">&build_directory;/&build_file;</parameter>
          <parameter/>
          <parameter>A</parameter>
-         <parameter>html-js/wsk-chat.html</parameter>
+         <parameter>html-js/*.html</parameter>
       </function>
     </block>
   </target>

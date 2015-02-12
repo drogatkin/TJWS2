@@ -31,9 +31,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
+import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
@@ -128,12 +131,30 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				if (epc.getConfigurator() != null
 						&& epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false)
 					throw new ServletException("Origin check failed : " + req.getHeader(WSKT_ORIGIN));
-				SimpleSession ss = new SimpleSession(sc, container);
+				final SimpleSession ss = new SimpleSession(sc, container);
 				ss.addMessageHandler(epc);
 				ss.pathParamsMap = foundVarMap;
-				if (req.getSession(false) != null)
+				if (req.getSession(false) != null) {
 					ss.id = req.getSession(false).getId();
-				else
+					// TDO this approach isn't robust and flexible, so consider as temporarly 
+					req.getSession(false).setAttribute("javax.websocket.server.session", new HttpSessionBindingListener() {
+
+						@Override
+						public void valueBound(HttpSessionBindingEvent arg0) {
+							
+						}
+
+						@Override
+						public void valueUnbound(HttpSessionBindingEvent arg0) {
+							try {
+								ss.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Session invalidate"));
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+						}});
+				} else
 					ss.id = "wskt-" + serve.generateSessionId();
 				ss.soTimeout = socket.getSoTimeout();
 				ss.paramsMap = new HashMap<String, List<String>>();
@@ -301,7 +322,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			case s_invar:
 				if (c == '}') {
 					vi++;
-					regExp += "((?:[a-z0-9-._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
+					regExp += "((?:[a-z0-9-\\._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
 					st = s_inuri;
 					result.put(vi, varName);
 				} else {

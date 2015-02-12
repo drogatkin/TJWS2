@@ -11,10 +11,12 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -22,6 +24,8 @@ import java.util.Set;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
@@ -78,6 +82,8 @@ public class SimpleSession implements Session {
 	URI uri;
 	Principal principal;
 	SimpleServerContainer container;
+	private SimpleBasic basicRemote;
+	private ServerEndpointConfig endpointConfig;
 
 	SimpleSession(SocketChannel sc, SimpleServerContainer c) {
 		channel = sc;
@@ -256,15 +262,16 @@ public class SimpleSession implements Session {
 							for (int p = 0; p < data.length; p++)
 								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
 						}
+						boolean partBinConsumed = false;
+						for (SimpleMessageHandler mh : handlers) {
+							System.err.printf("process text %s%n", mh);
+							partBinConsumed |= mh.processBinary(data, frameFinal);
+						}
 						if (!contin)
 							completeData = data;
 						else {
 							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
 							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
-						}
-						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process text %s%n", mh);
-							mh.processBinary(data, frameFinal);
 						}
 						if (frameFinal) {
 							for (SimpleMessageHandler mh : handlers) {
@@ -353,7 +360,10 @@ public class SimpleSession implements Session {
 	}
 
 	void addMessageHandler(ServerEndpointConfig arg0) throws IllegalStateException {
-		handlers.add(new SimpleMessageHandler(arg0));
+		if (endpointConfig != null)
+			throw new IllegalStateException("Only one endpoint can be associated with session/connection");
+		endpointConfig = arg0;
+		handlers.add(new SimpleMessageHandler());
 	}
 
 	@Override
@@ -371,8 +381,11 @@ public class SimpleSession implements Session {
 	public void close(CloseReason reason) throws IOException {
 		for (SimpleMessageHandler mh : handlers) {
 			mh.processClose(reason);
+			// 
+			mh.destroy();
 		}
-
+		if (basicRemote != null)
+			basicRemote.destroy();
 	}
 
 	@Override
@@ -383,7 +396,10 @@ public class SimpleSession implements Session {
 
 	@Override
 	public Basic getBasicRemote() {
-		return new SimpleBasic();
+		// TODO investigate if possible to use from different threads
+		if (basicRemote == null)
+			basicRemote = new SimpleBasic(); 
+		return basicRemote;
 	}
 
 	@Override
@@ -517,7 +533,7 @@ public class SimpleSession implements Session {
 
 		int sourceType;
 		String sourceName;
-		javax.websocket.Decoder decoder;
+		Decoder decoder;
 	}
 
 	class SimpleMessageHandler implements MessageHandler {
@@ -530,22 +546,22 @@ public class SimpleSession implements Session {
 		private static final int CLOSEREASON_PARAM = 7;
 		private static final int THROWABLE_PARAM = 8;
 		private static final int PONG = 9;
+		private static final int DECODER = 10;
 
 		Method onText, onBin, onPong;
 		Method onOpen;
 		Method onClose;
 		Method onError;
+		boolean partText, partBin;
 
-		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong;
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong, paramMapBin;
 
 		Object endpoint;
 		Object result;
-		ServerEndpointConfig endpointConfig;
+		//ServerEndpointConfig endpointConfig;
 
-		SimpleMessageHandler(ServerEndpointConfig sepc) {
-			endpointConfig = sepc;
+		SimpleMessageHandler() {
 			Class<?> epc = endpointConfig.getEndpointClass();
-
 			try {
 				endpoint = epc.newInstance();
 				endpointConfig.getConfigurator().getEndpointInstance(epc);
@@ -563,14 +579,18 @@ public class SimpleSession implements Session {
 					Annotation[][] annots = m.getParameterAnnotations();
 					Class<?>[] params = m.getParameterTypes();
 					ParameterEntry[] pmap = new ParameterEntry[params.length];
+					boolean partReq = false, primeText = false, primeBin = false;
 					for (Class<?> t : params) {
 						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
 							PathParam pp = (PathParam) getFromList(annots[pi], PathParam.class);
 							if (pp == null) {
 								pmap[pi].sourceType = TEXT;
+								if (onText != null)
+									throw new IllegalArgumentException("Only one text messages handler is allowed");
 								onText = m;
 								paramMapText = pmap;
+								primeText = true;
 							} else {
 								// if (pathParamsMap.containsKey(pp.value()) ==
 								// false)
@@ -582,10 +602,16 @@ public class SimpleSession implements Session {
 							}
 						} else if (t.isAssignableFrom(Session.class)) {
 							pmap[pi].sourceType = SESSION_PARAM;
-						} else if (t == boolean.class)
+						} else if (t == boolean.class) {
 							pmap[pi].sourceType = BOOLEAN;
-						else if (t == byte[].class) {
+							partReq = true;
+						} else if (t == byte[].class) {
 							pmap[pi].sourceType = BIN;
+							if (onBin != null)
+								throw new IllegalArgumentException("Only one binary messages handler is allowed");
+							onBin = m;
+							paramMapBin = pmap;
+							primeBin = true;
 						} else if (t == Reader.class) {
 						} else if (t == ByteBuffer.class) {
 						} else if (t == InputStream.class) {
@@ -594,15 +620,43 @@ public class SimpleSession implements Session {
 							onPong = m;
 							paramMapPong = pmap;
 						} else {
-							if (endpointConfig.getEncoders() != null) {
-								for (Class<?> e : endpointConfig.getEncoders()) {
-									e.getInterfaces();
-
+							if (endpointConfig.getDecoders() != null) {
+								for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
+									Method dm = null;
+									try {
+										dm = dc.getDeclaredMethod("decode", String.class);
+									} catch (NoSuchMethodException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									} catch (SecurityException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									if (dm != null && t == dm.getReturnType()) {
+										// TODO since several decoders can match, then add all and do willDecode(String) at runtime
+										try {
+											pmap[pi].decoder = dc.newInstance();
+											pmap[pi].decoder.init(endpointConfig);
+											pmap[pi].sourceType = DECODER;
+											if (onText != null)
+												throw new IllegalArgumentException(
+														"Only one text messages handler is allowed");
+											onText = m;
+										} catch (InstantiationException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										} catch (IllegalAccessException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+									}
 								}
 							}
 						}
 						pi++;
 					}
+					partText = primeText && partReq;
+					partBin = primeBin && partReq;
 				} else if (m.getAnnotation(OnOpen.class) != null) {
 					onOpen = m;
 					paramMapOpen = creatParamMap(onOpen);
@@ -615,6 +669,19 @@ public class SimpleSession implements Session {
 				}
 			}
 
+		}
+
+		void destroy() {
+			destroyDecoders(paramMapText);
+			destroyDecoders(paramMapBin);
+		}
+
+		void destroyDecoders(ParameterEntry[] pmap) {
+			if (pmap != null)
+				for (ParameterEntry pe : pmap) {
+					if (pe.decoder != null)
+						pe.decoder.destroy();
+				}
 		}
 
 		SimpleMessageHandler(MessageHandler mh) {
@@ -744,16 +811,22 @@ public class SimpleSession implements Session {
 			}
 		}
 
-		void processBinary(byte[] b, boolean f) {
-
+		boolean processBinary(byte[] b, boolean f) {
+			if (onBin != null && partBin) {
+				return true;
+			}
+			return false;
 		}
 
 		void processBinary(byte[] b) {
 
 		}
 
-		void processText(String t, boolean f) {
-
+		boolean processText(String t, boolean f) {
+			if (onText != null && partText) {
+				return true;
+			}
+			return false;
 		}
 
 		void processText(String t) {
@@ -774,6 +847,15 @@ public class SimpleSession implements Session {
 					case BOOLEAN:
 						params[pi] = null;
 						break;
+					case DECODER:
+						if (((Decoder.Text) paramMapText[pi].decoder).willDecode(t))
+							try {
+								params[pi] = ((Decoder.Text) paramMapText[pi].decoder).decode(t);
+							} catch (DecodeException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								processError(e);
+							}
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
 						params[pi] = null;
@@ -892,6 +974,7 @@ public class SimpleSession implements Session {
 		Random rn = new Random();
 		boolean masked;
 		boolean cont;
+		HashMap<Class<?>, Encoder> encoders;
 
 		@Override
 		public void flushBatch() throws IOException {
@@ -978,8 +1061,51 @@ public class SimpleSession implements Session {
 		 */
 		@Override
 		public void sendObject(Object arg0) throws IOException, EncodeException {
-			// TODO Auto-generated method stub
+			if (encoders == null)
+				initEncoders();
+			Encoder ec = encoders.get(arg0.getClass());
+			if (ec == null)
+				throw new EncodeException(arg0, "There is no encoder");
+			if (ec instanceof Encoder.Text) {
+				sendText(((Encoder.Text)ec).encode(arg0));
+			} else if (ec instanceof Encoder.TextStream) {
+			} else if (ec instanceof Encoder.TextStream) {
+			} else if (ec instanceof Encoder.TextStream) {
+				
+			} else
+				throw new EncodeException(ec, "The encoder doesn't rpvide proper encding method");
 
+		}
+
+		private void initEncoders() {
+			encoders = new HashMap<Class<?>, Encoder>(); 
+			for (Class<? extends Encoder> ec :endpointConfig.getEncoders()) {
+				for (Method em :ec.getDeclaredMethods()) {
+					System.err.printf("method %s returns %s%n", em.getName(), em.getReturnType());
+					if (!"encode".equals(em.getName()))
+						continue;
+					Class<?> rt = em.getReturnType();
+					//Type[] pts = em.getGenericParameterTypes();
+					Class<?>[] pts = em.getParameterTypes();
+					if (rt == String.class) {
+						if (pts.length == 1) {
+							try {
+								Encoder e = ec.newInstance();
+								e.init(endpointConfig);
+								encoders.put(pts[0], e);
+							} catch (InstantiationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (IllegalAccessException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+					} //else 
+						//throw new IllegalArgumentException ("Only text encoders are implemented - "+rt+" for method "+em.getName());
+				}
+			}
+			
 		}
 
 		@Override
@@ -1059,6 +1185,12 @@ public class SimpleSession implements Session {
 			bb.flip();
 			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
+		}
+		
+		void destroy() {
+			if (encoders != null)
+				for (Encoder ec:encoders.values())
+					ec.destroy();
 		}
 
 	}
