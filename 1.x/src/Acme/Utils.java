@@ -1059,7 +1059,11 @@ public class Utils {
 		String result = url.getPath();
 		if (result.charAt(0) == '/' && File.separatorChar == '\\')
 			result = result.substring(1);
-		return URLDecoder.decode(result);
+		try {
+			return decode(result, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			return result;
+		}
 	}
 
 	// public static final int firstOccurrence(String s, String occur) {

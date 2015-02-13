@@ -167,10 +167,10 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				} catch (URISyntaxException e) {
 
 				}
+				
 				selector.wakeup();
 				sc.register(selector, SelectionKey.OP_READ, ss);
 				ss.open();
-
 			} else
 				// TODO looks also in default location
 				throw new ServletException("No web application associated with " + path);

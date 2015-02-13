@@ -9,14 +9,14 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -37,16 +37,10 @@ import javax.websocket.OnOpen;
 import javax.websocket.PongMessage;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.Channels;
-import java.nio.channels.SocketChannel;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpointConfig;
 
 public class SimpleSession implements Session {
 
@@ -69,7 +63,7 @@ public class SimpleSession implements Session {
 	// /////////////////////////////////
 	SocketChannel channel;
 
-	ArrayList<SimpleMessageHandler> handlers;
+	HashSet<SimpleMessageHandler> handlers;
 
 	String id;
 
@@ -91,7 +85,7 @@ public class SimpleSession implements Session {
 		buf = ByteBuffer.allocate(binBufSize);
 		buf.mark();
 		state = FrameState.prepare;
-		handlers = new ArrayList<SimpleMessageHandler>();
+		handlers = new HashSet<SimpleMessageHandler>();
 	}
 
 	public void run() {
@@ -218,12 +212,12 @@ public class SimpleSession implements Session {
 							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
 						}
 						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process text %s%n", mh);
+							System.err.printf("process text part %s%n", mh);
 							mh.processText(bytesToString(data), frameFinal);
 						}
 						if (frameFinal) {
 							for (SimpleMessageHandler mh : handlers) {
-								System.err.printf("process text %s%n", mh);
+								System.err.printf("process text all %s%n", mh);
 								mh.processText(bytesToString(completeData));
 							}
 						}
@@ -286,10 +280,19 @@ public class SimpleSession implements Session {
 					CloseReason cr = null;
 					avail = buf.remaining();
 					state = FrameState.header;
-					if (len >= 2)
+					if (len >= 0)
 						if (avail >= 2) {
-							short reason = buf.getShort();
+							data = new byte[(int) len];
+							buf.get(data);
+							if (masked) {
+								int mp = 0;
+								for (int p = 0; p < data.length; p++)
+									data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
+							}
+							short reason = (short) ((data[1]&255)+(data[0]<<8));
+							//System.err.printf("close code %x %x %d%n", data[0], data[1], reason);
 							cr = new CloseReason(CloseCodes.getCloseCode(reason), "");
+							// TODO clean all len
 						}
 					System.err.printf("close(%s) %n", cr);
 					try {
@@ -384,8 +387,10 @@ public class SimpleSession implements Session {
 			// 
 			mh.destroy();
 		}
-		if (basicRemote != null)
+		if (basicRemote != null) {
 			basicRemote.destroy();
+			basicRemote = null;
+		}
 	}
 
 	@Override
@@ -429,8 +434,9 @@ public class SimpleSession implements Session {
 
 	@Override
 	public Set<MessageHandler> getMessageHandlers() {
-		// TODO Auto-generated method stub
-		return null;
+		HashSet<MessageHandler> result = new HashSet<MessageHandler>();
+		
+		return result;
 	}
 
 	@Override
@@ -624,6 +630,8 @@ public class SimpleSession implements Session {
 								for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
 									Method dm = null;
 									try {
+										// TODO consider if more robust to use dc.getInterfaces();
+										// or simply instantiate and then check?
 										dm = dc.getDeclaredMethod("decode", String.class);
 									} catch (NoSuchMethodException e1) {
 										// TODO Auto-generated catch block
@@ -642,6 +650,7 @@ public class SimpleSession implements Session {
 												throw new IllegalArgumentException(
 														"Only one text messages handler is allowed");
 											onText = m;
+											paramMapText = pmap;
 										} catch (InstantiationException e) {
 											// TODO Auto-generated catch block
 											e.printStackTrace();
@@ -856,6 +865,7 @@ public class SimpleSession implements Session {
 								e.printStackTrace();
 								processError(e);
 							}
+						break;
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
 						params[pi] = null;
@@ -871,7 +881,8 @@ public class SimpleSession implements Session {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
+			} else 
+				System.err.printf("No handler for text mess %s%n", t);
 		}
 
 		void processOpen() {
@@ -975,11 +986,13 @@ public class SimpleSession implements Session {
 		boolean masked;
 		boolean cont;
 		HashMap<Class<?>, Encoder> encoders;
+		boolean batchMode;
 
 		@Override
 		public void flushBatch() throws IOException {
-			// TODO Auto-generated method stub
-
+			if (batchMode ) {
+				
+			}
 		}
 
 		@Override
@@ -993,7 +1006,6 @@ public class SimpleSession implements Session {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException("Control fame data length can't exceed 125");
 			int lc = channel.write(createFrame(true, arg0));
-
 		}
 
 		@Override
@@ -1001,13 +1013,11 @@ public class SimpleSession implements Session {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException("Control fame data length can't exceed 125");
 			int lc = channel.write(createFrame(false, arg0));
-
 		}
 
 		@Override
 		public void setBatchingAllowed(boolean arg0) throws IOException {
-			// TODO Auto-generated method stub
-
+			batchMode = arg0;
 		}
 
 		@Override
@@ -1016,8 +1026,8 @@ public class SimpleSession implements Session {
 
 				@Override
 				public void close() throws IOException {
-					super.close();
 					sendBinary(ByteBuffer.wrap(toByteArray()));
+					super.close();
 				}
 
 			};
@@ -1031,7 +1041,7 @@ public class SimpleSession implements Session {
 		@Override
 		public void sendBinary(ByteBuffer arg0) throws IOException {
 			int lc = channel.write(createFrame(arg0, true, true));
-
+			System.err.printf("Sent %d bytes binarry%n", lc);
 		}
 
 		@Override
@@ -1069,8 +1079,8 @@ public class SimpleSession implements Session {
 			if (ec instanceof Encoder.Text) {
 				sendText(((Encoder.Text)ec).encode(arg0));
 			} else if (ec instanceof Encoder.TextStream) {
-			} else if (ec instanceof Encoder.TextStream) {
-			} else if (ec instanceof Encoder.TextStream) {
+			} else if (ec instanceof Encoder.Binary) {
+			} else if (ec instanceof Encoder.BinaryStream) {
 				
 			} else
 				throw new EncodeException(ec, "The encoder doesn't rpvide proper encding method");
@@ -1121,8 +1131,10 @@ public class SimpleSession implements Session {
 		}
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
+			System.err.printf("Sending %d bytes as final %b as first %b%n", bbp.remaining(), fin, first);
 			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
 			bb.put(bbp).flip();
+			System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp, bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2), bb.get(3));
 			return bb;
 		}
 
@@ -1133,7 +1145,7 @@ public class SimpleSession implements Session {
 		}
 
 		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin, boolean first) {
-			if (cmd != 2 && cmd != 2) {
+			if (cmd != 1 && cmd != 2) {
 				fin = first = true;
 			}
 			int bl = 2;
@@ -1158,7 +1170,7 @@ public class SimpleSession implements Session {
 				hb |= cmd;
 			bb.put(hb).put(lm);
 			if (len > 125)
-				if (len < Short.MAX_VALUE)
+				if (len <= Short.MAX_VALUE)
 					bb.putShort((short) len);
 				else
 					bb.putLong(len);
