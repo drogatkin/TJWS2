@@ -167,178 +167,127 @@ public class SimpleSession implements Session {
 					break readmore;
 			case data:
 				System.err.printf("data oper 0%x len %d%n", oper, len);
-				boolean contin = oper == 0;
-				if (contin)
-					oper = frameText ? 1 : 2;
-				switch (oper) {
-				case 0:
-					// TODO provide accum content flag
-					// break;
-					throw new IllegalStateException();
-				case 1:
-					avail = buf.remaining();// buf.limit() - buf.position();
-					frameText = true;
-					if (dataLen == 0) {
-						if (avail >= len) {
-							data = new byte[(int) len];
-							buf.get(data);
-							dataLen = (int) len;
-						} else {
-							data = new byte[(int) avail];
-							buf.get(data);
-							dataLen = avail;
-						}
-					} else {
-						// if (dataLen+avail >= len) {
-						int sl = (int) Math.min(avail, len - dataLen);
-						data = Arrays.copyOf(data, dataLen + sl);
-						buf.get(data, dataLen, sl);
-						dataLen += sl;
-						// } else {
-						// data = Arrays.copyOf(data, avail);
-						// }
-					}
-					if (dataLen == len) { // all data
-						state = FrameState.header;
-						if (masked) {
-							int mp = 0;
-							for (int p = 0; p < data.length; p++)
-								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
-						}
-						if (!contin)
-							completeData = data;
-						else {
-							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
-							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
-						}
-						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process text part %s%n", mh);
-							mh.processText(bytesToString(data), frameFinal);
-						}
-						if (frameFinal) {
-							for (SimpleMessageHandler mh : handlers) {
-								System.err.printf("process text all %s%n", mh);
-								mh.processText(bytesToString(completeData));
-							}
-						}
-					} else
-						break readmore;
-					break;
-				case 2:
-					frameText = false;
-					System.err.printf("bin%n");
-					avail = buf.remaining();// buf.limit() - buf.position();
+				boolean contin = false;
+				//if (contin)
+				//oper = frameText ? 1 : 2;
 
-					if (dataLen == 0) {
-						if (avail >= len) {
-							data = new byte[(int) len];
-							buf.get(data);
-							dataLen = (int) len;
-						} else {
-							data = new byte[(int) avail];
-							buf.get(data);
-							dataLen = avail;
-						}
-					} else {
-						// if (dataLen+avail >= len) {
-						int sl = (int) Math.min(avail, len - dataLen);
-						data = Arrays.copyOf(data, dataLen + sl);
-						buf.get(data, dataLen, sl);
-						dataLen += sl;
-						// } else {
-						// data = Arrays.copyOf(data, avail);
-						// }
-					}
-					if (dataLen == len) { // all data
-						state = FrameState.header;
-						if (masked) {
-							int mp = 0;
-							for (int p = 0; p < data.length; p++)
-								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
-						}
-						boolean partBinConsumed = false;
-						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process text %s%n", mh);
-							partBinConsumed |= mh.processBinary(data, frameFinal);
-						}
-						if (!contin)
-							completeData = data;
-						else {
-							completeData = Arrays.copyOf(completeData, completeData.length + data.length);
-							System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
-						}
-						if (frameFinal) {
-							for (SimpleMessageHandler mh : handlers) {
-								System.err.printf("process text %s%n", mh);
-								mh.processBinary(completeData);
-							}
-						}
-					} else
-						break readmore;
-					break;
-				case 8: // close
-					CloseReason cr = null;
-					avail = buf.remaining();
-					state = FrameState.header;
-					if (len >= 0)
-						if (avail >= 2) {
-							data = new byte[(int) len];
-							buf.get(data);
-							if (masked) {
-								int mp = 0;
-								for (int p = 0; p < data.length; p++)
-									data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
-							}
-							short reason = (short) ((data[1]&255)+(data[0]<<8));
-							//System.err.printf("close code %x %x %d%n", data[0], data[1], reason);
-							cr = new CloseReason(CloseCodes.getCloseCode(reason), "");
-							// TODO clean all len
-						}
-					System.err.printf("close(%s) %n", cr);
-					try {
-						// TODO find out reason
-						// TODO send close frame as well
-						close(cr);
-						channel.close();
-					} catch (IOException e1) {
-
-					}
-					state = FrameState.header;
-					break;
-				case 0x9: // ping
-					avail = buf.remaining();
+				avail = buf.remaining();
+				if (dataLen == 0) {
 					if (avail >= len) {
-						state = FrameState.header;
 						data = new byte[(int) len];
 						buf.get(data);
-						dataLen = data.length;
-						// TODO send pong
-					}
-					break;
-				case 0xa: // pong
-					avail = buf.remaining();
-					if (avail >= len) {
-						state = FrameState.header;
-						data = new byte[(int) len];
+						dataLen = (int) len;
+					} else {
+						data = new byte[(int) avail];
 						buf.get(data);
-						dataLen = data.length;
+						dataLen = avail;
+					}
+				} else {
+					int sl = (int) Math.min(avail, len - dataLen);
+					data = Arrays.copyOf(data, dataLen + sl);
+					buf.get(data, dataLen, sl);
+					dataLen += sl;
+				}
+				if (dataLen == len) { // all data
+					state = FrameState.header;
+					if (masked) {
+						int mp = 0;
+						for (int p = 0; p < data.length; p++)
+							data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
+					}
+					switch (oper) {
+					case 1:
+						frameText = true;
+						break;
+					case 2:
+						frameText = false;
+						break;
+					}
+					switch (oper) {
+					case 8: // close
+						CloseReason cr = null;
+						if (data != null && data.length >= 2) {
+						short reason = (short) ((data[1] & 255) + (data[0] << 8));
+						String msg;
+						if (data.length > 2) {
+							msg = bytesToString(Arrays.copyOfRange(data, 2, data.length));
+						}
+						else
+							msg = "";
+						cr = new CloseReason(CloseCodes.getCloseCode(reason), msg);
+						}
+						// TODO clean all len
+						System.err.printf("close(%s) %n", cr);
+						try {
+							((SimpleBasic)getBasicRemote()).sendEcho((byte) 8, data);
+							// TODO send close frame as well
+							close(cr);
+							channel.close();
+						} catch (IOException e1) {
+
+						}
+						break;
+					case 0x9: // ping
+						try {
+							((SimpleBasic)getBasicRemote()).sendEcho((byte) 10, data);
+						} catch (IOException e1) {
+							container.log(e1, "Problem in returning pong");
+						}
+						break;
+					case 0xa: // pong
 						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process text %s%n", mh);
+							System.err.printf("process pong %s%n", mh);
 							mh.processPong(data);
 						}
+						break;
+					case 0:
+						contin = true;
+					case 1:
+					case 2:
+						boolean partConsumed = false;
+						if (frameText) {
+							for (SimpleMessageHandler mh : handlers) {
+								partConsumed |= mh.processText(bytesToString(data), frameFinal);
+								System.err.printf("process text part %s - %b%n", mh, partConsumed);
+							}
+						} else {
+							for (SimpleMessageHandler mh : handlers) {
+								partConsumed |= mh.processBinary(data, frameFinal);
+								System.err.printf("process binary part %s - %b%n", mh, partConsumed);
+							}
+						}
+						if (partConsumed == false) {
+							if (!contin)
+								completeData = data;
+							else {
+								completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+								System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
+							}
+							if (frameFinal) {
+								if (frameText) {
+									for (SimpleMessageHandler mh : handlers) {
+										mh.processText(bytesToString(completeData));
+										System.err.printf("process text %s%n", mh);
+									}
+								} else {
+									for (SimpleMessageHandler mh : handlers) {
+										mh.processBinary(completeData);
+										System.err.printf("process binary %s%n", mh);
+									}
+								}
+							}
+						}
+						break;
+					default:
+						System.err.printf(" Invalid frame op 0%x, len %d%n", oper, len);
+						try {
+							close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
+									+ oper));
+						} catch (IOException e) {
+							container.log(e, "Exception at clososing");
+						}
+						break readmore;
 					}
-					break;
-				default:
-					System.err.printf(" Invalid frame op 0%x, len %d%n", oper, len);
-					try {
-						close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
-								+ oper));
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					break readmore;
-
 				}
 				forceOp = false;
 			}
@@ -403,7 +352,7 @@ public class SimpleSession implements Session {
 	public Basic getBasicRemote() {
 		// TODO investigate if possible to use from different threads
 		if (basicRemote == null)
-			basicRemote = new SimpleBasic(); 
+			basicRemote = new SimpleBasic();
 		return basicRemote;
 	}
 
@@ -435,7 +384,7 @@ public class SimpleSession implements Session {
 	@Override
 	public Set<MessageHandler> getMessageHandlers() {
 		HashSet<MessageHandler> result = new HashSet<MessageHandler>();
-		
+
 		return result;
 	}
 
@@ -564,6 +513,7 @@ public class SimpleSession implements Session {
 
 		Object endpoint;
 		Object result;
+
 		//ServerEndpointConfig endpointConfig;
 
 		SimpleMessageHandler() {
@@ -881,7 +831,7 @@ public class SimpleSession implements Session {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			} else 
+			} else
 				System.err.printf("No handler for text mess %s%n", t);
 		}
 
@@ -990,8 +940,8 @@ public class SimpleSession implements Session {
 
 		@Override
 		public void flushBatch() throws IOException {
-			if (batchMode ) {
-				
+			if (batchMode) {
+
 			}
 		}
 
@@ -1077,20 +1027,20 @@ public class SimpleSession implements Session {
 			if (ec == null)
 				throw new EncodeException(arg0, "There is no encoder");
 			if (ec instanceof Encoder.Text) {
-				sendText(((Encoder.Text)ec).encode(arg0));
+				sendText(((Encoder.Text) ec).encode(arg0));
 			} else if (ec instanceof Encoder.TextStream) {
 			} else if (ec instanceof Encoder.Binary) {
 			} else if (ec instanceof Encoder.BinaryStream) {
-				
+
 			} else
 				throw new EncodeException(ec, "The encoder doesn't rpvide proper encding method");
 
 		}
 
 		private void initEncoders() {
-			encoders = new HashMap<Class<?>, Encoder>(); 
-			for (Class<? extends Encoder> ec :endpointConfig.getEncoders()) {
-				for (Method em :ec.getDeclaredMethods()) {
+			encoders = new HashMap<Class<?>, Encoder>();
+			for (Class<? extends Encoder> ec : endpointConfig.getEncoders()) {
+				for (Method em : ec.getDeclaredMethods()) {
 					System.err.printf("method %s returns %s%n", em.getName(), em.getReturnType());
 					if (!"encode".equals(em.getName()))
 						continue;
@@ -1115,7 +1065,7 @@ public class SimpleSession implements Session {
 						//throw new IllegalArgumentException ("Only text encoders are implemented - "+rt+" for method "+em.getName());
 				}
 			}
-			
+
 		}
 
 		@Override
@@ -1129,12 +1079,19 @@ public class SimpleSession implements Session {
 			int lc = channel.write(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
+		
+		void sendEcho(byte op, byte[] data) throws IOException {
+			ByteBuffer bb = prepreFrameHeader(op, data.length, true, true);
+			bb.put(data).flip();
+			int lc = channel.write(bb);
+		}
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
 			System.err.printf("Sending %d bytes as final %b as first %b%n", bbp.remaining(), fin, first);
 			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
 			bb.put(bbp).flip();
-			System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp, bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2), bb.get(3));
+			System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp, bb.remaining(), bb, bb.get(0), bb.get(1),
+					bb.get(2), bb.get(3));
 			return bb;
 		}
 
@@ -1198,10 +1155,10 @@ public class SimpleSession implements Session {
 			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
-		
+
 		void destroy() {
 			if (encoders != null)
-				for (Encoder ec:encoders.values())
+				for (Encoder ec : encoders.values())
 					ec.destroy();
 		}
 

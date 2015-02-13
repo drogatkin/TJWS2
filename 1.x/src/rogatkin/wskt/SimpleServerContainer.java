@@ -135,5 +135,23 @@ public class SimpleServerContainer implements ServerContainer {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	void log(String msg, Object ...params) {
+		log(null, msg, params);
+	}
+	
+	void log(Throwable e, String msg, Object ...params) {
+		msg = "websocket : "+msg;
+		if (e == null)
+			if (params == null || params.length == 0)
+				provider.serve.log(msg);
+			else
+				provider.serve.log(String.format(msg, params));
+		else
+			if (params == null || params.length == 0)
+				provider.serve.log(msg, e);
+			else
+				provider.serve.log(String.format(msg, params), e);
+	}
 
 }

@@ -2,6 +2,7 @@ package tjws.test;
 
 import java.io.*;
 import java.nio.file.*;
+import java.util.List;
 import java.io.File;
 
 import javax.websocket.*;
@@ -21,7 +22,10 @@ public class SlideServer {
 
 	@OnMessage
 	public void showSlideNo(Integer slideNo, Session ses, @PathParam("mode") String mode) {
-		File slideDir = new File("");
+		List<String> params = ses.getRequestParameterMap().get("dir");
+		if (params == null || params.size() == 0)
+			return;
+		File slideDir = new File(params.get(0).trim());
 		File[] slides = slideDir.listFiles();
 		if (slides.length > 0) {
 			if (slideNo < 0)
@@ -30,6 +34,9 @@ public class SlideServer {
 				slideNo = slides.length - 1;
 		}
 
+		if (slides[slideNo].isDirectory()) {
+			return;
+		}
 		try (FileInputStream slideIm = new FileInputStream(slides[slideNo]);
 				OutputStream webIm = ses.getBasicRemote().getSendStream()) {
 			Utils.copyStream(slideIm, webIm, 0);

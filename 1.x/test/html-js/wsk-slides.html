@@ -2,14 +2,15 @@
 
 <html>
     <head>
-        <title>File System Monitor</title>
+        <title>Slide show</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
     </head>
     <body>
 
         <div>
-            <input type="text" id="numinput"/>
+            Slide No: <input type="text" id="numinput"/> 
+            &nbsp; &nbsp; &nbsp; &nbsp; Directory : <input type="text" id="dirinput" size="30"/>
         </div>
         <div>
             <button type="button" onclick="startSlides();" >Start</button>
@@ -25,7 +26,6 @@
             var webSocket;
             var messages = document.getElementById("messages");
             
-            
             function startSlides(){
                 // Ensures only one connection is open at a time
                 if(webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED){
@@ -33,7 +33,7 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/slides/"+document.getElementById("numinput").value);
+                webSocket = new WebSocket("ws://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/slides/one?dir="+encodeURIComponent(document.getElementById("dirinput").value));
                  
                 /**
                  * Binds functions to the listeners for the websocket.
