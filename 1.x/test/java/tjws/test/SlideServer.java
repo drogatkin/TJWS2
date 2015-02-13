@@ -34,14 +34,16 @@ public class SlideServer {
 				slideNo = slides.length - 1;
 		}
 
-		if (slides[slideNo].isDirectory()) {
-			return;
-		}
 		try (FileInputStream slideIm = new FileInputStream(slides[slideNo]);
 				OutputStream webIm = ses.getBasicRemote().getSendStream()) {
 			Utils.copyStream(slideIm, webIm, 0);
 		} catch (Exception e) {
 			e.printStackTrace();
+			try {
+				ses.getBasicRemote().sendText("Can't open "+e);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		}
 	}
 
