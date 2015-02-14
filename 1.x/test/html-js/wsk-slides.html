@@ -31,7 +31,7 @@
 			// Ensures only one connection is open at a time
 			if (webSocket !== undefined
 					&& webSocket.readyState !== WebSocket.CLOSED) {
-				writeResponse("Monitor is in progress.");
+				writeResponse("Show is in progress.");
 				return;
 			}
 			// Create a new instance of the websocket

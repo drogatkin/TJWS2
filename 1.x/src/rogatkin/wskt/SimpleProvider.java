@@ -27,6 +27,7 @@ import Acme.Utils;
 import Acme.Serve.Serve;
 import Acme.Serve.Serve.WebsocketProvider;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -270,7 +271,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 				}
 		}
-		servlet.getServletConfig().getServletContext().setAttribute("javax.websocket.server.ServerContainer", ssc);
+		ServletContext servCtx = servlet.getServletConfig().getServletContext(); 
+		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);
+		servCtx.addListener(ssc);
 	}
 
 	String getSHA1Base64(String key) {

@@ -1228,6 +1228,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     			file = new File(deployDir, "WEB-INF/classes");
     			if (file.exists() && file.isDirectory())
     				result.add(file);
+    			if (webApp.listeners == null)
+    				webApp.listeners = new ArrayList<EventListener>(2);
     			webApp.server.websocketProvider.deploy(webApp, result);
         	}
         	return webApp;
@@ -2301,7 +2303,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	 */
 	@Override
 	public <T extends EventListener> void addListener(T t) {
-		throw new UnsupportedOperationException();
+		listeners.add(t);
 	}
 
 	/**

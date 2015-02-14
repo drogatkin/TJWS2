@@ -2,15 +2,22 @@ package rogatkin.wskt;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.websocket.ClientEndpointConfig;
+import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Extension;
 import javax.websocket.Session;
+import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -20,14 +27,17 @@ import javax.websocket.server.ServerEndpointConfig;
  * @author Dmitriy
  *
  */
-public class SimpleServerContainer implements ServerContainer {
+public class SimpleServerContainer implements ServerContainer, ServletContextListener {
 
 	HashMap<String, ServerEndpointConfig> endpoints;
 	SimpleProvider provider;
 	
+	HashSet<SimpleSession> sessions;
+	
 	SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
 		endpoints = new HashMap<String, ServerEndpointConfig>();
+		sessions = new HashSet<SimpleSession>(); 
 	}
 
 	@Override
@@ -153,5 +163,35 @@ public class SimpleServerContainer implements ServerContainer {
 			else
 				provider.serve.log(String.format(msg, params), e);
 	}
+
+	@Override
+	public void contextDestroyed(ServletContextEvent arg0) {
+		CloseReason cr = new CloseReason(CloseCodes.SERVICE_RESTART,"");
+		//ArrayList <SimpleSession> copyss = new ArrayList<SimpleSession>(sessions);
+		for(SimpleSession ss:new ArrayList<SimpleSession>(sessions))
+			try {
+				System.err.printf("Closing session %s%n", ss);
+				ss.close(cr);
+			} catch (IOException e) {
+				
+			}
+		sessions.clear();
+	}
+
+	@Override
+	public void contextInitialized(ServletContextEvent arg0) {
+		
+	}
+	
+	void addSession(SimpleSession ss) {
+		sessions.add(ss);
+	}
+	
+	void removeSession(SimpleSession ss) {
+		sessions.remove(ss);
+	}
+	
+	
+
 
 }
