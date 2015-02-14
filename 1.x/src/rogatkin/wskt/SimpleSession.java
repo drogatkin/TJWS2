@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
@@ -37,6 +38,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.PongMessage;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
+import javax.websocket.SendHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
@@ -609,6 +611,36 @@ public class SimpleSession implements Session {
 											e.printStackTrace();
 										}
 									}
+									try {
+										// TODO consider if more robust to use dc.getInterfaces();
+										// or simply instantiate and then check?
+										dm = dc.getDeclaredMethod("decode", ByteBuffer.class);
+									} catch (NoSuchMethodException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									} catch (SecurityException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									if (dm != null && t == dm.getReturnType()) {
+										// TODO since several decoders can match, then add all and do willDecode(String) at runtime
+										try {
+											pmap[pi].decoder = dc.newInstance();
+											pmap[pi].decoder.init(endpointConfig);
+											pmap[pi].sourceType = DECODER;
+											if (onBin != null)
+												throw new IllegalArgumentException(
+														"Only one binary messages handler is allowed");
+											onBin = m;
+											paramMapBin = pmap;
+										} catch (InstantiationException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										} catch (IllegalAccessException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+									}
 								}
 							}
 						}
@@ -772,23 +804,77 @@ public class SimpleSession implements Session {
 
 		boolean processBinary(byte[] b, boolean f) {
 			if (onBin != null && partBin) {
+				processBinary(b, f);
 				return true;
 			}
 			return false;
 		}
 
 		void processBinary(byte[] b) {
-
+			processBinary(b, null);
+		}
+		
+		void processBinary(byte[] b, Boolean part) {
+			if (onBin != null) {				
+				Class<?>[] paramts = onBin.getParameterTypes();
+				Object[] params = new Object[paramts.length];
+				for (int pi = 0; pi < params.length; pi++)
+					switch (paramMapBin[pi].sourceType) {
+					case BIN:
+						params[pi] = b;
+						break;
+					case SESSION_PARAM:
+						params[pi] = SimpleSession.this;
+						break;
+					case PATH_PARAM:
+						params[pi] = pathParamsMap.get(paramMapBin[pi].sourceName);
+						break;
+					case BOOLEAN:
+						params[pi] = part;
+						break;
+					case DECODER:
+						ByteBuffer bb = ByteBuffer.wrap(b)
+;						if (((Decoder.Binary) paramMapBin[pi].decoder).willDecode(bb))
+							try {
+								params[pi] = ((Decoder.Binary) paramMapBin[pi].decoder).decode(bb);
+							} catch (DecodeException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								processError(e);
+							}
+						break;
+					default:
+						System.err.printf("Unmapped bin  parameter %d%n", pi);
+						params[pi] = null;
+					}
+				try {
+					System.err.printf("Called %s%n", b);
+					result = onBin.invoke(endpoint, params);
+					if (result != null) {
+						if (result instanceof String)
+							getBasicRemote().sendText(result.toString());
+					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} else
+				System.err.printf("No handler for binary mess %s%n", b);
 		}
 
 		boolean processText(String t, boolean f) {
 			if (onText != null && partText) {
+				processText(t, f);
 				return true;
 			}
 			return false;
 		}
 
 		void processText(String t) {
+			processText(t, null);
+		}
+		
+		void processText(String t, Boolean part) {
 			if (onText != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
@@ -804,7 +890,7 @@ public class SimpleSession implements Session {
 						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
 						break;
 					case BOOLEAN:
-						params[pi] = null;
+						params[pi] = part;
 						break;
 					case DECODER:
 						if (((Decoder.Text) paramMapText[pi].decoder).willDecode(t))
@@ -1169,6 +1255,88 @@ public class SimpleSession implements Session {
 			mh.processOpen();
 		}
 
+	}
+	
+	static class SimpleAsync implements Async {
+
+		@Override
+		public void flushBatch() throws IOException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean getBatchingAllowed() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void setBatchingAllowed(boolean arg0) throws IOException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public long getSendTimeout() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public Future<Void> sendBinary(ByteBuffer arg0) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void sendBinary(ByteBuffer arg0, SendHandler arg1) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public Future<Void> sendObject(Object arg0) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void sendObject(Object arg0, SendHandler arg1) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public Future<Void> sendText(String arg0) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void sendText(String arg0, SendHandler arg1) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void setSendTimeout(long arg0) {
+			// TODO Auto-generated method stub
+			
+		}
+		
 	}
 
 }

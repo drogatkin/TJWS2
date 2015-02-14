@@ -98,6 +98,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		//resp.addHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.UPGRADE);
 		resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=3000");
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
+		
+		// TODO copy code from upgrade to find endpoint, and then preserve endpoint in request attribute
+		// also take configurator and checkorigin, negotiate extension and protocols and finally apply modifyHandshake
 	}
 
 	@Override
