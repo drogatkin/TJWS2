@@ -1,11 +1,14 @@
 package rogatkin.wskt;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -551,6 +554,9 @@ public class SimpleSession implements Session {
 		private static final int THROWABLE_PARAM = 8;
 		private static final int PONG = 9;
 		private static final int DECODER = 10;
+		private static final int READER = 11;
+		private static final int BYTEBUF = 12;
+		private static final int INPUT = 13;
 
 		Method onText, onBin, onPong;
 		Method onOpen;
@@ -614,16 +620,34 @@ public class SimpleSession implements Session {
 							pmap[pi].sourceType = BOOLEAN;
 							partReq = true;
 						} else if (t == byte[].class) {
-							pmap[pi].sourceType = BIN;
 							if (onBin != null)
 								throw new IllegalArgumentException(
 										"Only one binary messages handler is allowed");
+							pmap[pi].sourceType = BIN;
 							onBin = m;
 							paramMapBin = pmap;
 							primeBin = true;
 						} else if (t == Reader.class) {
+							if (onText != null)
+								throw new IllegalArgumentException(
+										"Only one text messages handler is allowed");
+							onText = m;
+							pmap[pi].sourceType = READER;
+							paramMapText = pmap;
 						} else if (t == ByteBuffer.class) {
+							if (onBin != null)
+								throw new IllegalArgumentException(
+										"Only one binary messages handler is allowed");
+							onBin = m;
+							pmap[pi].sourceType = BYTEBUF;
+							paramMapBin = pmap;
 						} else if (t == InputStream.class) {
+							if (onBin != null)
+								throw new IllegalArgumentException(
+										"Only one binary messages handler is allowed");
+							onBin = m;
+							pmap[pi].sourceType = INPUT;
+							paramMapBin = pmap;
 						} else if (t == PongMessage.class) {
 							pmap[pi].sourceType = PONG;
 							onPong = m;
@@ -915,6 +939,12 @@ public class SimpleSession implements Session {
 								processError(e);
 							}
 						break;
+					case BYTEBUF:
+						params[pi] = ByteBuffer.wrap(b);
+						break;
+					case INPUT:
+						params[pi] = new ByteArrayInputStream(b);
+						break;
 					default:
 						System.err.printf("Unmapped bin  parameter %d%n", pi);
 						params[pi] = null;
@@ -976,6 +1006,9 @@ public class SimpleSession implements Session {
 								e.printStackTrace();
 								processError(e);
 							}
+						break;
+					case READER:
+						params[pi] = new StringReader(t);
 						break;
 					default:
 						System.err.printf("Unmapped text  parameter %d%n", pi);
@@ -1150,6 +1183,7 @@ public class SimpleSession implements Session {
 
 				@Override
 				public void close() throws IOException {
+					flush();
 					sendBinary(ByteBuffer.wrap(toByteArray()));
 					super.close();
 				}
@@ -1159,7 +1193,17 @@ public class SimpleSession implements Session {
 
 		@Override
 		public Writer getSendWriter() throws IOException {
-			return new OutputStreamWriter(getSendStream());
+			return new StringWriter() {
+
+				@Override
+				public void close() throws IOException {
+					flush();
+					sendText(toString());
+					super.close();
+				}
+				
+			};
+			
 		}
 
 		@Override
