@@ -137,6 +137,7 @@ library.
 	<li>Simple configuration, no hundreds of config parameters</li>
   <li>Flexible JSP support</li>
     <li>Limited JSS 3.0 support (JSR 315)</li>
+    <li>JSR 356 support (websocket)</li>
     <li>Built for Java 7 with intelligent downgraded support for Java 2
     </li>
     <li>Runs on Android and Blackberry platforms out of the box</li>
@@ -147,7 +148,7 @@ library.
 was ACME Java Web Server. It was pretty good, but supported only JSS 1.x and JDK 1.02. Since my servlets required a bit more, I have added
 support for contemporary versions of JDK and JSDK. I just continued adding
 more features and providing bug fixes after. The current version is mostly
-compatible with the latest servlet container specification (3.0).</p>
+compatible with the latest servlet container specification (3.0) and offers also websocket support.</p>
 		</td>
 	</tr>
 </table>
@@ -155,7 +156,7 @@ compatible with the latest servlet container specification (3.0).</p>
     Competitors</h4>
 <p>
     Main competitors for TJWS are Winstone, LWS, and Jetty. TJWS can successfully compete
-    with more established and reputable servers as Tomcat and JBOSS. Main benefits of TJWS are
+    with more established and reputable servers as Tomcat, Glassfish, and JBOSS. Main benefits of TJWS are
     simplicity and tiny footprint.</p>
 <a name="design"></a><h4>
     Design
@@ -178,7 +179,7 @@ BSD license, however GNU JSP providers can be reached in previous versions. I do
 Only <a href="#jasper">Jasper</a> is currently supported as JSP provider. However I separate it to avoid any licensing issues.
 Base module, and J2EE deployment modules have sizes 100K, and 72K
 correspondingly. Jasper's size is about 580K. (I am still looking for help to separate Jasper on runtime and JSP parsing and compilation parts,
-it could be beneficial for Android deployment.) App server services module adds 46Kb.</p>
+it could be beneficial for Android deployment.) App server services module adds 46Kb. And finally websocket module adds 65Kb</p>
 <a name="configuration"></a><h4>
     Configuration</h4>
     <p>
@@ -505,11 +506,12 @@ implementation and other modules of the server</td>
     </p>
     <p>
         Since TJWS has a long history it supports as a legacy way of deployment and configuration
-        of servlets as a new .war based. The legacy deployment uses property 
+        of servlets as a new .war (web.xml) based. The legacy deployment uses property 
 files, like servlets.properties and aliases.properties. J2EE way is based 
-on .war and config.xml files. When a legacy way used, the server can keep a minimal 
+on web.xml and config.xml files. When a legacy way used, the server can keep a minimal 
 configuration and run on JDK version started from 1.2 (Actually the current version has 9 JDK
-        1.4 dependencies which can be easily corrected if JDK 1.2 is a real requirement).
+        1.4 dependencies which can be easily corrected if JDK 1.2 is a real requirement). Websocket
+        extension deployment uses the modern annotated classes mechanism.
         </p>
     <h4>    
     <a name="security"></a>Security</h4>
@@ -610,6 +612,7 @@ packaged socket factories as a reference implementation.</p>
   <li>ejb-ref - no</li>
   <li>ejb-local-ref - no</li>
   <li>new JSR315 - yes</li>
+  <li>new JSR356 - yes</li>
 </ul>
 <a name="appservices"></a>
 <h4>App server services</h4>
@@ -895,7 +898,7 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.107)
+(version 1.109)
 </p>
 
 <p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
@@ -970,6 +973,7 @@ version</a> (use kill to stop)</p><a name="version"></a>
     <li>Proper freeing resources in CGI servlet by Frank</li>
     <li>SSL handler default class updated  by Jan</li>
     <li>Reliable detection of chunked encoding by Darren</li>
+    <li>JSR (websocket) by Robert</>
 </ul>
  </font>
 <a name="apps"></a><h4>Tested web applications</h4>
@@ -1011,6 +1015,8 @@ The tool is available in sources at <a href="https://github.com/drogatkin/7Bee" 
         <li>SERVLET_BUILD - fully qualified path to binaries of classes of JSS, used only for packaging JSS
             in launcher packaging and can be omitted, unless launcher with JSP has to be built</li>
         <li>JSP_LIB - fully qualified path to jsp.jar or other lib/directory containing JSP API classes</li>
+        <li>WEBSOCKETS_CLIENT_LIB, and WEBSOCKETS_SERVER_LIB - fully qualified pathes for JSR 356 API client and server
+          jars respectfully</li>
     </ol>
 <font color=red>Note:</font> environment variables for versions prior 1.28 are slightly different.
     <a name="vm"></a>
