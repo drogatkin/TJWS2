@@ -1469,8 +1469,7 @@ public class SimpleSession implements Session {
 						basicRemote.sendBinary(arg0);
 						arg1.onResult(new SendResult());
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						arg1.onResult(new SendResult(e));
 					}
 					
 				}});
@@ -1498,8 +1497,7 @@ public class SimpleSession implements Session {
 						basicRemote.sendObject(arg0);
 						arg1.onResult(new SendResult());
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						arg1.onResult(new SendResult(e));
 					}
 					
 				}});
@@ -1527,8 +1525,7 @@ public class SimpleSession implements Session {
 						basicRemote.sendText(arg0);
 						arg1.onResult(new SendResult());
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						arg1.onResult(new SendResult(e));
 					}
 					
 				}});
