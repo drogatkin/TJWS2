@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -34,10 +36,13 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	
 	HashSet<SimpleSession> sessions;
 	
+	ExecutorService asyncService;
+	
 	SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
 		endpoints = new HashMap<String, ServerEndpointConfig>();
 		sessions = new HashSet<SimpleSession>(); 
+		asyncService = Executors.newSingleThreadExecutor();
 	}
 
 	@Override

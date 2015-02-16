@@ -58,6 +58,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	public static final String WSKT_RFC4122 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+	//static final ForkJoinPool mainPool = new ForkJoinPool();
+	
 	Selector selector;
 	Serve serve;
 

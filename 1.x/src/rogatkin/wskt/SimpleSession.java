@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import javax.websocket.CloseReason;
@@ -392,8 +393,8 @@ public class SimpleSession implements Session {
 
 	@Override
 	public Async getAsyncRemote() {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO maybe cache
+		return new SimpleAsync();
 	}
 
 	@Override
@@ -1201,9 +1202,9 @@ public class SimpleSession implements Session {
 					sendText(toString());
 					super.close();
 				}
-				
+
 			};
-			
+
 		}
 
 		@Override
@@ -1398,10 +1399,13 @@ public class SimpleSession implements Session {
 		for (SimpleMessageHandler mh : handlers) {
 			mh.processOpen();
 		}
-
 	}
 
-	static class SimpleAsync implements Async {
+	class SimpleAsync implements Async {
+
+		SimpleAsync() {
+			getBasicRemote();
+		}
 
 		@Override
 		public void flushBatch() throws IOException {
@@ -1418,15 +1422,14 @@ public class SimpleSession implements Session {
 		@Override
 		public void sendPing(ByteBuffer arg0) throws IOException,
 				IllegalArgumentException {
-			// TODO Auto-generated method stub
+			basicRemote.sendPing(arg0);
 
 		}
 
 		@Override
 		public void sendPong(ByteBuffer arg0) throws IOException,
 				IllegalArgumentException {
-			// TODO Auto-generated method stub
-
+			basicRemote.sendPong(arg0);
 		}
 
 		@Override
@@ -1442,9 +1445,17 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public Future<Void> sendBinary(ByteBuffer arg0) {
-			// TODO Auto-generated method stub
-			return null;
+		public Future<Void> sendBinary(final ByteBuffer arg0) {
+			return container.asyncService.submit(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					synchronized (basicRemote) { // TODO it can be not required since socket will synchronize
+						basicRemote.sendBinary(arg0);
+					}
+					return null;
+				}
+			});
 		}
 
 		@Override
@@ -1454,9 +1465,15 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public Future<Void> sendObject(Object arg0) {
-			// TODO Auto-generated method stub
-			return null;
+		public Future<Void> sendObject(final Object arg0) {
+			return container.asyncService.submit(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					basicRemote.sendObject(arg0);
+					return null;
+				}
+			});
 		}
 
 		@Override
@@ -1466,9 +1483,15 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public Future<Void> sendText(String arg0) {
-			// TODO Auto-generated method stub
-			return null;
+		public Future<Void> sendText(final String arg0) {
+			return container.asyncService.submit(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					basicRemote.sendText(arg0);
+					return null;
+				}
+			});
 		}
 
 		@Override
