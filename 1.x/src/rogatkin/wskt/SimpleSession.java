@@ -43,6 +43,7 @@ import javax.websocket.PongMessage;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
@@ -1459,9 +1460,20 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendBinary(ByteBuffer arg0, SendHandler arg1) {
-			// TODO Auto-generated method stub
+		public void sendBinary(final ByteBuffer arg0, final SendHandler arg1) {
+			container.asyncService.execute(new Runnable(){
 
+				@Override
+				public void run() {
+					try {
+						basicRemote.sendBinary(arg0);
+						arg1.onResult(new SendResult());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}});
 		}
 
 		@Override
@@ -1477,9 +1489,20 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendObject(Object arg0, SendHandler arg1) {
-			// TODO Auto-generated method stub
+		public void sendObject(final Object arg0, final SendHandler arg1) {
+			container.asyncService.execute(new Runnable(){
 
+				@Override
+				public void run() {
+					try {
+						basicRemote.sendObject(arg0);
+						arg1.onResult(new SendResult());
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}});
 		}
 
 		@Override
@@ -1495,9 +1518,20 @@ public class SimpleSession implements Session {
 		}
 
 		@Override
-		public void sendText(String arg0, SendHandler arg1) {
-			// TODO Auto-generated method stub
+		public void sendText(final String arg0, final SendHandler arg1) {
+			container.asyncService.execute(new Runnable(){
 
+				@Override
+				public void run() {
+					try {
+						basicRemote.sendText(arg0);
+						arg1.onResult(new SendResult());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}});
 		}
 
 		@Override

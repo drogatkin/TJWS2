@@ -181,6 +181,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 				
 			}
 		sessions.clear();
+		asyncService.shutdown();
 	}
 
 	@Override
