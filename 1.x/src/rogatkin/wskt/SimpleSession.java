@@ -83,7 +83,8 @@ public class SimpleSession implements Session {
 	Principal principal;
 	SimpleServerContainer container;
 	private SimpleBasic basicRemote;
-	private ServerEndpointConfig endpointConfig;
+	ServerEndpointConfig endpointConfig;
+	String subprotocol;
 
 	SimpleSession(SocketChannel sc, SimpleServerContainer c) {
 		channel = sc;
@@ -445,8 +446,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public String getNegotiatedSubprotocol() {
-		// TODO Auto-generated method stub
-		return null;
+		return subprotocol;
 	}
 
 	@Override
@@ -491,8 +491,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public Map<String, Object> getUserProperties() {
-		// TODO Auto-generated method stub
-		return null;
+		return endpointConfig.getUserProperties();
 	}
 
 	@Override
@@ -674,7 +673,6 @@ public class SimpleSession implements Session {
 											throw new IllegalArgumentException(
 													"Only one text messages handler is allowed");
 										try {
-
 											onText = m;
 											Decoder decoder = dc.newInstance();
 											decoder.init(endpointConfig);
@@ -886,8 +884,8 @@ public class SimpleSession implements Session {
 				try {
 					result = onPong.invoke(endpoint, params);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Error in sending pong");
+					processError(e);
 				}
 			}
 		}
@@ -955,7 +953,7 @@ public class SimpleSession implements Session {
 							getBasicRemote().sendText(result.toString());
 					}
 				} catch (Exception e) {
-					container.log(e, "Error in sending binary");
+					container.log(e, "Error in sending binary data");
 					processError(e);
 				}
 			} else

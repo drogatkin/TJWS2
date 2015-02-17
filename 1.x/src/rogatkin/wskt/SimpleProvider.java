@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,6 +41,8 @@ import javax.servlet.ServletException;
 import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
+import javax.websocket.Extension;
+import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -130,9 +133,14 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			}
 			epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
 
-			//epc.getConfigurator().getNegotiatedExtensions(arg0, arg1)
-			//epc.getSubprotocols()
-			// epc.getExtensions()
+			String protocol = req.getHeader(WSKT_PROTOCOL);
+			if (protocol != null) {
+				epc.getConfigurator().getNegotiatedSubprotocol(epc.getSubprotocols(), Arrays.asList(protocol.split(",")));
+			}
+			String extensions = req.getHeader(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS);
+			if (extensions != null) {
+				epc.getConfigurator().getNegotiatedExtensions(epc.getExtensions(), parseToExtensions(extensions));
+			}
 		}
 		req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
 		req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
@@ -146,7 +154,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=" + container.getDefaultMaxSessionIdleTimeout()
 					/ 1000);
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
-
 	}
 
 	@Override
@@ -306,7 +313,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	}
 
 	Map<String, String> matchTemplate(String uri, String template) {
-		System.err.printf("Matching %s to %s%n", uri, template);
+		//System.err.printf("Matching %s to %s%n", uri, template);
 		Map<Integer, String> parsed = parseTemplate(template);
 		Pattern p = Pattern.compile(parsed.get(0));
 		Matcher m = p.matcher(uri);
@@ -314,7 +321,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			HashMap<String, String> result = new HashMap<String, String>();
 			for (int i = 0; i < m.groupCount(); i++)
 				result.put(parsed.get(i + 1), m.group(i + 1));
-			System.err.printf("Success %s%n", result);
+			//System.err.printf("Success %s%n", result);
 			return result;
 		}
 		return null;
@@ -357,6 +364,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		}
 		result.put(0, regExp);
 		return result;
+	}
+	
+	/** parses ext1;param=val param=val, ext2
+	 * 
+	 * @param parse
+	 * @return
+	 */
+	List<Extension> parseToExtensions(String parse) {
+		return Collections.emptyList();
 	}
 
 	@Override
