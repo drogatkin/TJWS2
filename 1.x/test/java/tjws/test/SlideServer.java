@@ -17,16 +17,33 @@ import Acme.Utils;
  *                 the name of the package and "monitor" is the address to
  *                 access this class from the server
  */
-@ServerEndpoint(value = "/slides/{mode}", decoders={SlideServer.String2Int.class})
+@ServerEndpoint(value = "/slides/{mode}", decoders = { SlideServer.String2Int.class })
 public class SlideServer {
 
 	@OnMessage
-	public void showSlideNo(Integer slideNo, Session ses, @PathParam("mode") String mode) {
+	public void showSlideNo(Integer slideNo, Session ses,
+			@PathParam("mode") String mode) {
 		List<String> params = ses.getRequestParameterMap().get("dir");
 		if (params == null || params.size() == 0)
 			return;
 		File slideDir = new File(params.get(0).trim());
-		File[] slides = slideDir.listFiles();
+		File[] slides = slideDir.listFiles(new FileFilter() {
+			public boolean accept(File pathname) {
+				String n = pathname.getName().toLowerCase();
+				return pathname.isFile() && n.endsWith(".jpg")
+						|| n.endsWith(".gif") || n.endsWith(".png")
+						|| n.endsWith(".jpeg");
+			}
+		});
+		if (slides == null || slides.length == 0) {
+			try {
+				ses.getBasicRemote().sendText(
+						"Empty or non existent " + slideDir);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			return;
+		}
 		if (slides.length > 0) {
 			if (slideNo < 0)
 				slideNo = 0;
@@ -40,7 +57,7 @@ public class SlideServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 			try {
-				ses.getBasicRemote().sendText("Can't open "+e);
+				ses.getBasicRemote().sendText("Can't open " + e);
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -52,13 +69,13 @@ public class SlideServer {
 		@Override
 		public void destroy() {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		public void init(EndpointConfig arg0) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
@@ -83,6 +100,6 @@ public class SlideServer {
 			}
 			return false;
 		}
-		
+
 	}
 }
