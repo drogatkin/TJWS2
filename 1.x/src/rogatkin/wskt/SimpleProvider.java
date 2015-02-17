@@ -59,7 +59,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public static final String WSKT_RFC4122 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 	//static final ForkJoinPool mainPool = new ForkJoinPool();
-	
+
 	Selector selector;
 	Serve serve;
 
@@ -78,22 +78,67 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	@Override
 	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException {
+			throws IOException {
+		if (socket.getChannel() == null) {
+			resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "Websockets implemented only with SelectorAcceptor");
+			return;
+		}
 		String ver = req.getHeader(WSKT_VERSION);
 		if (ver == null || "13".equals(ver.trim()) == false) {
 			resp.addHeader(WSKT_VERSION, "13");
-			try {
-				resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
-			} catch (Exception e) {
-
-				e.printStackTrace();
-			}
+			resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			return;
 		}
 
 		String key = req.getHeader(WSKT_KEY);
-		if (key == null)
-			throw new ServletException("Sec Key is missed");
+		if (key == null) {
+			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Sec Key is missed");
+			return;
+		}
+		if (servlet != null) {
+			SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
+					.getAttribute("javax.websocket.server.ServerContainer");
+			if (container == null) {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
+				return;
+			}
+			String found = null;
+			int hops = -1;
+			Map<String, String> foundVarMap = null;
+			for (String p : container.endpoints.keySet()) {
+				Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
+				if (varMap != null) {
+					if (found == null || hops > varMap.size()) {
+						found = p;
+						hops = varMap.size();
+						foundVarMap = varMap;
+					}
+				}
+			}
+			if (found == null) {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No matching endpoint found for " + path);
+				return;
+			}
+			ServerEndpointConfig epc = container.endpoints.get(found);
+			if (epc.getConfigurator() != null) {
+				if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
+					resp.sendError(HttpServletResponse.SC_FORBIDDEN,
+							"Origin check failed : " + req.getHeader(WSKT_ORIGIN));
+					return;
+				}
+				epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
+
+				//epc.getConfigurator().getNegotiatedExtensions(arg0, arg1)
+				//epc.getSubprotocols()
+				// epc.getExtensions()
+			}
+			req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
+			req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
+		} else {
+			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No web application associated with " + path);
+			return;
+		}
+
 		resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
 		resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
 		resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
@@ -101,89 +146,59 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		//resp.addHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.UPGRADE);
 		resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=3000");
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
-		
-		// TODO copy code from upgrade to find endpoint, and then preserve endpoint in request attribute
-		// also take configurator and checkorigin, negotiate extension and protocols and finally apply modifyHandshake
+
 	}
 
 	@Override
 	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException {
+			throws IOException {
 		SocketChannel sc = socket.getChannel();
-		try {
+		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
+				.getAttribute("javax.websocket.server.ServerContainer");
+		ServerEndpointConfig epc = (ServerEndpointConfig) req
+				.getAttribute("javax.websocket.server.ServerEndpointConfig");
+		final SimpleSession ss = new SimpleSession(sc, container);
+		ss.addMessageHandler(epc);
+		ss.pathParamsMap = (Map<String, String>) req.getAttribute("javax.websocket.server.PathParametersMap");
+		if (req.getSession(false) != null) {
+			ss.id = req.getSession(false).getId();
+			// TODO this approach isn't robust and flexible, so consider as temporarly 
+			req.getSession(false).setAttribute("javax.websocket.server.session", new HttpSessionBindingListener() {
 
-			if (servlet != null) {
-				SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig()
-						.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
-				if (container == null)
-					throw new ServletException("No end points associated with path " + path);
-				String found = null;
-				int hops = -1;
-				Map<String, String> foundVarMap = null;
-				for (String p : container.endpoints.keySet()) {
-					Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
-					if (varMap != null) {
-						if (found == null || hops > varMap.size()) {
-							found = p;
-							hops = varMap.size();
-							foundVarMap = varMap;
-						}
+				@Override
+				public void valueBound(HttpSessionBindingEvent arg0) {
+
+				}
+
+				@Override
+				public void valueUnbound(HttpSessionBindingEvent arg0) {
+					try {
+						ss.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Session invalidate"));
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-				}
-				if (found == null)
-					throw new ServletException("No matching endpoint found for " + path);
-				sc.configureBlocking(false);
-				ServerEndpointConfig epc = container.endpoints.get(found);
-				if (epc.getConfigurator() != null
-						&& epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false)
-					throw new ServletException("Origin check failed : " + req.getHeader(WSKT_ORIGIN));
-				final SimpleSession ss = new SimpleSession(sc, container);
-				ss.addMessageHandler(epc);
-				ss.pathParamsMap = foundVarMap;
-				if (req.getSession(false) != null) {
-					ss.id = req.getSession(false).getId();
-					// TDO this approach isn't robust and flexible, so consider as temporarly 
-					req.getSession(false).setAttribute("javax.websocket.server.session", new HttpSessionBindingListener() {
-
-						@Override
-						public void valueBound(HttpSessionBindingEvent arg0) {
-							
-						}
-
-						@Override
-						public void valueUnbound(HttpSessionBindingEvent arg0) {
-							try {
-								ss.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Session invalidate"));
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							
-						}});
-				} else
-					ss.id = "wskt-" + serve.generateSessionId();
-				ss.soTimeout = socket.getSoTimeout();
-				ss.paramsMap = new HashMap<String, List<String>>();
-				for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
-					ss.paramsMap.put(e.getKey(), Arrays.asList(e.getValue()));
-				}
-				ss.query = req.getQueryString();
-				try {
-					ss.uri = new URI(req.getRequestURL().toString());
-				} catch (URISyntaxException e) {
 
 				}
-				
-				selector.wakeup();
-				sc.register(selector, SelectionKey.OP_READ, ss);
-				ss.open();
-			} else
-				// TODO looks also in default location
-				throw new ServletException("No web application associated with " + path);
-		} catch (/*ClosedChannelException */IOException cce) {
-			// TODO call onError
-			throw new ServletException("Can't register channel", cce);
+			});
+		} else
+			ss.id = "wskt-" + serve.generateSessionId();
+		ss.soTimeout = socket.getSoTimeout();
+		ss.paramsMap = new HashMap<String, List<String>>();
+		for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
+			ss.paramsMap.put(e.getKey(), Arrays.asList(e.getValue()));
 		}
+		ss.query = req.getQueryString();
+		try {
+			ss.uri = new URI(req.getRequestURL().toString());
+		} catch (URISyntaxException e) {
+
+		}
+		sc.configureBlocking(false);
+		selector.wakeup();
+		sc.register(selector, SelectionKey.OP_READ, ss);
+		ss.open();
+
 	}
 
 	@Override
@@ -273,7 +288,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 				}
 		}
-		ServletContext servCtx = servlet.getServletConfig().getServletContext(); 
+		ServletContext servCtx = servlet.getServletConfig().getServletContext();
 		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);
 		servCtx.addListener(ssc);
 	}

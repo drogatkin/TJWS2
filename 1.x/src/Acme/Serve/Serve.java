@@ -914,9 +914,9 @@ public class Serve implements ServletContext, Serializable {
     public static interface WebsocketProvider {
     	public void init(Serve serve);
     	
-    	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
+    	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws IOException;
        
-    	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws ServletException;
+    	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws IOException;
     	
     	public void destroy();
     	
