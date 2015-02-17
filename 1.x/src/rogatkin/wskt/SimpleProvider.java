@@ -95,56 +95,56 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Sec Key is missed");
 			return;
 		}
-		if (servlet != null) {
-			SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
-					.getAttribute("javax.websocket.server.ServerContainer");
-			if (container == null) {
-				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
-				return;
-			}
-			String found = null;
-			int hops = -1;
-			Map<String, String> foundVarMap = null;
-			for (String p : container.endpoints.keySet()) {
-				Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
-				if (varMap != null) {
-					if (found == null || hops > varMap.size()) {
-						found = p;
-						hops = varMap.size();
-						foundVarMap = varMap;
-					}
-				}
-			}
-			if (found == null) {
-				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No matching endpoint found for " + path);
-				return;
-			}
-			ServerEndpointConfig epc = container.endpoints.get(found);
-			if (epc.getConfigurator() != null) {
-				if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
-					resp.sendError(HttpServletResponse.SC_FORBIDDEN,
-							"Origin check failed : " + req.getHeader(WSKT_ORIGIN));
-					return;
-				}
-				epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
-
-				//epc.getConfigurator().getNegotiatedExtensions(arg0, arg1)
-				//epc.getSubprotocols()
-				// epc.getExtensions()
-			}
-			req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
-			req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
-		} else {
+		if (servlet == null) {
 			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No web application associated with " + path);
 			return;
 		}
+		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
+				.getAttribute("javax.websocket.server.ServerContainer");
+		if (container == null) {
+			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
+			return;
+		}
+		String found = null;
+		int hops = -1;
+		Map<String, String> foundVarMap = null;
+		for (String p : container.endpoints.keySet()) {
+			Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
+			if (varMap != null) {
+				if (found == null || hops > varMap.size()) {
+					found = p;
+					hops = varMap.size();
+					foundVarMap = varMap;
+				}
+			}
+		}
+		if (found == null) {
+			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No matching endpoint found for " + path);
+			return;
+		}
+		ServerEndpointConfig epc = container.endpoints.get(found);
+		if (epc.getConfigurator() != null) {
+			if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
+				resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Origin check failed : " + req.getHeader(WSKT_ORIGIN));
+				return;
+			}
+			epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
+
+			//epc.getConfigurator().getNegotiatedExtensions(arg0, arg1)
+			//epc.getSubprotocols()
+			// epc.getExtensions()
+		}
+		req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
+		req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
 
 		resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
 		resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
 		resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
 				+ Serve.ServeConnection.UPGRADE);
 		//resp.addHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.UPGRADE);
-		resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=3000");
+		if (container.getDefaultMaxSessionIdleTimeout() > 0)
+			resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=" + container.getDefaultMaxSessionIdleTimeout()
+					/ 1000);
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
 
 	}
