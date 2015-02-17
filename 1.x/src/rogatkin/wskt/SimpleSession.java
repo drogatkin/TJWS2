@@ -239,7 +239,7 @@ public class SimpleSession implements Session {
 						break;
 					case 0xa: // pong
 						for (SimpleMessageHandler mh : handlers) {
-							System.err.printf("process pong %s%n", mh);
+							//System.err.printf("process pong %s%n", mh);
 							mh.processPong(data);
 						}
 						break;
@@ -633,8 +633,6 @@ public class SimpleSession implements Session {
 										// or simply instantiate and then check?
 										dm = dc.getDeclaredMethod("decode", String.class);
 									} catch (NoSuchMethodException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
 									} catch (SecurityException e1) {
 										// TODO Auto-generated catch block
 										e1.printStackTrace();
@@ -666,8 +664,6 @@ public class SimpleSession implements Session {
 										// or simply instantiate and then check?
 										dm = dc.getDeclaredMethod("decode", ByteBuffer.class);
 									} catch (NoSuchMethodException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
 									} catch (SecurityException e1) {
 										// TODO Auto-generated catch block
 										e1.printStackTrace();
@@ -902,7 +898,7 @@ public class SimpleSession implements Session {
 						params[pi] = new ByteArrayInputStream(b);
 						break;
 					default:
-						System.err.printf("Unmapped bin  parameter %d%n", pi);
+						container.log("Unmapped binary parameter %d", pi);
 						params[pi] = null;
 					}
 				try {
@@ -913,11 +909,11 @@ public class SimpleSession implements Session {
 							getBasicRemote().sendText(result.toString());
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Error in sending binary");
+					processError(e);
 				}
 			} else
-				System.err.printf("No handler for binary mess %s%n", b);
+				container.log("No handler for binary message %s", b);
 		}
 
 		boolean processText(String t, boolean f) {
