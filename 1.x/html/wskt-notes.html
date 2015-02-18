@@ -1,0 +1,17 @@
+<html>
+<body>
+<h2>TJWS Websocket (JSR 356) extension module version 1.0 alpha </h2>
+<h3>Release notes</h3>
+<p>This is first release of JSR 356 implementation in scope of TJWS. The implementation is provided as TJWS extension module and 
+generally optional. It introduces extra dependency as fast classpath scan library which is used for end points deployment. The library
+ is forked at <a href="https://github.com/drogatkin/fast-classpath-scanner">GitHub</a>. 7Bee scripts are provided in the fork. End points
+ deployment is provided only in scope of J2EE deployed applications. The limitation can be reconsidered in future. Since websockets
+ use non blocking IO, they work only with SelectorAcceptor acceptor. 
+</p>
+<h3>Known problems and limitations</h3>
+<ol>
+<li>No SSL support</li>
+<li>No extensions processing and negotiation</li>
+</ol>
+</body>
+</html>

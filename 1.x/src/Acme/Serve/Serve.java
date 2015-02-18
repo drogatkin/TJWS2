@@ -1681,6 +1681,12 @@ public class Serve implements ServletContext, Serializable {
 				conn.asyncMode.notifyTimeout();
 				conn.keepAlive = false;
 				conn.joinAsync();
+			    } else if (conn.websocketUpgrade) {
+			    	try {
+			    		conn.socket.getChannel().close(); // TODO perhaps use normal close call 
+			    	} catch(Exception e) {
+			    		
+			    	}
 			    }
 			} else {
 			    long nd = conn.asyncTimeout - ct;

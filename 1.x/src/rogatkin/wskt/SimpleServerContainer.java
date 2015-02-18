@@ -40,6 +40,8 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	HashSet<SimpleSession> sessions;
 
 	ExecutorService asyncService;
+	
+	int defBufSize = 1024 * 8;
 
 	SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
@@ -104,8 +106,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public int getDefaultMaxBinaryMessageBufferSize() {
-		// TODO Auto-generated method stub
-		return 0;
+		return defBufSize;
 	}
 
 	@Override
@@ -116,8 +117,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public int getDefaultMaxTextMessageBufferSize() {
-		// TODO Auto-generated method stub
-		return 0;
+		return defBufSize;
 	}
 
 	@Override
@@ -134,8 +134,8 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public void setDefaultMaxBinaryMessageBufferSize(int arg0) {
-		// TODO Auto-generated method stub
-
+		if (arg0 > 1024)
+			defBufSize = arg0;
 	}
 
 	@Override
@@ -146,8 +146,8 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public void setDefaultMaxTextMessageBufferSize(int arg0) {
-		// TODO Auto-generated method stub
-
+		if (arg0 > 1024)
+			defBufSize = arg0;
 	}
 
 	void log(String msg, Object... params) {

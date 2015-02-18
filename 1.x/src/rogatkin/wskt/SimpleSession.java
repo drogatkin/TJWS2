@@ -73,7 +73,7 @@ public class SimpleSession implements Session {
 
 	String id;
 
-	int binBufSize = 1024 * 2;
+	final int DEF_BUF_SIZE = 1024 * 2;
 
 	int soTimeout;
 	Map<String, List<String>> paramsMap;
@@ -85,12 +85,13 @@ public class SimpleSession implements Session {
 	private SimpleBasic basicRemote;
 	ServerEndpointConfig endpointConfig;
 	String subprotocol;
+	List<Extension> extensions;
 
 	SimpleSession(SocketChannel sc, SimpleServerContainer c) {
 		channel = sc;
 		container = c;
 		container.addSession(this);
-		buf = ByteBuffer.allocate(binBufSize);
+		buf = ByteBuffer.allocate(DEF_BUF_SIZE);
 		buf.mark();
 		state = FrameState.prepare;
 		handlers = new HashSet<SimpleMessageHandler>();
@@ -418,7 +419,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public int getMaxBinaryMessageBufferSize() {
-		return binBufSize;
+		return buf.capacity();
 	}
 
 	@Override
@@ -428,7 +429,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public int getMaxTextMessageBufferSize() {
-		return binBufSize;
+		return buf.capacity();
 	}
 
 	@Override
@@ -440,8 +441,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public List<Extension> getNegotiatedExtensions() {
-		// TODO Auto-generated method stub
-		return null;
+		return extensions;
 	}
 
 	@Override
@@ -513,8 +513,8 @@ public class SimpleSession implements Session {
 
 	@Override
 	public void setMaxBinaryMessageBufferSize(int arg0) {
-		binBufSize = arg0;
-		// TODO apply to the buffer
+		if (buf.capacity() < arg0 && buf.remaining() == 0)
+		buf = ByteBuffer.allocate(arg0);
 	}
 
 	@Override
@@ -525,8 +525,8 @@ public class SimpleSession implements Session {
 
 	@Override
 	public void setMaxTextMessageBufferSize(int arg0) {
-		binBufSize = arg0;
-		// TODO apply to the buffer
+		if (buf.capacity() < arg0 && buf.remaining() == 0)
+			buf = ByteBuffer.allocate(arg0);
 	}
 
 	static class ParameterEntry {
@@ -1157,8 +1157,8 @@ public class SimpleSession implements Session {
 				IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException(
-						"Control fame data length can't exceed 125");
-			sendBuffer(createFrame(true, arg0));
+						"Control frame data length can't exceed 125");
+			sendBuffer(createFrame(true, arg0), true);
 		}
 
 		@Override
@@ -1167,7 +1167,7 @@ public class SimpleSession implements Session {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException(
 						"Control frame data length can't exceed 125");
-			int lc = channel.write(createFrame(false, arg0)); // TODO use sendBuffer( but without batch
+			sendBuffer(createFrame(false, arg0), true);
 		}
 
 		@Override
@@ -1218,15 +1218,24 @@ public class SimpleSession implements Session {
 		}
 		
 		void sendBuffer(ByteBuffer bb) throws IOException {
-			if (batchBuffer != null) {
+			sendBuffer(bb, false);
+		}
+		
+		void sendBuffer(ByteBuffer bb, boolean nobatch) throws IOException {
+			if (batchBuffer != null && !nobatch) {
 				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length+1);
 				batchBuffer[batchBuffer.length-1] = bb;
 			} else {
 				// TODO possibly iterate over until entire buffer sent
 				int len = bb.remaining();
 				int lc = channel.write(bb);
-				if (len > lc)
-					throw new IOException("Only "+lc+" of "+len+" sent");
+				if (len > lc) { 
+					// it looks like sending remaining doesn't work
+					//len = bb.remaining();
+					//lc = channel.write(bb);
+					//if (len > lc)
+						throw new IOException("Only "+lc+" of "+len+" sent");
+				}
 			}
 		}
 
@@ -1325,9 +1334,12 @@ public class SimpleSession implements Session {
 		}
 
 		void sendEcho(byte op, byte[] data) throws IOException {
+			if (data.length > 125)
+				throw new IllegalArgumentException(
+						"Control frame data length can't exceed 125");
 			ByteBuffer bb = prepreFrameHeader(op, data.length, true, true);
 			bb.put(data).flip();
-			int lc = channel.write(bb); // TODO use sendBuffer( but without batch
+			sendBuffer(bb, true);
 		}
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {

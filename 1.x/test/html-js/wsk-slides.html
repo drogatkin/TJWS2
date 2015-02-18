@@ -14,7 +14,9 @@
 	</div>
 	<div>
 		<button type="button" onclick="startSlides();">Start</button>
+		<button type="button" onclick="prevSlide();">&lt;&lt;Prev</button>
 		<button type="button" onclick="askSlide();">Show</button>
+		<button type="button" onclick="nextSlide();">Next&gt;&gt;</button>
 		<button type="button" onclick="stopShow();">Stop</button>
 	</div>
 	<!-- Server responses get written here -->
@@ -90,6 +92,16 @@
 		function askSlide() {
 			var text = document.getElementById("numinput").value;
 			webSocket.send(text);
+		}
+
+		function nextSlide() {
+			document.getElementById("numinput").value =1+Number(document.getElementById("numinput").value);
+			askSlide();
+		}
+
+		function prevSlide() {
+			document.getElementById("numinput").value =-1+Number(document.getElementById("numinput").value);
+			askSlide();
 		}
 
 		function stopShow() {

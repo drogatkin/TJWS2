@@ -126,22 +126,13 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			return;
 		}
 		ServerEndpointConfig epc = container.endpoints.get(found);
-		if (epc.getConfigurator() != null) {
-			if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
-				resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Origin check failed : " + req.getHeader(WSKT_ORIGIN));
-				return;
-			}
-			epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
-
-			String protocol = req.getHeader(WSKT_PROTOCOL);
-			if (protocol != null) {
-				epc.getConfigurator().getNegotiatedSubprotocol(epc.getSubprotocols(), Arrays.asList(protocol.split(",")));
-			}
-			String extensions = req.getHeader(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS);
-			if (extensions != null) {
-				epc.getConfigurator().getNegotiatedExtensions(epc.getExtensions(), parseToExtensions(extensions));
-			}
+		//Objects.requireNonNull(epc.getConfigurator());
+		if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
+			resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Origin check failed : " + req.getHeader(WSKT_ORIGIN));
+			return;
 		}
+		epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
+
 		req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
 		req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
 
@@ -164,6 +155,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				.getAttribute("javax.websocket.server.ServerContainer");
 		ServerEndpointConfig epc = (ServerEndpointConfig) req
 				.getAttribute("javax.websocket.server.ServerEndpointConfig");
+
 		final SimpleSession ss = new SimpleSession(sc, container);
 		ss.addMessageHandler(epc);
 		ss.pathParamsMap = (Map<String, String>) req.getAttribute("javax.websocket.server.PathParametersMap");
@@ -202,11 +194,22 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		} catch (URISyntaxException e) {
 
 		}
+		String protocol = req.getHeader(WSKT_PROTOCOL);
+		if (protocol != null) {
+			ss.subprotocol = epc.getConfigurator().getNegotiatedSubprotocol(epc.getSubprotocols(),
+					Arrays.asList(protocol.split(",")));
+		}
+		if (epc.getExtensions().size() > 0) {
+			ss.extensions = epc.getConfigurator().getNegotiatedExtensions(epc.getExtensions(),
+					parseToExtensions(req.getHeader(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS)));
+			if (ss.extensions.size() == 0)
+				ss.close(new CloseReason(CloseReason.CloseCodes.NO_EXTENSION, ""));
+			return;
+		}
 		sc.configureBlocking(false);
 		selector.wakeup();
 		sc.register(selector, SelectionKey.OP_READ, ss);
 		ss.open();
-
 	}
 
 	@Override
@@ -361,13 +364,16 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		result.put(0, regExp);
 		return result;
 	}
-	
-	/** parses ext1;param=val param=val, ext2
+
+	/**
+	 * parses ext1;param=val param=val, ext2
 	 * 
 	 * @param parse
 	 * @return
 	 */
 	List<Extension> parseToExtensions(String parse) {
+		if (parse == null || parse.isEmpty())
+			return Collections.emptyList();
 		return Collections.emptyList();
 	}
 
@@ -399,9 +405,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 					} else if (key.isReadable()) {
 						// a channel is ready for reading
-						if (key.channel().isOpen())
+						if (key.channel().isOpen()) {
 							((SimpleSession) key.attachment()).run();
-						else {
+							// TODO decide which timeout mechanism to use
+							// advance idle timeout 
+							// conn.asyncTimeout = System.currentTimeMillis() + ((SimpleSession) key.attachment()).getMaxIdleTimeout(); 
+						} else {
 							serve.log("Cancel key :" + key + ", cnannel closed");
 							key.cancel();
 						}
