@@ -190,6 +190,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			});
 		} else
 			ss.id = "wskt-" + serve.generateSessionId();
+		ss.principal = req.getUserPrincipal();
 		ss.soTimeout = socket.getSoTimeout();
 		ss.paramsMap = new HashMap<String, List<String>>();
 		for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
@@ -246,11 +247,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						try {
 							appCfgs.add(arg0.newInstance());
 						} catch (InstantiationException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							serve.log(e, "Error at deployment");
 						} catch (IllegalAccessException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							serve.log(e, "Error at deployment");
 						}
 					}
 
@@ -266,9 +265,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			}
 		}).scan();
 
-		// TODO build list of all scanned classes
-		// if ServerApplicationConfig exist then use them to filter all found and produce maybe more
-		// if not then just use ServerEndpoint
 		if (appCfgs.size() > 0) {
 			for (ServerApplicationConfig sac : appCfgs) {
 				for (Class<?> se : sac.getAnnotatedEndpointClasses(annSeps))

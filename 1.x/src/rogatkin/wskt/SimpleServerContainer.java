@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,11 +52,9 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 			try {
 				addEndpoint((ServerEndpointConfig)arg0.newInstance());
 			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new DeploymentException( "Error in deployment end point", e);
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new DeploymentException( "Error in deployment end point", e);
 			}
 		} else {
 			ServerEndpoint sep = arg0.getAnnotation(ServerEndpoint.class);
@@ -63,6 +62,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 			if (path == null || path.startsWith("/") == false)
 					throw new DeploymentException("Invalid path "+path);
 			//addEndpoint(ServerEndpointConfig.Builder.create(arg0, path).build());
+
 			addEndpoint(new SimpleServerEndpointConfig(arg0));
 		}
 		
