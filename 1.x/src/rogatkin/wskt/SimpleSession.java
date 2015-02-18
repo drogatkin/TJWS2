@@ -1142,6 +1142,7 @@ public class SimpleSession implements Session {
 		public void flushBatch() throws IOException {
 			if (batchBuffer != null) {
 				long bl = channel.write(batchBuffer);
+				// TODO check if sent size is different than total length
 				batchBuffer = new ByteBuffer[0];
 			}
 		}
@@ -1157,7 +1158,7 @@ public class SimpleSession implements Session {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException(
 						"Control fame data length can't exceed 125");
-			int lc = channel.write(createFrame(true, arg0));
+			sendBuffer(createFrame(true, arg0));
 		}
 
 		@Override
@@ -1165,8 +1166,8 @@ public class SimpleSession implements Session {
 				IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException(
-						"Control fame data length can't exceed 125");
-			int lc = channel.write(createFrame(false, arg0));
+						"Control frame data length can't exceed 125");
+			int lc = channel.write(createFrame(false, arg0)); // TODO use sendBuffer( but without batch
 		}
 
 		@Override
@@ -1213,14 +1214,26 @@ public class SimpleSession implements Session {
 
 		@Override
 		public void sendBinary(ByteBuffer arg0) throws IOException {
-			int lc = channel.write(createFrame(arg0, true, true));
-			System.err.printf("Sent %d bytes binarry%n", lc);
+			sendBuffer( createFrame(arg0, true, true));
+		}
+		
+		void sendBuffer(ByteBuffer bb) throws IOException {
+			if (batchBuffer != null) {
+				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length+1);
+				batchBuffer[batchBuffer.length-1] = bb;
+			} else {
+				// TODO possibly iterate over until entire buffer sent
+				int len = bb.remaining();
+				int lc = channel.write(bb);
+				if (len > lc)
+					throw new IOException("Only "+lc+" of "+len+" sent");
+			}
 		}
 
 		@Override
 		public void sendBinary(ByteBuffer arg0, boolean arg1)
 				throws IOException {
-			int lc = channel.write(createFrame(arg0, arg1, !cont));
+			sendBuffer(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
 
@@ -1302,31 +1315,30 @@ public class SimpleSession implements Session {
 
 		@Override
 		public void sendText(String arg0) throws IOException {
-			int lc = channel.write(createFrame(arg0, true, true));
-			System.err.printf("%d%n", lc);
+			sendBuffer(createFrame(arg0, true, true));
 		}
 
 		@Override
 		public void sendText(String arg0, boolean arg1) throws IOException {
-			int lc = channel.write(createFrame(arg0, arg1, !cont));
+			sendBuffer(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
 
 		void sendEcho(byte op, byte[] data) throws IOException {
 			ByteBuffer bb = prepreFrameHeader(op, data.length, true, true);
 			bb.put(data).flip();
-			int lc = channel.write(bb);
+			int lc = channel.write(bb); // TODO use sendBuffer( but without batch
 		}
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
-			System.err.printf("Sending %d bytes as final %b as first %b%n",
-					bbp.remaining(), fin, first);
+			//System.err.printf("Sending %d bytes as final %b as first %b%n",
+				//	bbp.remaining(), fin, first);
 			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin,
 					first);
 			bb.put(bbp).flip();
-			System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
-					bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
-					bb.get(3));
+			//System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
+				//	bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
+					//bb.get(3));
 			return bb;
 		}
 
