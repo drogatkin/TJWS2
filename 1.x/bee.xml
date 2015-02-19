@@ -686,6 +686,12 @@
               <parameter value="&build_directory;\&launchername;.jar" type="file"/>
            </function>
     </dependency>
+    <dependency>
+           <function name="allnewer">
+              <parameter value="&build_directory;/wskt.jar" type="file"/>
+              <parameter value="&build_directory;/&launchername;.jar" type="file"/>
+           </function>
+    </dependency>
     <block>
     <task name="jar launcher" code="sun.tools.jar.Main">
        <parameter value="-cmf"/>
@@ -1294,6 +1300,8 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <parameter>50</parameter>
       <parameter>-sh</parameter>
       <!--parameter value="-nka"/-->
+      <parameter value="-acceptorImpl"/>
+      <parameter value="Acme.Serve.SelectorAcceptor"/>
       <parameter value="-j"/>
       <parameter value="org.apache.jasper.servlet.JspServlet"/>
       <parameter value="-org.apache.jasper.servlet.JspServlet.classpath"/>

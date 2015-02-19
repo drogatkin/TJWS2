@@ -2294,7 +2294,7 @@ public class Serve implements ServletContext, Serializable {
 			if (serve.websocketProvider != null)
 				try {
 					serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, this);
-					websocketUpgrade = true;
+					websocketUpgrade = resCode == SC_SWITCHING_PROTOCOLS;
 				} catch(Exception wse) {					
 					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR, wse  );
 				}
