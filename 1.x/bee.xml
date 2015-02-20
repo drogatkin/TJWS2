@@ -54,11 +54,21 @@
                     =</value>
         <value variable="ANDROID_RT"/> 
         <value>
-      WEBSOCKET API (optional)
+      WEBSOCKET_CLIENT_LIB, EBSOCKET_SERVER_LIB - websocket (JSR356) API libraries (optional)
                     =</value>
-        <value variable="WEBSOCKETS_CLIENT_LIB"/> 
+        <value variable="WEBSOCKET_CLIENT_LIB"/> 
         <value> </value>
-        <value variable="WEBSOCKETS_SERVER_LIB"/> 
+        <value variable="WEBSOCKET_SERVER_LIB"/> 
+        <value>
+      WEBSOCKET_API - fully qualified path to websocket spec source api directory (optional)
+                   =</value>
+        <value variable="WEBSOCKET_API"/> 
+        <value>
+      CLASS_SCAN_LIB, CLASS_SCAN_CLASSES - fully qualified paths to fast scan library and classes tree (optional)
+                   =</value>
+        <value variable="CLASS_SCAN_LIB"/>
+        <value> </value>
+        <value variable="CLASS_SCAN_CLASSES"/>   
        <value>
      =============================================</value>
      </operator>
@@ -138,9 +148,9 @@
         <value variable="PATH SEPARATOR"/>
         <value variable="SERVLET_LIB_30"/>
         <value variable="PATH SEPARATOR"/>
-        <value variable="WEBSOCKETS_CLIENT_LIB"/>
+        <value variable="WEBSOCKET_CLIENT_LIB"/>
         <value variable="PATH SEPARATOR"/>
-        <value variable="WEBSOCKETS_SERVER_LIB"/>
+        <value variable="WEBSOCKET_SERVER_LIB"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="CLASS_SCAN_LIB"/>
      </operator>
@@ -754,6 +764,29 @@
                </for>
            </expression>
        </parameter>
+       <parameter value="-C"/>
+       <parameter>
+         <expression>
+             <operator name="append">
+                <value variable="WEBSOCKET_API" type="dir"/>
+                <value>/client/lib</value>
+             </operator>
+         </expression>
+       </parameter>    
+       <parameter value="javax" type="dir"/>
+       <parameter value="-C"/>
+       <parameter>
+         <expression>
+             <operator name="append">
+                <value variable="WEBSOCKET_API" type="dir"/>
+                <value>/server/lib</value>
+             </operator>
+         </expression>
+       </parameter>    
+       <parameter value="javax/websocket/server" type="dir"/>
+       <parameter value="-C"/>
+       <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
+       <parameter value="io" type="dir"/>
     </task>
     <if>
       <expression>
@@ -875,6 +908,29 @@
                </for>
            </expression>
        </parameter>
+       <parameter value="-C"/>
+       <parameter>
+         <expression>
+             <operator name="append">
+                <value variable="WEBSOCKET_API" type="dir"/>
+                <value>/client/lib</value>
+             </operator>
+         </expression>
+       </parameter>    
+       <parameter value="javax" type="dir"/>
+       <parameter value="-C"/>
+       <parameter>
+         <expression>
+             <operator name="append">
+                <value variable="WEBSOCKET_API" type="dir"/>
+                <value>/server/lib</value>
+             </operator>
+         </expression>
+       </parameter>    
+       <parameter value="javax/websocket/server" type="dir"/>
+       <parameter value="-C"/>
+       <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
+       <parameter value="io" type="dir"/>
     </task>
     <if>
       <expression>
