@@ -159,7 +159,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 		req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
 		req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
-System.err.printf("ep %s,  back from req: %s%n",  epc, req.getAttribute("javax.websocket.server.ServerEndpointConfig"));
+
 		resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
 		resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
 		resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
@@ -179,7 +179,7 @@ System.err.printf("ep %s,  back from req: %s%n",  epc, req.getAttribute("javax.w
 				.getAttribute("javax.websocket.server.ServerContainer");
 		ServerEndpointConfig epc = (ServerEndpointConfig) req
 				.getAttribute("javax.websocket.server.ServerEndpointConfig");
-		System.err.printf("ep back from req: %s%n",  epc);
+
 		final SimpleSession ss = new SimpleSession(sc, container);
 		ss.addMessageHandler(epc);
 		ss.pathParamsMap = (Map<String, String>) req.getAttribute("javax.websocket.server.PathParametersMap");

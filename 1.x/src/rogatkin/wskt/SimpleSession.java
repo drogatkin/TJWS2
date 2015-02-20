@@ -603,11 +603,9 @@ public class SimpleSession implements Session {
 				endpoint = epc.newInstance();
 				endpointConfig.getConfigurator().getEndpointInstance(epc);
 			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				container.log(e, "Can't instantiate end point for %s", epc);
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				container.log(e, "Can't instantiate end point for %s", epc);
 			}
 			Method[] ms = epc.getDeclaredMethods();
 			for (Method m : ms) {

@@ -510,12 +510,14 @@ BOOL createJVM() {
     // Append USER_CLASSPATH to the end of default system class path 
 	if (customCP)
 		sprintf_s(classpath, sizeof classpath, "-Djava.class.path=%s\\webserver.jar%c%s\\lib\\webserver.jar%c"
-		"%s\\servlet.jar%c%s\\lib\\servlet.jar%c%s\\war.jar%c%s\\lib\\war.jar%c%s%s", installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR,
-		installDir, PATH_SEPARATOR, installDir,  PATH_SEPARATOR, installDir,  PATH_SEPARATOR, installDir, PATH_SEPARATOR, customCP, apppath);
+		"%s\\servlet.jar%c%s\\lib\\servlet.jar%c%s\\war.jar%c%s\\lib\\war.jar%c%s\\lib\\wskt.jar%c%s\\lib\\class-scanner.jar%c%s\\lib\\javax.websocket-client-api.jar%c%s\\lib\\javax.websocket-server-api.jar%c%s%s", installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR,
+		installDir, PATH_SEPARATOR, installDir,  PATH_SEPARATOR, installDir,  PATH_SEPARATOR, installDir
+		, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, customCP, apppath);
 	else
 		sprintf_s(classpath, sizeof classpath, "-Djava.class.path=%s\\webserver.jar%c%s\\lib\\webserver.jar%c"
-		"%s\\servlet.jar%c%s\\lib\\servlet.jar%c%s\\war.jar%c%s\\lib\\war.jar%s", installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR,
-		installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir,apppath);	
+		"%s\\servlet.jar%c%s\\lib\\servlet.jar%c%s\\war.jar%c%s\\lib\\war.jar%c%s\\lib\\wskt.jar%c%s\\lib\\class-scanner.jar%c%s\\lib\\javax.websocket-client-api.jar%c%s\\lib\\javax.websocket-server-api.jar%s", installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR,
+		installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir
+		, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir, PATH_SEPARATOR, installDir,apppath);	
 	options[0].optionString = classpath;
 	sprintf_s(userdir, sizeof userdir, "-Duser.dir=%s", installDir);
 	options[1].optionString = userdir;
