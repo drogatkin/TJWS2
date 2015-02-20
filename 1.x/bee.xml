@@ -1170,6 +1170,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
          <parameter value="&build_directory;/&launchername;.jar" type="file"/>
          <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
          <parameter value="&build_directory;/war.jar" type="file"/>
+         <parameter value="&build_directory;/wskt.jar" type="file"/>
          <parameter value="&build_directory;/app.jar" type="file"/>
          <parameter value="&build_directory;/conn_chk.jar" type="file"/>
          <parameter value="src/rogatkin/app/remote/*.java" type="dir"/>
@@ -1272,13 +1273,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
         <value variable="TJWS_HOME"/>
         <value>/&build_directory;/wskt.jar</value>
         <value variable="PATH SEPARATOR"/>
-        <value variable="SERVLET_LIB_30"/>
-        <value variable="PATH SEPARATOR"/>
-        <value variable="WEBSOCKETS_CLIENT_LIB"/>
-        <value variable="PATH SEPARATOR"/>
-        <value variable="WEBSOCKETS_SERVER_LIB"/>
-        <value variable="PATH SEPARATOR"/>
-        <value variable="CLASS_SCAN_LIB"/>
+        <value variable="j2ee class path"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="JAVA_HOME"/>
         <value>/lib/tools.jar</value>
