@@ -73,7 +73,10 @@ import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpointConfig;
 
-public class SimpleSession implements Session {
+import Acme.Serve.Serve.AsyncCallback;
+import Acme.Serve.Serve.ServeConnection;
+
+public class SimpleSession implements Session, AsyncCallback {
 
 	enum FrameState {
 		prepare, header, length, length32, length64, mask, data
@@ -93,6 +96,7 @@ public class SimpleSession implements Session {
 	byte[] completeData;
 	// /////////////////////////////////
 	SocketChannel channel;
+	ServeConnection conn; // temporary
 
 	HashSet<SimpleMessageHandler> handlers;
 
@@ -100,7 +104,7 @@ public class SimpleSession implements Session {
 
 	final int DEF_BUF_SIZE = 1024 * 2;
 
-	int soTimeout;
+	long idleTimeout;
 	Map<String, List<String>> paramsMap;
 	Map<String, String> pathParamsMap;
 	String query;
@@ -449,7 +453,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public long getMaxIdleTimeout() {
-		return soTimeout;
+		return idleTimeout;
 	}
 
 	@Override
@@ -544,8 +548,7 @@ public class SimpleSession implements Session {
 
 	@Override
 	public void setMaxIdleTimeout(long arg0) {
-		// TODO Auto-generated method stub
-
+		idleTimeout = arg0;
 	}
 
 	@Override
@@ -1594,6 +1597,21 @@ public class SimpleSession implements Session {
 
 		}
 
+	}
+
+	@Override
+	public void notifyTimeout() {
+		try {
+			close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public long getTimeout() {
+		return idleTimeout;
 	}
 
 }

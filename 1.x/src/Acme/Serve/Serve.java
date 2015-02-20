@@ -1680,14 +1680,18 @@ public class Serve implements ServletContext, Serializable {
 			    if (conn.asyncMode != null) {
 				conn.asyncMode.notifyTimeout();
 				conn.keepAlive = false;
+				if (conn.websocketUpgrade)
+					conn.asyncMode = null;
 				conn.joinAsync();
-			    } else if (conn.websocketUpgrade) {
+			    } /*else if (conn.websocketUpgrade) {
 			    	try {
-			    		conn.socket.getChannel().close(); // TODO perhaps use normal close call 
+			    		conn.keepAlive = false;
+			    		//conn.socket.getChannel().close(); // TODO perhaps use normal close call
+			    		//conn.socket = null;
 			    	} catch(Exception e) {
 			    		
 			    	}
-			    }
+			    }*/
 			} else {
 			    long nd = conn.asyncTimeout - ct;
 			    if (nd < d)
@@ -2020,11 +2024,13 @@ public class Serve implements ServletContext, Serializable {
 		throw ioe;
 	}
 
-	// protected void finalize() throws Throwable {
-	// System.err.println("Connection object gone"); // !!!
-	// super.finalize();
-	// }
-
+	/*   open for debug only   
+	protected void finalize() throws Throwable {
+	 System.err.println("Connection object gone"); // !!!
+	 super.finalize();
+	}
+    */
+	
 	private void restart() throws IOException {
 	    // new Exception("RESTART").printStackTrace();
 	    reqMethod = null;
@@ -2497,6 +2503,11 @@ public class Serve implements ServletContext, Serializable {
 	    }
 	}
 
+	public void extendAsyncTimeout(long period) {
+		if (period > 0)
+			asyncTimeout = System.currentTimeMillis() + period;	
+	}
+	
 	private static final int MAYBEVERSION = 1;
 
 	private static final int INVERSION = 2;

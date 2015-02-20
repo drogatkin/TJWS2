@@ -50,6 +50,7 @@ import java.nio.channels.SocketChannel;
 
 import Acme.Utils;
 import Acme.Serve.Serve;
+import Acme.Serve.Serve.ServeConnection;
 import Acme.Serve.Serve.WebsocketProvider;
 
 import javax.servlet.ServletContext;
@@ -207,7 +208,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		} else
 			ss.id = "wskt-" + serve.generateSessionId();
 		ss.principal = req.getUserPrincipal();
-		ss.soTimeout = socket.getSoTimeout();
+		ss.setMaxIdleTimeout(container.getDefaultMaxSessionIdleTimeout());
 		ss.paramsMap = new HashMap<String, List<String>>();
 		for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
 			ss.paramsMap.put(e.getKey(), Arrays.asList(e.getValue()));
@@ -224,12 +225,20 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					Arrays.asList(protocol.split(",")));
 		}
 		if (epc.getExtensions().size() > 0) {
+			// TODO maybe  it should be going in handshake?
 			ss.extensions = epc.getConfigurator().getNegotiatedExtensions(epc.getExtensions(),
 					parseToExtensions(req.getHeader(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS)));
-			if (ss.extensions.size() == 0)
+			if (ss.extensions.size() == 0) {
 				ss.close(new CloseReason(CloseReason.CloseCodes.NO_EXTENSION, ""));
-			return;
+				return;
+			}
 		}
+		if (req instanceof ServeConnection) {
+			ss.conn = (ServeConnection) req;
+			((ServeConnection) req).spawnAsync(ss);
+		} else
+			serve.log("Request isn't of ServeConnection type " + req.getClass());
+
 		sc.configureBlocking(false);
 		selector.wakeup();
 		sc.register(selector, SelectionKey.OP_READ, ss);
@@ -419,8 +428,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 					serve.log("key:" + key + " " + key.isValid());
 
-					if (!key.isValid())
+					if (!key.isValid()) {
+						//SimpleSession ss = (SimpleSession) key.attachment();
+						//serve.log("session "+ss.isOpen());
+						//ss.close();
 						continue;
+					}
 					if (key.isAcceptable()) {
 						// a connection was accepted by a ServerSocketChannel.
 
@@ -428,14 +441,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						// a connection was established with a remote server.
 
 					} else if (key.isReadable()) {
-						// a channel is ready for reading
+						// a channel is ready for reading						
 						if (key.channel().isOpen()) {
-							((SimpleSession) key.attachment()).run();
+							SimpleSession ss = (SimpleSession) key.attachment();
+							ss.run();
 							// TODO decide which timeout mechanism to use
 							// advance idle timeout 
-							// conn.asyncTimeout = System.currentTimeMillis() + ((SimpleSession) key.attachment()).getMaxIdleTimeout(); 
+							ss.conn.extendAsyncTimeout(ss.getMaxIdleTimeout());
 						} else {
-							serve.log("Cancel key :" + key + ", cnannel closed");
+							serve.log("Cancel key :" + key + ", channel closed");
 							key.cancel();
 						}
 					} else if (key.isWritable()) {

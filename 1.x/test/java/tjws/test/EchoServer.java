@@ -2,6 +2,8 @@ package tjws.test;
 
 import java.io.IOException;
  
+import java.util.Date;
+
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -27,7 +29,8 @@ public class EchoServer {
     public void onOpen(Session session){
         System.out.println(session.getId() + " has opened a connection"); 
         try {
-            session.getBasicRemote().sendText("Connection Established");
+            session.getBasicRemote().sendText("Connection Established at "+new Date());
+            session.setMaxIdleTimeout(60*1000);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -56,6 +59,6 @@ public class EchoServer {
      */
     @OnClose
     public void onClose(Session session){
-        System.out.println("Session " +session.getId()+" has ended");
+        System.out.println("Session " +session.getId()+" has ended at "+new Date());
     }
 }
