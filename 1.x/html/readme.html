@@ -148,7 +148,7 @@ library.
 was ACME Java Web Server. It was pretty good, but supported only JSS 1.x and JDK 1.02. Since my servlets required a bit more, I have added
 support for contemporary versions of JDK and JSDK. I just continued adding
 more features and providing bug fixes after. The current version is mostly
-compatible with the latest servlet container specification (3.0) and offers also websocket support.</p>
+compatible with the latest servlet container specification (3.1) and offers also websocket support.</p>
 		</td>
 	</tr>
 </table>
@@ -782,7 +782,7 @@ Add a line as below:
       ((Test$1)srv).<strong>addWarDeployer</strong>(null, null);
 </pre>
 <p>
-The default war deployer will look in directory "user.dir/webapss" and
+The default war deployer will look in directory "user.dir/webapps" and
 deploy all wars there. You can redefine a deploy repository by setting
 </p>
 <code>
@@ -811,7 +811,7 @@ servers on the platfrom including Jetty,  JBOSS and Tomcat. Start time for it is
  observe times close to 1 minute with 
 other application servers. Here are few notes helping to start using it:</p>
 <ul>
-  <li>Debian �wheezy� is preferred as OS for Raspberry Pi and TJWS</li>
+  <li>Debian "wheezy" is preferred as OS for Raspberry Pi and TJWS</li>
   <li>Download Oracle JRE marked as <strong>Linux ARM v6/v7 Hard Float ABI</strong></li>
   <li>If you use Linux "dd" utility on Ubuntu to transfer Debian image to SD card, then keep it mounted and
   use device name as <strong>/dev/sd</strong>c (last letter can be "b" for some systems)</li>
@@ -845,7 +845,7 @@ bundled with Jasper to run JSP. See more about Atjeews <a href="atjeews.html">he
 </p>
 <h4>Run it on iPhone?</h4>
   <p> There are several options to run Java applications on iPhone and iPad. You will need to jail break your iPhone though.
-  Since Steeve isn't with Apple anymore, there is a good chance for porting Davlik to iOS platfrom. I heard that iOS 8.0 (current is 7.0) will have Java included</p>
+  Since Steeve isn't with Apple anymore, there is a good chance for porting Davlik to iOS platfrom. I heard that iOS 9.0 (current is 8.0) will have Java included</p>
 
 <a name="proxy"></a>
 <h3>Use TJWS as proxied</h3>
@@ -898,7 +898,7 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.109)
+(version 1.110)
 </p>
 
 <p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
@@ -973,7 +973,7 @@ version</a> (use kill to stop)</p><a name="version"></a>
     <li>Proper freeing resources in CGI servlet by Frank</li>
     <li>SSL handler default class updated  by Jan</li>
     <li>Reliable detection of chunked encoding by Darren</li>
-    <li>JSR (websocket) by Robert</>
+    <li>JSR 356 (websocket) by Robert</>
 </ul>
  </font>
 <a name="apps"></a><h4>Tested web applications</h4>
@@ -1064,6 +1064,6 @@ a music jukebox remote controllable from your phone or tablet.</p>
 <a href="mailto:jAddressBook@gmail.com">Dmitriy
 Rogatkin</a>.Happy web servicing!</p>
 <p>
-
+<center>&copy; 2015</center>
 </body>
 </html>
