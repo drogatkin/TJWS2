@@ -128,12 +128,13 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	public void run() {
 		try {
-			conn.extendAsyncTimeout(getMaxIdleTimeout());
+			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
 			System.err.printf("Read len %d%n", l);
 			if (l < 0)
 				throw new IOException("Closed");
 			parseFrame();
+			conn.extendAsyncTimeout(getMaxIdleTimeout());
 		} catch (IOException e) {
 			e.printStackTrace();
 			try {
@@ -1167,11 +1168,12 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public void flushBatch() throws IOException {
-			conn.extendAsyncTimeout(getMaxIdleTimeout());
+			conn.extendAsyncTimeout(-1);
 			if (batchBuffer != null) {
 				long bl = channel.write(batchBuffer);
 				// TODO check if sent size is different than total length
 				batchBuffer = new ByteBuffer[0];
+				conn.extendAsyncTimeout(getMaxIdleTimeout());
 			}
 		}
 
@@ -1250,14 +1252,15 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 		
 		void sendBuffer(ByteBuffer bb, boolean nobatch) throws IOException {
-			conn.extendAsyncTimeout(getMaxIdleTimeout());
 			if (batchBuffer != null && !nobatch) {
 				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length+1);
 				batchBuffer[batchBuffer.length-1] = bb;
 			} else {
+				conn.extendAsyncTimeout(-1);
 				// TODO possibly iterate over until entire buffer sent
 				int len = bb.remaining();
 				int lc = channel.write(bb);
+				conn.extendAsyncTimeout(getMaxIdleTimeout());
 				if (len > lc) { 
 					// it looks like sending remaining doesn't work
 					//len = bb.remaining();
