@@ -429,9 +429,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					serve.log("key:" + key + " " + key.isValid());
 
 					if (!key.isValid()) {
-						//SimpleSession ss = (SimpleSession) key.attachment();
-						//serve.log("session "+ss.isOpen());
-						//ss.close();
 						continue;
 					}
 					if (key.isAcceptable()) {
@@ -443,11 +440,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					} else if (key.isReadable()) {
 						// a channel is ready for reading						
 						if (key.channel().isOpen()) {
-							SimpleSession ss = (SimpleSession) key.attachment();
-							ss.run();
-							// TODO decide which timeout mechanism to use
-							// advance idle timeout 
-							ss.conn.extendAsyncTimeout(ss.getMaxIdleTimeout());
+							((SimpleSession) key.attachment()).run();
 						} else {
 							serve.log("Cancel key :" + key + ", channel closed");
 							key.cancel();

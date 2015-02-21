@@ -128,6 +128,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	public void run() {
 		try {
+			conn.extendAsyncTimeout(getMaxIdleTimeout());
 			int l = channel.read(buf);
 			System.err.printf("Read len %d%n", l);
 			if (l < 0)
@@ -1166,6 +1167,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public void flushBatch() throws IOException {
+			conn.extendAsyncTimeout(getMaxIdleTimeout());
 			if (batchBuffer != null) {
 				long bl = channel.write(batchBuffer);
 				// TODO check if sent size is different than total length
@@ -1248,6 +1250,7 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 		
 		void sendBuffer(ByteBuffer bb, boolean nobatch) throws IOException {
+			conn.extendAsyncTimeout(getMaxIdleTimeout());
 			if (batchBuffer != null && !nobatch) {
 				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length+1);
 				batchBuffer[batchBuffer.length-1] = bb;
