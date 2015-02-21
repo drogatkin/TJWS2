@@ -2505,7 +2505,9 @@ public class Serve implements ServletContext, Serializable {
 
 	public void extendAsyncTimeout(long period) {
 		if (period > 0)
-			asyncTimeout = System.currentTimeMillis() + period;	
+			asyncTimeout = System.currentTimeMillis() + period;
+		else if (period < 0)
+			asyncTimeout = 0;
 	}
 	
 	private static final int MAYBEVERSION = 1;
