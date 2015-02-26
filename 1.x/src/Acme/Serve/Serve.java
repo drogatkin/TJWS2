@@ -1629,7 +1629,7 @@ public class Serve implements ServletContext, Serializable {
 	}
 
 	public void run() {
-	    int maxUse = getMaxTimesConnectionUse();
+	    //int maxUse = getMaxTimesConnectionUse();
 	    while (true) {
 		synchronized (ingoings) {
 		    Iterator i = ingoings.iterator();

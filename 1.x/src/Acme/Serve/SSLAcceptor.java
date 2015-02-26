@@ -52,9 +52,9 @@ public class SSLAcceptor implements Acceptor {
 	public static final String ARG_KEYSTOREFILE = "keystoreFile"; //
 
 	public static final String PROP_KEYSTOREFILE = "javax.net.ssl.keyStore"; //
-	
+
 	public static final String ARG_KEYSTOREPASS = "keystorePass"; // KEYSTOREPASS
-	
+
 	public static final String PROP_KEYSTOREPASS = "javax.net.ssl.keyStorePassword";
 
 	public static final String ARG_KEYSTORETYPE = "keystoreType"; // KEYSTORETYPE
@@ -62,8 +62,6 @@ public class SSLAcceptor implements Acceptor {
 	public static final String PROP_KEYSTORETYPE = "javax.net.ssl.keyStoreType"; // 
 
 	public static final String ARG_KEYPASS = "keyPass"; //
-	
-	
 
 	public static final String ARG_PROTOCOL = "protocol"; // TLS
 
@@ -147,65 +145,9 @@ public class SSLAcceptor implements Acceptor {
 	}
 
 	public void init(Map inProperties, Map outProperties) throws IOException {
-		javax.net.ssl.SSLServerSocketFactory sslSoc = null;
-		// init keystore
-		KeyStore keyStore = null;
-		FileInputStream istream = null;
-		String keystorePass = null;
-		android = System.getProperty("java.vm.name") != null && System.getProperty("java.vm.name").startsWith("Dalvik");
-		try {
-			String keystoreType = getWithDefault(inProperties, ARG_KEYSTORETYPE, KEYSTORETYPE);
-			keyStore = KeyStore.getInstance(keystoreType);
-			String keystoreFile = (String) inProperties.get(ARG_KEYSTOREFILE);
-			if (keystoreFile == null)
-				keystoreFile = getKeystoreFile();
-			istream = new FileInputStream(keystoreFile);
-			keystorePass = getWithDefault(inProperties, ARG_KEYSTOREPASS, KEYSTOREPASS);
-			keyStore.load(istream, keystorePass.toCharArray());
-		} catch (Exception e) {
-			throw (IOException)new IOException(e.toString()).initCause(e);
-		} finally {
-			if (istream != null)
-				istream.close();
-		}
-
-		try {
-			// Register the JSSE security Provider (if it is not already there)
-			if (android == false)
-				try {
-					Security.addProvider((java.security.Provider) Class
-							.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
-				} catch (Throwable t) {
-					if (t instanceof ThreadDeath)
-						throw (ThreadDeath) t;
-					// TODO think to do not propagate absence of the provider, since other can still work
-					throw (IOException)new IOException(t.toString()).initCause(t);
-				}
-
-			// Create an SSL context used to create an SSL socket factory
-			String protocol = getWithDefault(inProperties, ARG_PROTOCOL, TLS);
-			SSLContext context = SSLContext.getInstance(protocol);
-
-			// Create the key manager factory used to extract the server key
-			String algorithm = getWithDefault(inProperties, ARG_ALGORITHM, KeyManagerFactory.getDefaultAlgorithm());
-			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
-
-			String keyPass = getWithDefault(inProperties, ARG_KEYPASS, keystorePass);
-
-			keyManagerFactory.init(keyStore, keyPass.toCharArray());
-
-			// Initialize the context with the key managers
-			context.init(keyManagerFactory.getKeyManagers(), null, new java.security.SecureRandom());
-
-			// Create the proxy and return
-			sslSoc = context.getServerSocketFactory();
-
-		} catch (Exception e) {
-			System.err.println("SSLsocket creation:  " + e);
-			e.printStackTrace();
-			throw (IOException)new IOException(e.toString()).initCause(e);
-		}
-
+		// Create the proxy and return
+		javax.net.ssl.SSLServerSocketFactory sslSoc = initSSLContext(inProperties, outProperties)
+				.getServerSocketFactory();
 		int port = PORT;
 		if (inProperties.get(ARG_PORT) != null)
 			try {
@@ -230,6 +172,63 @@ public class SSLAcceptor implements Acceptor {
 		initServerSocket(socket, "true".equals(inProperties.get(ARG_CLIENTAUTH)));
 		if (outProperties != null)
 			outProperties.put(Serve.ARG_BINDADDRESS, socket.getInetAddress().getHostName());
+	}
+
+	protected SSLContext initSSLContext(Map inProperties, Map outProperties) throws IOException {
+		// init keystore
+		KeyStore keyStore = null;
+		FileInputStream istream = null;
+		String keystorePass = null;
+		android = System.getProperty("java.vm.name") != null && System.getProperty("java.vm.name").startsWith("Dalvik");
+		try {
+			String keystoreType = getWithDefault(inProperties, ARG_KEYSTORETYPE, KEYSTORETYPE);
+			keyStore = KeyStore.getInstance(keystoreType);
+			String keystoreFile = (String) inProperties.get(ARG_KEYSTOREFILE);
+			if (keystoreFile == null)
+				keystoreFile = getKeystoreFile();
+			istream = new FileInputStream(keystoreFile);
+			keystorePass = getWithDefault(inProperties, ARG_KEYSTOREPASS, KEYSTOREPASS);
+			keyStore.load(istream, keystorePass.toCharArray());
+		} catch (Exception e) {
+			throw (IOException) new IOException(e.toString()).initCause(e);
+		} finally {
+			if (istream != null)
+				istream.close();
+		}
+
+		try {
+			// Register the JSSE security Provider (if it is not already there)
+			if (android == false)
+				try {
+					Security.addProvider((java.security.Provider) Class
+							.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
+				} catch (Throwable t) {
+					if (t instanceof ThreadDeath)
+						throw (ThreadDeath) t;
+					// TODO think to do not propagate absence of the provider, since other can still work
+					throw (IOException) new IOException(t.toString()).initCause(t);
+				}
+
+			// Create an SSL context used to create an SSL socket factory
+			String protocol = getWithDefault(inProperties, ARG_PROTOCOL, TLS);
+			SSLContext context = SSLContext.getInstance(protocol);
+
+			// Create the key manager factory used to extract the server key
+			String algorithm = getWithDefault(inProperties, ARG_ALGORITHM, KeyManagerFactory.getDefaultAlgorithm());
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
+
+			String keyPass = getWithDefault(inProperties, ARG_KEYPASS, keystorePass);
+
+			keyManagerFactory.init(keyStore, keyPass.toCharArray());
+
+			// Initialize the context with the key managers
+			context.init(keyManagerFactory.getKeyManagers(), null, new java.security.SecureRandom());
+			return context;
+		} catch (Exception e) {
+			System.err.println("SSLsocket creation:  " + e);
+			e.printStackTrace();
+			throw (IOException) new IOException(e.toString()).initCause(e);
+		}
 	}
 
 	/**

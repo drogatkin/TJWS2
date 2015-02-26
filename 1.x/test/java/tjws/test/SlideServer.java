@@ -53,6 +53,7 @@ public class SlideServer {
 
 		try (FileInputStream slideIm = new FileInputStream(slides[slideNo]);
 				OutputStream webIm = ses.getBasicRemote().getSendStream()) {
+			System.out.printf("Showing %s[%d]%n", slides[slideNo], slideNo);
 			Utils.copyStream(slideIm, webIm, 0);
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -1468,7 +1468,10 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
                 <expression variable="secure socket">
                   <operator name="array">
                       <value>-acceptorImpl</value>
+                      <!--
                       <value>Acme.Serve.SSLAcceptor</value>
+                      -->
+                      <value>rogatkin.wskt.SSLSelectorAcceptor</value>
                       <value>-keystorePass</value>
                       <value variable="keystore pass"/>
                   </operator>

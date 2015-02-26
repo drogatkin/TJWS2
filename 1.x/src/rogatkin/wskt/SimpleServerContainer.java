@@ -66,6 +66,9 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	ExecutorService asyncService;
 	
 	int defBufSize = 1024 * 8;
+	
+	long idleTimeout;
+	long asyncTimeout;
 
 	SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
@@ -124,8 +127,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public long getDefaultAsyncSendTimeout() {
-		// TODO Auto-generated method stub
-		return 0;
+		return asyncTimeout;
 	}
 
 	@Override
@@ -135,8 +137,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public long getDefaultMaxSessionIdleTimeout() {
-		// TODO Auto-generated method stub
-		return 0;
+		return idleTimeout;
 	}
 
 	@Override
@@ -146,14 +147,13 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public Set<Extension> getInstalledExtensions() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void setAsyncSendTimeout(long arg0) {
-		// TODO Auto-generated method stub
-
+		if (arg0 >= 0)
+			asyncTimeout = arg0;
 	}
 
 	@Override
@@ -164,8 +164,9 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public void setDefaultMaxSessionIdleTimeout(long arg0) {
-		// TODO Auto-generated method stub
-
+		if (arg0 < 0)
+			return;
+		idleTimeout = arg0;
 	}
 
 	@Override

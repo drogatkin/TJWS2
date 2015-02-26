@@ -102,8 +102,6 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	String id;
 
-	final int DEF_BUF_SIZE = 1024 * 2;
-
 	long idleTimeout;
 	Map<String, List<String>> paramsMap;
 	Map<String, String> pathParamsMap;
@@ -120,7 +118,7 @@ public class SimpleSession implements Session, AsyncCallback {
 		channel = sc;
 		container = c;
 		container.addSession(this);
-		buf = ByteBuffer.allocate(DEF_BUF_SIZE);
+		buf = ByteBuffer.allocate(c.getDefaultMaxBinaryMessageBufferSize());
 		buf.mark();
 		state = FrameState.prepare;
 		handlers = new HashSet<SimpleMessageHandler>();
@@ -1620,4 +1618,7 @@ public class SimpleSession implements Session, AsyncCallback {
 		return idleTimeout;
 	}
 
+	public String getRemoteAddr() {
+		return conn.getRemoteAddr();
+    }
 }
