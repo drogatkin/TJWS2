@@ -1942,7 +1942,7 @@ public class Serve implements ServletContext, Serializable {
 		accessFmt = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
 		logPlaceholders = new Object[12];
 	    }
-	    initSSLAttrs();
+	    //initSSLAttrs();
 	    try {
 		in = new ServeInputStream(socket.getInputStream(), this);
 		out = new ServeOutputStream(socket.getOutputStream(), this);
@@ -2312,6 +2312,7 @@ public class Serve implements ServletContext, Serializable {
 
 		    // System.err.println("Servlet "+os[0]+" for path "+reqUriPath);
 		    uriLen = ((Integer) os[1]).intValue();
+		    initSSLAttrs();
 		    runServlet((HttpServlet) os[0]);
 		} else {
 		    problem("No any servlet found for serving " + reqUriPath, SC_BAD_REQUEST);
