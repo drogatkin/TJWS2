@@ -1404,8 +1404,21 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
                <value name="secure" type="property"/>
              </expression>
              <block type="then">
-                <variable name="port" value="443"/>
-             </block>
+					<if>
+						<expression>
+							<operator name="eq">
+								<value>/</value>
+								<value name="file.separator" type="property" />
+							</operator>
+						</expression>
+						<then>
+							<variable name="port">8443</variable>
+						</then>
+						<else>
+							<variable name="port" value="443" />
+						</else>
+					</if>
+			 </block>
              <block type="else">
                <if>
                   <expression>
