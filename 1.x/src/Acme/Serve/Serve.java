@@ -1942,7 +1942,6 @@ public class Serve implements ServletContext, Serializable {
 		accessFmt = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
 		logPlaceholders = new Object[12];
 	    }
-	    //initSSLAttrs();
 	    try {
 		in = new ServeInputStream(socket.getInputStream(), this);
 		out = new ServeOutputStream(socket.getOutputStream(), this);
@@ -1954,7 +1953,7 @@ public class Serve implements ServletContext, Serializable {
 	}
 
 	private void initSSLAttrs() {
-	    if (socket.getClass().getName().indexOf("SSLSocket") > 0) {
+	    if (socket.getClass().getName().indexOf("SSLSocket") > 0 && sslAttributes == null) {
 		try {
 		    sslAttributes = new Hashtable();
 		    Object sslSession = socket.getClass().getMethod("getSession", Utils.EMPTY_CLASSES)
@@ -1985,7 +1984,7 @@ public class Serve implements ServletContext, Serializable {
 		    // iae.printStackTrace();
 		}
 		// System.err.println("Socket SSL attrs: "+sslAttributes);
-	    }
+	    } // else TODO take attributes from SSLEngine when used
 	}
 
 	/**
