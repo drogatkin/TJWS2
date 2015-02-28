@@ -2840,7 +2840,7 @@ public class Serve implements ServletContext, Serializable {
 		// lazy stuf dlc
 		synchronized (this) {
 		    if (scheme == null)
-			scheme = socket.getClass().getName().indexOf("SSLSocket") > 0 || (serve.proxySSL) ? "https"
+			scheme = socket.getClass().getName().indexOf("SSLSocket") > 0 ||  socket.getClass().getName().indexOf("SSLChannel") > 0 || (serve.proxySSL) ? "https"
 				: "http";
 		}
 	    return scheme;

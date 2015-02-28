@@ -178,7 +178,6 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		}
 
 		public ByteChannel getByteChannel() {
-			// TODO Auto-generated method stub
 			return channel;
 		}
 
