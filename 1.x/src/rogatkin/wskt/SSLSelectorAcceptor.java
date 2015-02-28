@@ -183,6 +183,21 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		}
 
 		@Override
+		public InetAddress getInetAddress() {
+			return socket.getInetAddress();
+		}
+
+		@Override
+		public int getLocalPort() {
+			return socket.getLocalPort();
+		}
+
+		@Override
+		public SocketAddress getRemoteSocketAddress() {
+			return socket.getRemoteSocketAddress();
+		}
+
+		@Override
 		public InputStream getInputStream() throws IOException {
 			if (inp == null)
 				inp = new InputStream() {
