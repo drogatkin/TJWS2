@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 
 <html>
     <head>
@@ -32,7 +32,7 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/monitor/"+document.getElementById("pathinput").value);
+                webSocket = new WebSocket("ws"+(window.location.protocol=="https:"?"s":"")+"://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/monitor/"+document.getElementById("pathinput").value);
                  
                 /**
                  * Binds functions to the listeners for the websocket.
@@ -75,4 +75,4 @@
         </script>
         
     </body>
-</html>
+</html> 

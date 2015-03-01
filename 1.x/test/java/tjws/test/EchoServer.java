@@ -29,7 +29,7 @@ public class EchoServer {
     public void onOpen(Session session){
         System.out.println(session.getId() + " has opened a connection"); 
         try {
-            session.getBasicRemote().sendText("Connection Established at "+new Date());
+            session.getBasicRemote().sendText((session.isSecure()?"Secure c":"C")+"onnection Established at "+new Date());
             session.setMaxIdleTimeout(60*1000);
         } catch (IOException ex) {
             ex.printStackTrace();

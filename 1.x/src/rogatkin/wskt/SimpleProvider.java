@@ -432,7 +432,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 					SelectionKey key = keyIterator.next();
 
-					serve.log("key:" + key + " " + key.isValid());
+					serve.log("key:" + key + " " + key.isValid()+" chan "+key.channel());
 
 					if (!key.isValid()) {
 						continue;

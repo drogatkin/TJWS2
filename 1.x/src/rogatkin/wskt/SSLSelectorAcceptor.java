@@ -467,12 +467,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 				processHandshake();
 				return 0;
 			}
-			// assert ( bufferallocations > 1 ); //see #190
-			//if( bufferallocations <= 1 ) {
-			//	createBuffers( sslEngine.getSession() );
-			//}
-			int num = socketChannel.write(wrap(src));
-			return num;
+			return  socketChannel.write(wrap(src));
 
 		}
 
@@ -564,6 +559,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			if (socketChannel.isOpen())
 				socketChannel.write(wrap(emptybuffer));// FIXME what if not all bytes can be written
 			socketChannel.close();
+			System.err.printf("Socke %s is %b%n", socketChannel, socketChannel.isOpen());
 			//exec.shutdownNow();
 		}
 

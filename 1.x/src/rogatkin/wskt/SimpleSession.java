@@ -40,7 +40,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -257,8 +256,8 @@ public class SimpleSession implements Session, AsyncCallback {
 						// TODO clean all len
 						System.err.printf("close(%s) %n", cr);
 						try {
-							((SimpleBasic) getBasicRemote()).sendEcho((byte) 8, data);
-							close(cr);
+							//((SimpleBasic) getBasicRemote()).sendEcho((byte) 8, data);
+							close(cr, data);
 						} catch (IOException e1) {
 
 						}
@@ -315,12 +314,12 @@ public class SimpleSession implements Session, AsyncCallback {
 						}
 						break;
 					default:
-						System.err.printf(" Invalid frame op 0%x, len %d%n", oper, len);
+						System.err.printf("Invalid frame op 0%x, len %d%n", oper, len);
 						try {
 							close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
 									+ oper));
 						} catch (IOException e) {
-							container.log(e, "Exception at clososing");
+							container.log(e, "Exception at closing");
 						}
 						break readmore;
 					}
@@ -389,8 +388,12 @@ public class SimpleSession implements Session, AsyncCallback {
 					b = new byte[bb.remaining()];
 					bb.put(b);
 				}
-			((SimpleBasic) getBasicRemote()).sendEcho((byte) 8, b);
 			if (basicRemote != null) {
+				try {
+					basicRemote.sendEcho((byte) 8, b);
+				} catch (Exception e) {
+					// eat it, can be closed
+				}
 				basicRemote.destroy();
 				basicRemote = null;
 			}
@@ -398,6 +401,7 @@ public class SimpleSession implements Session, AsyncCallback {
 			System.err.println("Channel closed");
 			container.removeSession(this);
 			channel.close();
+			channel = null;
 		}
 	}
 
@@ -509,8 +513,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	@Override
 	public boolean isSecure() {
-		// TODO Auto-generated method stub
-		return false;
+		return conn.isSecure();
 	}
 
 	@Override
@@ -758,7 +761,7 @@ public class SimpleSession implements Session, AsyncCallback {
 					if (!initPatialBin2(mhc, mh))
 						initPatialBin1(mhc, mh);
 			} else if (mh instanceof MessageHandler.Whole) {
-
+				Class<?> mhc = mh.getClass();
 			}
 
 		}
@@ -1118,20 +1121,11 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public void flushBatch() throws IOException {
-			conn.extendAsyncTimeout(-1);
 			if (batchBuffer != null) {
-				long bl = 0;
 				for (ByteBuffer cb : batchBuffer) {
-					int r = cb.remaining();
-					int l = channel.write(cb);
-					if (l > 0)
-						bl += l;
-					if (l < r)
-						throw new IOException("Ca't write completely batch part " + l + " of " + r + " of total " + bl);
+					sendBuffer(cb, true);
 				}
-				// TODO check if sent size is different than total length
 				batchBuffer = new ByteBuffer[0];
-				conn.extendAsyncTimeout(getMaxIdleTimeout());
 			}
 		}
 
@@ -1212,16 +1206,12 @@ public class SimpleSession implements Session, AsyncCallback {
 			} else {
 				conn.extendAsyncTimeout(-1);
 				// TODO possibly iterate over until entire buffer sent
-				int len = bb.remaining();
-				int lc = channel.write(bb);
-				conn.extendAsyncTimeout(getMaxIdleTimeout());
-				if (len > lc) {
-					// it looks like sending remaining doesn't work
-					//len = bb.remaining();
-					//lc = channel.write(bb);
-					//if (len > lc)
-					throw new IOException("Only " + lc + " of " + len + " sent");
+				for (int len = bb.remaining(); len > 0; len = bb.remaining()) {
+					int lc = channel.write(bb);
+					if (lc <= 0)
+						throw new IOException("Can't sent complete bufer, remmaining " + len);
 				}
+				conn.extendAsyncTimeout(getMaxIdleTimeout());
 			}
 		}
 
@@ -1549,12 +1539,12 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	@Override
 	public void notifyTimeout() {
-		try {
-			close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		if (isOpen())
+			try {
+				close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 	}
 
 	@Override
