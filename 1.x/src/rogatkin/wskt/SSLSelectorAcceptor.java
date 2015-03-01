@@ -124,7 +124,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		if (exceptions.length() > 0)
 			throw new IOException(exceptions);
 		if (exec != null)
-			exec.shutdown();
+			exec.shutdownNow();
 	}
 
 	public void init(Map inProperties, Map outProperties) throws IOException {
@@ -182,6 +182,11 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		}
 
 		@Override
+		public SocketChannel getChannel() {
+			return channel.unwrapChannel();
+		}
+
+		@Override
 		public InetAddress getInetAddress() {
 			return socket.getInetAddress();
 		}
@@ -214,7 +219,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 								io.printStackTrace();
 								throw io;
 							}
-							System.err.printf("read %s%n", readBuff);
+							//System.err.printf("read %s%n", readBuff);
 							readBuff.flip();
 						}
 						int rl = Math.min(readBuff.remaining(), len);
@@ -249,7 +254,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 					@Override
 					public void write(byte[] arg0, int arg1, int arg2) throws IOException {
 						if (writeBuff.capacity() < arg2)
-							writeBuff = ByteBuffer.allocate(arg2);
+							writeBuff = ByteBuffer.allocate(arg2); // TODO in case of very big buffers, process it in chunks
 						else
 							writeBuff.clear();
 						writeBuff.put(arg0, arg1, arg2);
@@ -559,7 +564,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			if (socketChannel.isOpen())
 				socketChannel.write(wrap(emptybuffer));// FIXME what if not all bytes can be written
 			socketChannel.close();
-			exec.shutdownNow();
+			//exec.shutdownNow();
 		}
 
 		private boolean isHandShakeComplete() {
@@ -632,5 +637,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			return socketChannel.isBlocking();
 		}
 
+		public SocketChannel unwrapChannel() {
+			return socketChannel;
+		}
 	}
 }

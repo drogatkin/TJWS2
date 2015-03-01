@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -176,12 +177,19 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
 		SocketChannel sc = socket.getChannel();
+		sc.configureBlocking(false);
+		ByteChannel bc = sc; 
+		try {
+			bc = (ByteChannel)socket.getClass().getMethod("getByteChannel").invoke(socket);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
 				.getAttribute("javax.websocket.server.ServerContainer");
 		ServerEndpointConfig epc = (ServerEndpointConfig) req
 				.getAttribute("javax.websocket.server.ServerEndpointConfig");
 
-		final SimpleSession ss = new SimpleSession(sc, container);
+		final SimpleSession ss = new SimpleSession(bc, container);
 		ss.addMessageHandler(epc);
 		ss.pathParamsMap = (Map<String, String>) req.getAttribute("javax.websocket.server.PathParametersMap");
 		if (req.getSession(false) != null) {
@@ -238,8 +246,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			((ServeConnection) req).spawnAsync(ss);
 		} else
 			serve.log("Request isn't of ServeConnection type " + req.getClass());
-
-		sc.configureBlocking(false);
 		selector.wakeup();
 		sc.register(selector, SelectionKey.OP_READ, ss);
 		ss.open();

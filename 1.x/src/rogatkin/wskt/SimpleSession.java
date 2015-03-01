@@ -39,6 +39,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.util.Arrays;
@@ -95,7 +96,7 @@ public class SimpleSession implements Session, AsyncCallback {
 	boolean frameText;
 	byte[] completeData;
 	// /////////////////////////////////
-	SocketChannel channel;
+	ByteChannel channel;
 	ServeConnection conn; // temporary
 
 	HashSet<SimpleMessageHandler> handlers;
@@ -114,7 +115,7 @@ public class SimpleSession implements Session, AsyncCallback {
 	String subprotocol;
 	List<Extension> extensions;
 
-	SimpleSession(SocketChannel sc, SimpleServerContainer c) {
+	SimpleSession(ByteChannel sc, SimpleServerContainer c) {
 		channel = sc;
 		container = c;
 		container.addSession(this);
@@ -131,7 +132,8 @@ public class SimpleSession implements Session, AsyncCallback {
 			System.err.printf("Read len %d%n", l);
 			if (l < 0)
 				throw new IOException("Closed");
-			parseFrame();
+			else if (l > 0)
+				parseFrame();
 			conn.extendAsyncTimeout(getMaxIdleTimeout());
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -172,8 +174,7 @@ public class SimpleSession implements Session, AsyncCallback {
 				else
 					state = masked ? FrameState.mask : FrameState.data;
 				forceOp = !masked;
-				System.err.printf("len %d st %s avail %d%n", len, state,
-						buf.limit() - buf.position());
+				System.err.printf("len %d st %s avail %d%n", len, state, buf.limit() - buf.position());
 				break;
 			case length32:
 				avail = buf.remaining();
@@ -190,8 +191,7 @@ public class SimpleSession implements Session, AsyncCallback {
 				if (avail >= 8) {
 					len = buf.getLong();
 					if (len > Integer.MAX_VALUE)
-						throw new IllegalArgumentException(
-								"Frame length is too long");
+						throw new IllegalArgumentException("Frame length is too long");
 					state = masked ? FrameState.mask : FrameState.data;
 					break;
 				} else
@@ -249,18 +249,15 @@ public class SimpleSession implements Session, AsyncCallback {
 							short reason = (short) ((data[1] & 255) + (data[0] << 8));
 							String msg;
 							if (data.length > 2) {
-								msg = bytesToString(Arrays.copyOfRange(data, 2,
-										data.length));
+								msg = bytesToString(Arrays.copyOfRange(data, 2, data.length));
 							} else
 								msg = "";
-							cr = new CloseReason(
-									CloseCodes.getCloseCode(reason), msg);
+							cr = new CloseReason(CloseCodes.getCloseCode(reason), msg);
 						}
 						// TODO clean all len
 						System.err.printf("close(%s) %n", cr);
 						try {
-							((SimpleBasic) getBasicRemote()).sendEcho((byte) 8,
-									data);
+							((SimpleBasic) getBasicRemote()).sendEcho((byte) 8, data);
 							close(cr);
 						} catch (IOException e1) {
 
@@ -268,8 +265,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						break;
 					case 0x9: // ping
 						try {
-							((SimpleBasic) getBasicRemote()).sendEcho(
-									(byte) 10, data);
+							((SimpleBasic) getBasicRemote()).sendEcho((byte) 10, data);
 						} catch (IOException e1) {
 							container.log(e1, "Problem in returning pong");
 						}
@@ -287,55 +283,42 @@ public class SimpleSession implements Session, AsyncCallback {
 						boolean partConsumed = false;
 						if (frameText) {
 							for (SimpleMessageHandler mh : handlers) {
-								partConsumed |= mh.processText(
-										bytesToString(data), frameFinal);
-								System.err.printf(
-										"process text part %s - %b%n", mh,
-										partConsumed);
+								partConsumed |= mh.processText(bytesToString(data), frameFinal);
+								System.err.printf("process text part %s - %b%n", mh, partConsumed);
 							}
 						} else {
 							for (SimpleMessageHandler mh : handlers) {
-								partConsumed |= mh.processBinary(data,
-										frameFinal);
-								System.err.printf(
-										"process binary part %s - %b%n", mh,
-										partConsumed);
+								partConsumed |= mh.processBinary(data, frameFinal);
+								System.err.printf("process binary part %s - %b%n", mh, partConsumed);
 							}
 						}
 						if (partConsumed == false) {
 							if (!contin)
 								completeData = data;
 							else {
-								completeData = Arrays.copyOf(completeData,
-										completeData.length + data.length);
-								System.arraycopy(data, 0, completeData,
-										completeData.length - data.length,
-										data.length);
+								completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+								System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
 							}
 							if (frameFinal) {
 								if (frameText) {
 									for (SimpleMessageHandler mh : handlers) {
 										mh.processText(bytesToString(completeData));
-										System.err.printf("process text %s%n",
-												mh);
+										System.err.printf("process text %s%n", mh);
 									}
 								} else {
 									for (SimpleMessageHandler mh : handlers) {
 										mh.processBinary(completeData);
-										System.err.printf(
-												"process binary %s%n", mh);
+										System.err.printf("process binary %s%n", mh);
 									}
 								}
 							}
 						}
 						break;
 					default:
-						System.err.printf(" Invalid frame op 0%x, len %d%n",
-								oper, len);
+						System.err.printf(" Invalid frame op 0%x, len %d%n", oper, len);
 						try {
-							close(new CloseReason(
-									CloseReason.CloseCodes.PROTOCOL_ERROR,
-									"Unsupported frame operation:" + oper));
+							close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
+									+ oper));
 						} catch (IOException e) {
 							container.log(e, "Exception at clososing");
 						}
@@ -364,18 +347,15 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 	}
 
-	void addMessageHandler(ServerEndpointConfig arg0)
-			throws IllegalStateException {
+	void addMessageHandler(ServerEndpointConfig arg0) throws IllegalStateException {
 		if (endpointConfig != null)
-			throw new IllegalStateException(
-					"Only one endpoint can be associated with session/connection");
+			throw new IllegalStateException("Only one endpoint can be associated with session/connection");
 		endpointConfig = arg0;
 		handlers.add(new SimpleMessageHandler());
 	}
 
 	@Override
-	public void addMessageHandler(MessageHandler arg0)
-			throws IllegalStateException {
+	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
 		handlers.add(new SimpleMessageHandler(arg0));
 	}
 
@@ -401,8 +381,7 @@ public class SimpleSession implements Session, AsyncCallback {
 				if (reason == null)
 					b = new byte[0];
 				else {
-					ByteBuffer bb = ByteBuffer.allocate(2 + reason
-							.getReasonPhrase().length());
+					ByteBuffer bb = ByteBuffer.allocate(2 + reason.getReasonPhrase().length());
 					bb.putShort((short) reason.getCloseCode().getCode());
 					if (reason.getReasonPhrase().length() > 0)
 						bb.put(reason.getReasonPhrase().getBytes());
@@ -543,7 +522,7 @@ public class SimpleSession implements Session, AsyncCallback {
 	@Override
 	public void setMaxBinaryMessageBufferSize(int arg0) {
 		if (buf.capacity() < arg0 && buf.remaining() == 0)
-		buf = ByteBuffer.allocate(arg0);
+			buf = ByteBuffer.allocate(arg0);
 	}
 
 	@Override
@@ -592,8 +571,7 @@ public class SimpleSession implements Session, AsyncCallback {
 		Method onError;
 		boolean partText, partBin;
 
-		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose,
-				paramMapError, paramMapPong, paramMapBin;
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong, paramMapBin;
 
 		Object endpoint;
 		Object result;
@@ -621,13 +599,11 @@ public class SimpleSession implements Session, AsyncCallback {
 					for (Class<?> t : params) {
 						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
-							PathParam pp = (PathParam) getFromList(annots[pi],
-									PathParam.class);
+							PathParam pp = (PathParam) getFromList(annots[pi], PathParam.class);
 							if (pp == null) {
 								pmap[pi].sourceType = TEXT;
 								if (onText != null)
-									throw new IllegalArgumentException(
-											"Only one text messages handler is allowed");
+									throw new IllegalArgumentException("Only one text messages handler is allowed");
 								onText = m;
 								paramMapText = pmap;
 								primeText = true;
@@ -647,30 +623,26 @@ public class SimpleSession implements Session, AsyncCallback {
 							partReq = true;
 						} else if (t == byte[].class) {
 							if (onBin != null)
-								throw new IllegalArgumentException(
-										"Only one binary messages handler is allowed");
+								throw new IllegalArgumentException("Only one binary messages handler is allowed");
 							pmap[pi].sourceType = BIN;
 							onBin = m;
 							paramMapBin = pmap;
 							primeBin = true;
 						} else if (t == Reader.class) {
 							if (onText != null)
-								throw new IllegalArgumentException(
-										"Only one text messages handler is allowed");
+								throw new IllegalArgumentException("Only one text messages handler is allowed");
 							onText = m;
 							pmap[pi].sourceType = READER;
 							paramMapText = pmap;
 						} else if (t == ByteBuffer.class) {
 							if (onBin != null)
-								throw new IllegalArgumentException(
-										"Only one binary messages handler is allowed");
+								throw new IllegalArgumentException("Only one binary messages handler is allowed");
 							onBin = m;
 							pmap[pi].sourceType = BYTEBUF;
 							paramMapBin = pmap;
 						} else if (t == InputStream.class) {
 							if (onBin != null)
-								throw new IllegalArgumentException(
-										"Only one binary messages handler is allowed");
+								throw new IllegalArgumentException("Only one binary messages handler is allowed");
 							onBin = m;
 							pmap[pi].sourceType = INPUT;
 							paramMapBin = pmap;
@@ -680,15 +652,13 @@ public class SimpleSession implements Session, AsyncCallback {
 							paramMapPong = pmap;
 						} else {
 							if (endpointConfig.getDecoders() != null) {
-								for (Class<? extends Decoder> dc : endpointConfig
-										.getDecoders()) {
+								for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
 									Method dm = null;
 									try {
 										// TODO consider if more robust to use
 										// dc.getInterfaces();
 										// or simply instantiate and then check?
-										dm = dc.getDeclaredMethod("decode",
-												String.class);
+										dm = dc.getDeclaredMethod("decode", String.class);
 									} catch (NoSuchMethodException e1) {
 									} catch (SecurityException e1) {
 										// TODO Auto-generated catch block
@@ -719,8 +689,7 @@ public class SimpleSession implements Session, AsyncCallback {
 										// TODO consider if more robust to use
 										// dc.getInterfaces();
 										// or simply instantiate and then check?
-										dm = dc.getDeclaredMethod("decode",
-												ByteBuffer.class);
+										dm = dc.getDeclaredMethod("decode", ByteBuffer.class);
 									} catch (NoSuchMethodException e1) {
 									} catch (SecurityException e1) {
 										// TODO Auto-generated catch block
@@ -796,8 +765,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		boolean initPatialText(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = hc.getDeclaredMethod("onMessage", String.class,
-						boolean.class);
+				Method m = hc.getDeclaredMethod("onMessage", String.class, boolean.class);
 				onText = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -812,8 +780,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		boolean initPatialBin1(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage",
-						byte[].class, boolean.class);
+				Method m = mh.getClass().getDeclaredMethod("onMessage", byte[].class, boolean.class);
 				onBin = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -828,8 +795,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		boolean initPatialBin2(Class<?> hc, MessageHandler mh) {
 			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage",
-						ByteBuffer.class, boolean.class);
+				Method m = mh.getClass().getDeclaredMethod("onMessage", ByteBuffer.class, boolean.class);
 				onText = m;
 				endpoint = mh;
 				paramMapText = new ParameterEntry[2];
@@ -864,11 +830,9 @@ public class SimpleSession implements Session, AsyncCallback {
 				} else if (t == CloseReason.class) { // TODO exclude from onOpen
 					pmap[pi].sourceType = CLOSEREASON_PARAM;
 				} else if (t == String.class) {
-					PathParam pp = (PathParam) getFromList(annots[pi],
-							PathParam.class);
+					PathParam pp = (PathParam) getFromList(annots[pi], PathParam.class);
 					if (pp == null)
-						throw new IllegalArgumentException(
-								"String parameter isn't supported");
+						throw new IllegalArgumentException("String parameter isn't supported");
 					// if (pathParamsMap.containsKey(pp.value()) == false)
 					// throw new
 					// IllegalArgumentException("Not supported variable " +
@@ -878,8 +842,7 @@ public class SimpleSession implements Session, AsyncCallback {
 				} else if (t == Throwable.class) {
 					pmap[pi].sourceType = THROWABLE_PARAM;
 				} else
-					throw new IllegalArgumentException("Argument of " + t
-							+ " isn't allowed for a parameter");
+					throw new IllegalArgumentException("Argument of " + t + " isn't allowed for a parameter");
 				pi++;
 			}
 			return pmap;
@@ -903,8 +866,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						};
 						break;
 					case PATH_PARAM:
-						params[pi] = pathParamsMap
-								.get(paramMapPong[pi].sourceName);
+						params[pi] = pathParamsMap.get(paramMapPong[pi].sourceName);
 						break;
 					}
 				try {
@@ -941,8 +903,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						params[pi] = SimpleSession.this;
 						break;
 					case PATH_PARAM:
-						params[pi] = pathParamsMap
-								.get(paramMapBin[pi].sourceName);
+						params[pi] = pathParamsMap.get(paramMapBin[pi].sourceName);
 						break;
 					case BOOLEAN:
 						params[pi] = part;
@@ -952,8 +913,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						for (Decoder decoder : paramMapBin[pi].decoder)
 							if (((Decoder.Binary) decoder).willDecode(bb))
 								try {
-									params[pi] = ((Decoder.Binary) decoder)
-											.decode(bb);
+									params[pi] = ((Decoder.Binary) decoder).decode(bb);
 									break;
 								} catch (DecodeException e) {
 									// TODO Auto-generated catch block
@@ -1011,8 +971,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						params[pi] = SimpleSession.this;
 						break;
 					case PATH_PARAM:
-						params[pi] = pathParamsMap
-								.get(paramMapText[pi].sourceName);
+						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
 						break;
 					case BOOLEAN:
 						params[pi] = part;
@@ -1021,8 +980,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						for (Decoder decoder : paramMapText[pi].decoder)
 							if (((Decoder.Text) decoder).willDecode(t))
 								try {
-									params[pi] = ((Decoder.Text) decoder)
-											.decode(t);
+									params[pi] = ((Decoder.Text) decoder).decode(t);
 									break;
 								} catch (DecodeException e) {
 									// TODO Auto-generated catch block
@@ -1066,12 +1024,10 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = endpointConfig;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapOpen[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 
@@ -1099,15 +1055,13 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = endpointConfig;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapClose[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapClose[pi].sourceName);
 							break;
 						case CLOSEREASON_PARAM:
 							params[pi] = reason;
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 				try {
@@ -1134,12 +1088,10 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = error;
 							break;
 						case PATH_PARAM:
-							params[pi] = pathParamsMap
-									.get(paramMapError[pi].sourceName);
+							params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n",
-									pi);
+							System.err.printf("Unmapped open parameter %d%n", pi);
 							params[pi] = null;
 						}
 				try {
@@ -1168,7 +1120,15 @@ public class SimpleSession implements Session, AsyncCallback {
 		public void flushBatch() throws IOException {
 			conn.extendAsyncTimeout(-1);
 			if (batchBuffer != null) {
-				long bl = channel.write(batchBuffer);
+				long bl = 0;
+				for (ByteBuffer cb : batchBuffer) {
+					int r = cb.remaining();
+					int l = channel.write(cb);
+					if (l > 0)
+						bl += l;
+					if (l < r)
+						throw new IOException("Ca't write completely batch part " + l + " of " + r + " of total " + bl);
+				}
 				// TODO check if sent size is different than total length
 				batchBuffer = new ByteBuffer[0];
 				conn.extendAsyncTimeout(getMaxIdleTimeout());
@@ -1181,20 +1141,16 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 
 		@Override
-		public void sendPing(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
-				throw new IllegalArgumentException(
-						"Control frame data length can't exceed 125");
+				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			sendBuffer(createFrame(true, arg0), true);
 		}
 
 		@Override
-		public void sendPong(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
-				throw new IllegalArgumentException(
-						"Control frame data length can't exceed 125");
+				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			sendBuffer(createFrame(false, arg0), true);
 		}
 
@@ -1242,36 +1198,35 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public void sendBinary(ByteBuffer arg0) throws IOException {
-			sendBuffer( createFrame(arg0, true, true));
+			sendBuffer(createFrame(arg0, true, true));
 		}
-		
+
 		void sendBuffer(ByteBuffer bb) throws IOException {
 			sendBuffer(bb, false);
 		}
-		
+
 		void sendBuffer(ByteBuffer bb, boolean nobatch) throws IOException {
 			if (batchBuffer != null && !nobatch) {
-				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length+1);
-				batchBuffer[batchBuffer.length-1] = bb;
+				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length + 1);
+				batchBuffer[batchBuffer.length - 1] = bb;
 			} else {
 				conn.extendAsyncTimeout(-1);
 				// TODO possibly iterate over until entire buffer sent
 				int len = bb.remaining();
 				int lc = channel.write(bb);
 				conn.extendAsyncTimeout(getMaxIdleTimeout());
-				if (len > lc) { 
+				if (len > lc) {
 					// it looks like sending remaining doesn't work
 					//len = bb.remaining();
 					//lc = channel.write(bb);
 					//if (len > lc)
-						throw new IOException("Only "+lc+" of "+len+" sent");
+					throw new IOException("Only " + lc + " of " + len + " sent");
 				}
 			}
 		}
 
 		@Override
-		public void sendBinary(ByteBuffer arg0, boolean arg1)
-				throws IOException {
+		public void sendBinary(ByteBuffer arg0, boolean arg1) throws IOException {
 			sendBuffer(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
@@ -1314,8 +1269,7 @@ public class SimpleSession implements Session, AsyncCallback {
 			} else if (ec instanceof Encoder.BinaryStream) {
 				((Encoder.BinaryStream) ec).encode(arg0, getSendStream());
 			} else
-				throw new EncodeException(ec,
-						"The encoder doesn't provide proper encding method");
+				throw new EncodeException(ec, "The encoder doesn't provide proper encding method");
 
 		}
 
@@ -1323,8 +1277,7 @@ public class SimpleSession implements Session, AsyncCallback {
 			encoders = new HashMap<Class<?>, Encoder>();
 			for (Class<? extends Encoder> ec : endpointConfig.getEncoders()) {
 				for (Method em : ec.getDeclaredMethods()) {
-					System.err.printf("method %s returns %s%n", em.getName(),
-							em.getReturnType());
+					System.err.printf("method %s returns %s%n", em.getName(), em.getReturnType());
 					if (!"encode".equals(em.getName()))
 						continue;
 					Class<?> rt = em.getReturnType();
@@ -1365,8 +1318,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		void sendEcho(byte op, byte[] data) throws IOException {
 			if (data.length > 125)
-				throw new IllegalArgumentException(
-						"Control frame data length can't exceed 125");
+				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			ByteBuffer bb = prepreFrameHeader(op, data.length, true, true);
 			bb.put(data).flip();
 			sendBuffer(bb, true);
@@ -1374,25 +1326,22 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
 			//System.err.printf("Sending %d bytes as final %b as first %b%n",
-				//	bbp.remaining(), fin, first);
-			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin,
-					first);
+			//	bbp.remaining(), fin, first);
+			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
 			bb.put(bbp).flip();
 			//System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
-				//	bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
-					//bb.get(3));
+			//	bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
+			//bb.get(3));
 			return bb;
 		}
 
 		ByteBuffer createFrame(boolean ping, ByteBuffer bbp) {
-			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa),
-					bbp.remaining(), true, true);
+			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa), bbp.remaining(), true, true);
 			bb.put(bbp).flip();
 			return bb;
 		}
 
-		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin,
-				boolean first) {
+		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin, boolean first) {
 			if (cmd != 1 && cmd != 2) {
 				fin = first = true;
 			}
@@ -1429,14 +1378,12 @@ public class SimpleSession implements Session, AsyncCallback {
 			cont = !fin && !first;
 			byte[] mb = null;
 			try {
-				mb = text == null || text.length() == 0 ? new byte[0] : text
-						.getBytes("UTF-8");
+				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes("UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				mb = text.getBytes();
 			}
 
-			ByteBuffer bb = prepreFrameHeader((byte) 1, (long) mb.length, fin,
-					first);
+			ByteBuffer bb = prepreFrameHeader((byte) 1, (long) mb.length, fin, first);
 			if (masked) {
 				bb.putInt(mask);
 				int mp = 0;
@@ -1445,8 +1392,7 @@ public class SimpleSession implements Session, AsyncCallback {
 			}
 			bb.put(mb);
 			bb.flip();
-			System.err.printf("Send frame %s of %d %s 0%x%xn", text,
-					bb.remaining(), bb, bb.get(0), bb.get(1));
+			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
 
@@ -1481,15 +1427,13 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 
 		@Override
-		public void sendPing(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			basicRemote.sendPing(arg0);
 
 		}
 
 		@Override
-		public void sendPong(ByteBuffer arg0) throws IOException,
-				IllegalArgumentException {
+		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			basicRemote.sendPong(arg0);
 		}
 
@@ -1620,5 +1564,5 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	public String getRemoteAddr() {
 		return conn.getRemoteAddr();
-    }
+	}
 }
