@@ -447,7 +447,10 @@ public class SimpleSession implements Session, AsyncCallback {
 	@Override
 	public Set<MessageHandler> getMessageHandlers() {
 		HashSet<MessageHandler> result = new HashSet<MessageHandler>();
-
+		for (SimpleMessageHandler smh : handlers) {
+			if (smh.endpoint instanceof MessageHandler)
+				result.add((MessageHandler) smh.endpoint);
+		}
 		return result;
 	}
 
@@ -518,8 +521,12 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	@Override
 	public void removeMessageHandler(MessageHandler arg0) {
-		// TODO Auto-generated method stub
-
+		for (SimpleMessageHandler smh : handlers) {
+			if (smh.endpoint == arg0) {
+				handlers.remove(smh);
+				break;
+			}
+		}
 	}
 
 	@Override
@@ -755,12 +762,14 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 
 		SimpleMessageHandler(MessageHandler mh) {
+			endpoint = mh;
 			if (mh instanceof MessageHandler.Partial) {
 				Class<?> mhc = mh.getClass();
 				if (!initPatialText(mhc, mh))
 					if (!initPatialBin2(mhc, mh))
 						initPatialBin1(mhc, mh);
-			} else if (mh instanceof MessageHandler.Whole) {
+			} 
+			if (mh instanceof MessageHandler.Whole) {
 				Class<?> mhc = mh.getClass();
 			}
 
@@ -1187,7 +1196,6 @@ public class SimpleSession implements Session, AsyncCallback {
 				}
 
 			};
-
 		}
 
 		@Override
@@ -1205,13 +1213,15 @@ public class SimpleSession implements Session, AsyncCallback {
 				batchBuffer[batchBuffer.length - 1] = bb;
 			} else {
 				conn.extendAsyncTimeout(-1);
-				// TODO possibly iterate over until entire buffer sent
-				for (int len = bb.remaining(); len > 0; len = bb.remaining()) {
-					int lc = channel.write(bb);
-					if (lc <= 0)
-						throw new IOException("Can't sent complete bufer, remmaining " + len);
+				try {
+					for (int len = bb.remaining(); len > 0; len = bb.remaining()) {
+						int lc = channel.write(bb);
+						if (lc <= 0)
+							throw new IOException("Can't sent complete buffer, remmaining " + len);
+					}
+				} finally {
+					conn.extendAsyncTimeout(getMaxIdleTimeout());
 				}
-				conn.extendAsyncTimeout(getMaxIdleTimeout());
 			}
 		}
 
