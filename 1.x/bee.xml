@@ -9,7 +9,7 @@
 
 <!-- 
   The 7Bee build script used for TJWS project
-   Copyright (c) 2005-2014 Dmitriy Rogatkin  
+   Copyright (c) 2005-2015 Dmitriy Rogatkin  
   -->
 
 <bee name="tjws" type="project">
@@ -1346,7 +1346,24 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <parameter>datasource.properties</parameter>
       <!-- ***************  ================ ****************  -->
       <parameter>-p</parameter>
-      <parameter>80</parameter>
+      <parameter>
+        <expression>
+          <if>
+              <expression>
+                 <operator name="eq">
+                   <value>/</value>
+                   <value name="file.separator" type="property"/>
+                 </operator>
+              </expression>
+              <then>
+                 <variable name="port">8080</variable>
+              </then>
+              <else>
+                <variable name="port">80</variable>
+              </else>
+           </if>
+          </expression>
+      </parameter>
       <parameter>-z</parameter>
       <parameter>50</parameter>
       <parameter>-sh</parameter>
@@ -1527,3 +1544,4 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
   </target>  
 </bee>
 
+ 
