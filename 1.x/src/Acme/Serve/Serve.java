@@ -1953,7 +1953,7 @@ public class Serve implements ServletContext, Serializable {
 	}
 
 	private void initSSLAttrs() {
-	    if (socket.getClass().getName().indexOf("SSLSocket") > 0 && sslAttributes == null) {
+	    if (isSSLSocket() && sslAttributes == null) {
 		try {
 		    sslAttributes = new Hashtable();
 		    Object sslSession = socket.getClass().getMethod("getSession", Utils.EMPTY_CLASSES)
@@ -2840,12 +2840,16 @@ public class Serve implements ServletContext, Serializable {
 		// lazy stuf dlc
 		synchronized (this) {
 		    if (scheme == null)
-			scheme = socket.getClass().getName().indexOf("SSLSocket") > 0 ||  socket.getClass().getName().indexOf("SSLChannel") > 0 || (serve.proxySSL) ? "https"
+			scheme = isSSLSocket() || (serve.proxySSL) ? "https"
 				: "http";
 		}
 	    return scheme;
 	}
 
+	boolean isSSLSocket() {
+		return socket.getClass().getName().indexOf("SSLSocket") > 0 ||  socket.getClass().getName().indexOf("SSLChannel") > 0; 
+	}
+	
 	// / Returns the host name of the server as used in the <host> part of
 	// the request URI.
 	// Same as the CGI variable SERVER_NAME.

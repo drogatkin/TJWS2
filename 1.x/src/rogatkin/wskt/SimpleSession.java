@@ -128,12 +128,12 @@ public class SimpleSession implements Session, AsyncCallback {
 		try {
 			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
+			conn.extendAsyncTimeout(getMaxIdleTimeout());
 			System.err.printf("Read len %d%n", l);
 			if (l < 0)
 				throw new IOException("Closed");
 			else if (l > 0)
 				parseFrame();
-			conn.extendAsyncTimeout(getMaxIdleTimeout());
 		} catch (IOException e) {
 			e.printStackTrace();
 			try {
@@ -355,7 +355,13 @@ public class SimpleSession implements Session, AsyncCallback {
 
 	@Override
 	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
+		SimpleMessageHandler smh = new SimpleMessageHandler(arg0);
+		for (SimpleMessageHandler h : handlers) {
+			if (h.sameType(smh))
+				throw new IllegalStateException("Only one handler of each type allowed");
+		}
 		handlers.add(new SimpleMessageHandler(arg0));
+
 	}
 
 	@Override
@@ -557,7 +563,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		int sourceType;
 		String sourceName;
-		HashSet<Decoder> decoder;
+		Set<Decoder> decoder;
 	}
 
 	class SimpleMessageHandler implements MessageHandler {
@@ -638,7 +644,7 @@ public class SimpleSession implements Session, AsyncCallback {
 							onBin = m;
 							paramMapBin = pmap;
 							primeBin = true;
-						} else if (t == Reader.class) {
+						} else if (t.isAssignableFrom(Reader.class)) {
 							if (onText != null)
 								throw new IllegalArgumentException("Only one text messages handler is allowed");
 							onText = m;
@@ -662,71 +668,48 @@ public class SimpleSession implements Session, AsyncCallback {
 							paramMapPong = pmap;
 						} else {
 							if (endpointConfig.getDecoders() != null) {
-								for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
-									Method dm = null;
-									try {
-										// TODO consider if more robust to use
-										// dc.getInterfaces();
-										// or simply instantiate and then check?
-										dm = dc.getDeclaredMethod("decode", String.class);
-									} catch (NoSuchMethodException e1) {
-									} catch (SecurityException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
-									}
-									if (dm != null && t == dm.getReturnType()) {
+								Set<Decoder> decoders = matchDecoders(t, Decoder.Text.class, String.class);
+								if (decoders.size() > 0) {
+									if (onText != null)
+										throw new IllegalStateException("Only one text messages handler is allowed");
+									onText = m;
+									pmap[pi].decoder = decoders;
+									pmap[pi].sourceType = DECODER;
+									paramMapText = pmap;
+								} else {
+									decoders = matchDecoders(t, Decoder.TextStream.class, Reader.class);
+									if (decoders.size() > 0) {
 										if (onText != null)
-											throw new IllegalArgumentException(
-													"Only one text messages handler is allowed");
-										try {
-											onText = m;
-											Decoder decoder = dc.newInstance();
-											decoder.init(endpointConfig);
-											if (pmap[pi].decoder == null)
-												pmap[pi].decoder = new HashSet<Decoder>();
-											pmap[pi].decoder.add(decoder);
-											pmap[pi].sourceType = DECODER;
-											paramMapText = pmap;
-										} catch (InstantiationException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										} catch (IllegalAccessException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										}
-									}
-									try {
-										// TODO consider if more robust to use
-										// dc.getInterfaces();
-										// or simply instantiate and then check?
-										dm = dc.getDeclaredMethod("decode", ByteBuffer.class);
-									} catch (NoSuchMethodException e1) {
-									} catch (SecurityException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
-									}
-									if (dm != null && t == dm.getReturnType()) {
-										if (onBin != null)
-											throw new IllegalArgumentException(
-													"Only one binary messages handler is allowed");
-										try {
+											throw new IllegalStateException("Only one text messages handler is allowed");
+										onText = m;
+										pmap[pi].decoder = decoders;
+										pmap[pi].sourceType = DECODER;
+										paramMapText = pmap;
+									} else {
+										decoders = matchDecoders(t, Decoder.Binary.class, ByteBuffer.class);
+										if (decoders.size() > 0) {
+											if (onBin != null)
+												throw new IllegalArgumentException(
+														"Only one binary messages handler is allowed");
 											onBin = m;
-											Decoder decoder = dc.newInstance();
-											decoder.init(endpointConfig);
-											if (pmap[pi].decoder == null)
-												pmap[pi].decoder = new HashSet<Decoder>();
-											pmap[pi].decoder.add(decoder);
+											pmap[pi].decoder = decoders;
 											pmap[pi].sourceType = DECODER;
 											paramMapBin = pmap;
-										} catch (InstantiationException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										} catch (IllegalAccessException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
+										} else {
+											decoders = matchDecoders(t, Decoder.BinaryStream.class, InputStream.class);
+											if (decoders.size() > 0) {
+												if (onBin != null)
+													throw new IllegalArgumentException(
+															"Only one binary messages handler is allowed");
+												onBin = m;
+												pmap[pi].decoder = decoders;
+												pmap[pi].sourceType = DECODER;
+												paramMapBin = pmap;
+											}
 										}
 									}
 								}
+
 							}
 						}
 						pi++;
@@ -747,6 +730,18 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		}
 
+		boolean sameType(SimpleMessageHandler smh) {
+			if (smh.onText != null)
+				if (onText != null)
+					return partText == smh.partText;
+			if (smh.onPong != null)
+				return onPong != null;
+			if (smh.onBin != null)
+				if (onBin != null)
+					return partBin == smh.partBin;
+			return false;
+		}
+
 		void destroy() {
 			destroyDecoders(paramMapText);
 			destroyDecoders(paramMapBin);
@@ -762,62 +757,155 @@ public class SimpleSession implements Session, AsyncCallback {
 		}
 
 		SimpleMessageHandler(MessageHandler mh) {
-			endpoint = mh;
-			if (mh instanceof MessageHandler.Partial) {
-				Class<?> mhc = mh.getClass();
-				if (!initPatialText(mhc, mh))
-					if (!initPatialBin2(mhc, mh))
-						initPatialBin1(mhc, mh);
-			} 
-			if (mh instanceof MessageHandler.Whole) {
-				Class<?> mhc = mh.getClass();
-			}
-
+			initHandler(mh);
 		}
 
-		boolean initPatialText(Class<?> hc, MessageHandler mh) {
-			try {
-				Method m = hc.getDeclaredMethod("onMessage", String.class, boolean.class);
-				onText = m;
-				endpoint = mh;
-				paramMapText = new ParameterEntry[2];
-				paramMapText[0] = new ParameterEntry(TEXT);
-				paramMapText[1] = new ParameterEntry(BOOLEAN);
-				return true;
-			} catch (NoSuchMethodException e) {
-			} catch (SecurityException e) {
+		void initHandler(MessageHandler mh) {
+			boolean partial = mh instanceof MessageHandler.Partial;
+			Class<?> mhc = mh.getClass();
+			for (Method m : mhc.getDeclaredMethods()) {
+				if (!"onMessage".equals(m.getName()))
+					continue;
+				Class<?>[] pts = m.getParameterTypes();
+				switch (pts.length) {
+				case 2:
+					if (!partial)
+						continue;
+					if (pts[1] != boolean.class)
+						continue;
+				case 1:
+					if (pts[0] == String.class) {
+						onText = m;
+						endpoint = mh;
+						paramMapText = new ParameterEntry[pts.length];
+						paramMapText[0] = new ParameterEntry(TEXT);
+						if (partial) {
+							paramMapText[1] = new ParameterEntry(BOOLEAN);
+							partText = true;
+						}
+					} else if (pts[0].isAssignableFrom(Reader.class)) {
+						onText = m;
+						endpoint = mh;
+						paramMapText = new ParameterEntry[pts.length];
+						paramMapText[0] = new ParameterEntry(READER);
+						if (partial) {
+							paramMapText[1] = new ParameterEntry(BOOLEAN);
+							partText = true;
+						}
+					} else if (pts[0] == PongMessage.class) {
+						if (partial)
+							throw new IllegalArgumentException("Pong message handler has to be Whole");
+						onPong = m;
+						endpoint = mh;
+						paramMapPong = new ParameterEntry[1];
+						paramMapPong[0] = new ParameterEntry(PONG);
+					} else if (pts[0] == byte[].class) {
+						onBin = m;
+						endpoint = mh;
+						paramMapBin = new ParameterEntry[pts.length];
+						paramMapBin[0] = new ParameterEntry(BIN);
+						if (partial) {
+							paramMapBin[1] = new ParameterEntry(BOOLEAN);
+							partBin = true;
+						}
+					} else if (pts[0] == ByteBuffer.class) {
+						onBin = m;
+						endpoint = mh;
+						paramMapBin = new ParameterEntry[pts.length];
+						paramMapBin[0] = new ParameterEntry(BYTEBUF);
+						if (partial) {
+							paramMapBin[1] = new ParameterEntry(BOOLEAN);
+							partBin = true;
+						}
+					} else {
+						if (endpointConfig.getDecoders() == null)
+							break;
+						Set<Decoder> decs = matchDecoders(pts[0], Decoder.Text.class, String.class);
+						if (decs.size() > 0) {
+							onText = m;
+							endpoint = mh;
+							paramMapText = new ParameterEntry[pts.length];
+							paramMapText[0] = new ParameterEntry(DECODER);
+							paramMapText[0].decoder = decs;
+							if (partial) {
+								paramMapText[1] = new ParameterEntry(BOOLEAN);
+								partText = true;
+							}
+							break;
+						}
+						decs = matchDecoders(pts[0], Decoder.TextStream.class, Reader.class);
+						if (decs.size() > 0) {
+							onText = m;
+							endpoint = mh;
+							paramMapText = new ParameterEntry[pts.length];
+							paramMapText[0] = new ParameterEntry(DECODER);
+							paramMapText[0].decoder = decs;
+							if (partial) {
+								paramMapText[1] = new ParameterEntry(BOOLEAN);
+								partText = true;
+							}
+							break;
+						}
+						decs = matchDecoders(pts[0], Decoder.Binary.class, ByteBuffer.class);
+						if (decs.size() > 0) {
+							onBin = m;
+							endpoint = mh;
+							paramMapBin = new ParameterEntry[pts.length];
+							paramMapBin[0] = new ParameterEntry(DECODER);
+							paramMapBin[0].decoder = decs;
+							if (partial) {
+								paramMapBin[1] = new ParameterEntry(BOOLEAN);
+								partBin = true;
+							}
+							break;
+						}
+						decs = matchDecoders(pts[0], Decoder.BinaryStream.class, InputStream.class);
+						if (decs.size() > 0) {
+							onBin = m;
+							endpoint = mh;
+							paramMapBin = new ParameterEntry[pts.length];
+							paramMapBin[0] = new ParameterEntry(DECODER);
+							paramMapBin[0].decoder = decs;
+							if (partial) {
+								paramMapBin[1] = new ParameterEntry(BOOLEAN);
+								partBin = true;
+							}
+							break;
+						}
+					}
+					break;
+				}
 			}
-			return false;
 		}
 
-		boolean initPatialBin1(Class<?> hc, MessageHandler mh) {
-			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage", byte[].class, boolean.class);
-				onBin = m;
-				endpoint = mh;
-				paramMapText = new ParameterEntry[2];
-				paramMapText[0] = new ParameterEntry(BIN);
-				paramMapText[1] = new ParameterEntry(BOOLEAN);
-				return true;
-			} catch (NoSuchMethodException e) {
-			} catch (SecurityException e) {
+		Set<Decoder> matchDecoders(Class<?> type, Class<? extends Decoder> dt, Class<?> param) {
+			HashSet<Decoder> result = new HashSet<Decoder>();
+			for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
+				if (dt.isAssignableFrom(dc)) {
+					Method dm;
+					try {
+						dm = dc.getDeclaredMethod("decode", param);
+						if (dm.getReturnType() == type) {
+							Decoder decoder = dc.newInstance();
+							decoder.init(endpointConfig);
+							result.add(decoder);
+						}
+					} catch (NoSuchMethodException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (SecurityException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (InstantiationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
-			return false;
-		}
-
-		boolean initPatialBin2(Class<?> hc, MessageHandler mh) {
-			try {
-				Method m = mh.getClass().getDeclaredMethod("onMessage", ByteBuffer.class, boolean.class);
-				onText = m;
-				endpoint = mh;
-				paramMapText = new ParameterEntry[2];
-				paramMapText[0] = new ParameterEntry(BIN);
-				paramMapText[1] = new ParameterEntry(BOOLEAN);
-				return true;
-			} catch (NoSuchMethodException e) {
-			} catch (SecurityException e) {
-			}
-			return false;
+			return result;
 		}
 
 		Annotation getFromList(Annotation[] annots, Class<?> targAnnot) {
@@ -1004,7 +1092,7 @@ public class SimpleSession implements Session, AsyncCallback {
 						params[pi] = new StringReader(t);
 						break;
 					default:
-						System.err.printf("Unmapped text  parameter %d%n", pi);
+						System.err.printf("Unmapped text parameter %d%n", pi);
 						params[pi] = null;
 					}
 				try {

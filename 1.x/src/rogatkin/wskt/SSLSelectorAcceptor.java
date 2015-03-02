@@ -181,6 +181,11 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			return channel;
 		}
 
+		public SSLSession getSession() {
+			//channel.sslEngine.getSSLParameters();
+			return channel.sslEngine.getSession();
+		}
+		
 		@Override
 		public SocketChannel getChannel() {
 			return channel.unwrapChannel();
