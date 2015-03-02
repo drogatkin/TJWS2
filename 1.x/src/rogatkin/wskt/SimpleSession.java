@@ -76,7 +76,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import Acme.Serve.Serve.AsyncCallback;
 import Acme.Serve.Serve.ServeConnection;
 
-public class SimpleSession implements Session, AsyncCallback {
+public class SimpleSession implements Session, AsyncCallback, Runnable {
 
 	enum FrameState {
 		prepare, header, length, length32, length64, mask, data
@@ -114,6 +114,9 @@ public class SimpleSession implements Session, AsyncCallback {
 	String subprotocol;
 	List<Extension> extensions;
 
+	static final boolean __debugOn = false;
+	static final boolean __parseDebugOn = __debugOn;
+
 	SimpleSession(ByteChannel sc, SimpleServerContainer c) {
 		channel = sc;
 		container = c;
@@ -124,18 +127,19 @@ public class SimpleSession implements Session, AsyncCallback {
 		handlers = new HashSet<SimpleMessageHandler>();
 	}
 
-	public void run() {
+	public synchronized void run() {
 		try {
 			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
 			conn.extendAsyncTimeout(getMaxIdleTimeout());
-			System.err.printf("Read len %d%n", l);
+			if (__parseDebugOn)
+				container.log("Read len %d", l);
 			if (l < 0)
 				throw new IOException("Closed");
 			else if (l > 0)
 				parseFrame();
 		} catch (IOException e) {
-			e.printStackTrace();
+			container.log(e, "Frame reading");
 			try {
 				close();
 			} catch (IOException e1) {
@@ -156,7 +160,8 @@ public class SimpleSession implements Session, AsyncCallback {
 			case header:
 			case prepare:
 				byte hb = buf.get();
-				System.err.printf("hdr 0%x%n", hb);
+				if (__parseDebugOn)
+					container.log("hdr 0%x", hb);
 				frameFinal = (hb & 0x80) != 0;
 				oper = hb & 0x0f;
 				state = FrameState.length;
@@ -173,7 +178,8 @@ public class SimpleSession implements Session, AsyncCallback {
 				else
 					state = masked ? FrameState.mask : FrameState.data;
 				forceOp = !masked;
-				System.err.printf("len %d st %s avail %d%n", len, state, buf.limit() - buf.position());
+				if (__parseDebugOn)
+					container.log("len %d st %s avail %d", len, state, buf.limit() - buf.position());
 				break;
 			case length32:
 				avail = buf.remaining();
@@ -204,7 +210,8 @@ public class SimpleSession implements Session, AsyncCallback {
 				} else
 					break readmore;
 			case data:
-				System.err.printf("data oper 0%x len %d%n", oper, len);
+				if (__parseDebugOn)
+					container.log("data oper 0%x len %d", oper, len);
 				boolean contin = false;
 				// if (contin)
 				// oper = frameText ? 1 : 2;
@@ -253,11 +260,10 @@ public class SimpleSession implements Session, AsyncCallback {
 								msg = "";
 							cr = new CloseReason(CloseCodes.getCloseCode(reason), msg);
 						}
-						// TODO clean all len
-						System.err.printf("close(%s) %n", cr);
+						if (__parseDebugOn)
+							container.log("close(%s)", cr);
 						try {
-							//((SimpleBasic) getBasicRemote()).sendEcho((byte) 8, data);
-							close(cr, data);
+							close(cr, data); // echo is handled by close
 						} catch (IOException e1) {
 
 						}
@@ -283,12 +289,14 @@ public class SimpleSession implements Session, AsyncCallback {
 						if (frameText) {
 							for (SimpleMessageHandler mh : handlers) {
 								partConsumed |= mh.processText(bytesToString(data), frameFinal);
-								System.err.printf("process text part %s - %b%n", mh, partConsumed);
+								if (__parseDebugOn)
+									container.log("process text part %s - %b", mh, partConsumed);
 							}
 						} else {
 							for (SimpleMessageHandler mh : handlers) {
 								partConsumed |= mh.processBinary(data, frameFinal);
-								System.err.printf("process binary part %s - %b%n", mh, partConsumed);
+								if (__parseDebugOn)
+									container.log("process binary part %s - %b", mh, partConsumed);
 							}
 						}
 						if (partConsumed == false) {
@@ -302,19 +310,21 @@ public class SimpleSession implements Session, AsyncCallback {
 								if (frameText) {
 									for (SimpleMessageHandler mh : handlers) {
 										mh.processText(bytesToString(completeData));
-										System.err.printf("process text %s%n", mh);
+										if (__parseDebugOn)
+											container.log("process text %s", mh);
 									}
 								} else {
 									for (SimpleMessageHandler mh : handlers) {
 										mh.processBinary(completeData);
-										System.err.printf("process binary %s%n", mh);
+										if (__parseDebugOn)
+											container.log("process binary %s", mh);
 									}
 								}
 							}
 						}
 						break;
 					default:
-						System.err.printf("Invalid frame op 0%x, len %d%n", oper, len);
+						container.log("Invalid frame op 0%x, len %d", oper, len);
 						try {
 							close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
 									+ oper));
@@ -327,7 +337,8 @@ public class SimpleSession implements Session, AsyncCallback {
 				forceOp = false;
 			}
 		}
-		System.err.printf("Exited %b%n", buf.hasRemaining());
+		if (__parseDebugOn)
+			container.log("Exited %b", buf.hasRemaining());
 		if (buf.hasRemaining()) {
 			buf.mark();
 			buf.position(lim);
@@ -404,7 +415,8 @@ public class SimpleSession implements Session, AsyncCallback {
 				basicRemote = null;
 			}
 		} finally {
-			System.err.println("Channel closed");
+			if (__debugOn)
+				container.log("Channel closed");
 			container.removeSession(this);
 			channel.close();
 			channel = null;
@@ -890,18 +902,11 @@ public class SimpleSession implements Session, AsyncCallback {
 							decoder.init(endpointConfig);
 							result.add(decoder);
 						}
-					} catch (NoSuchMethodException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (SecurityException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InstantiationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					} catch (Exception e) {
+						if (__debugOn)
+							container.log(e, "Problem of adding decoder %s", dc);
+						else
+							container.log("Problem %s at adding decoder %s", e, dc);
 					}
 				}
 			}
@@ -1016,8 +1021,8 @@ public class SimpleSession implements Session, AsyncCallback {
 									params[pi] = ((Decoder.Binary) decoder).decode(bb);
 									break;
 								} catch (DecodeException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
+									if (__debugOn)
+										container.log(e, "in decoding...");
 									processError(e);
 								}
 						break;
@@ -1028,11 +1033,12 @@ public class SimpleSession implements Session, AsyncCallback {
 						params[pi] = new ByteArrayInputStream(b);
 						break;
 					default:
-						container.log("Unmapped binary parameter %d", pi);
+						container.log("Unmapped binary parameter %d at calling %s", pi, onBin);
 						params[pi] = null;
 					}
 				try {
-					System.err.printf("Called %s%n", b);
+					if (__debugOn)
+						container.log("Called %s", b);
 					result = onBin.invoke(endpoint, params);
 					if (result != null) {
 						if (result instanceof String)
@@ -1083,8 +1089,8 @@ public class SimpleSession implements Session, AsyncCallback {
 									params[pi] = ((Decoder.Text) decoder).decode(t);
 									break;
 								} catch (DecodeException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
+									if (__debugOn)
+										container.log(e, "in decoding...");
 									processError(e);
 								}
 						break;
@@ -1092,22 +1098,22 @@ public class SimpleSession implements Session, AsyncCallback {
 						params[pi] = new StringReader(t);
 						break;
 					default:
-						System.err.printf("Unmapped text parameter %d%n", pi);
+						container.log("Unmapped text parameter %d at call %s", pi, onText);
 						params[pi] = null;
 					}
 				try {
-					System.err.printf("Called %s%n", t);
+					if (__debugOn)
+						container.log("Called %s", t);
 					result = onText.invoke(endpoint, params);
 					if (result != null) {
 						if (result instanceof String)
 							getBasicRemote().sendText(result.toString());
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Exception in text message processing");
 				}
 			} else
-				System.err.printf("No handler for text mess %s%n", t);
+				container.log("No handler for text message %s", t);
 		}
 
 		void processOpen() {
@@ -1127,16 +1133,16 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n", pi);
+							container.log("Unmapped open parameter %d at call %s", pi, onOpen);
 							params[pi] = null;
 						}
 
 				try {
-					System.err.printf("Called %s%n", "on open");
+					if (__debugOn)
+						container.log("Called %s", "on open");
 					result = onOpen.invoke(endpoint, params);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Exception in onOpen");
 				}
 			}
 		}
@@ -1161,15 +1167,15 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = reason;
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n", pi);
+							container.log("Unmapped close parameter %d at call %s", pi, onClose);
 							params[pi] = null;
 						}
 				try {
-					System.err.printf("Called %s%n", "on close");
+					if (__debugOn)
+						container.log("Called %s", "on close");
 					result = onClose.invoke(endpoint, params);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Exception in onClose");
 				}
 			}
 		}
@@ -1191,15 +1197,15 @@ public class SimpleSession implements Session, AsyncCallback {
 							params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
 							break;
 						default:
-							System.err.printf("Unmapped open parameter %d%n", pi);
+							container.log("Unmapped error parameter %d at call %s", pi, onError);
 							params[pi] = null;
 						}
 				try {
-					System.err.printf("Called %s%n", "on close");
+					if (__debugOn)
+						container.log("Called %s", "on error");
 					result = onError.invoke(endpoint, params);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					container.log(e, "Exception in onError");
 				}
 			}
 		}
@@ -1264,7 +1270,6 @@ public class SimpleSession implements Session, AsyncCallback {
 					super.close();
 					closed = true;
 				}
-
 			};
 		}
 
@@ -1365,7 +1370,8 @@ public class SimpleSession implements Session, AsyncCallback {
 			encoders = new HashMap<Class<?>, Encoder>();
 			for (Class<? extends Encoder> ec : endpointConfig.getEncoders()) {
 				for (Method em : ec.getDeclaredMethods()) {
-					System.err.printf("method %s returns %s%n", em.getName(), em.getReturnType());
+					if (__debugOn)
+						container.log("method %s returns %s", em.getName(), em.getReturnType());
 					if (!"encode".equals(em.getName()))
 						continue;
 					Class<?> rt = em.getReturnType();
@@ -1377,12 +1383,9 @@ public class SimpleSession implements Session, AsyncCallback {
 								Encoder e = ec.newInstance();
 								e.init(endpointConfig);
 								encoders.put(pts[0], e);
-							} catch (InstantiationException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (IllegalAccessException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+							} catch (Exception e) {
+								if (__debugOn)
+									container.log(e, "at encoder creation");
 							}
 						}
 					} // else
@@ -1480,7 +1483,8 @@ public class SimpleSession implements Session, AsyncCallback {
 			}
 			bb.put(mb);
 			bb.flip();
-			System.err.printf("Send frame %s of %d %s 0%x%xn", text, bb.remaining(), bb, bb.get(0), bb.get(1));
+			if (__debugOn)
+				container.log("Send frame %s of %d %s hdr: 0%x%x", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
 
@@ -1499,6 +1503,7 @@ public class SimpleSession implements Session, AsyncCallback {
 	}
 
 	class SimpleAsync implements Async {
+		long sendTimeout;
 
 		SimpleAsync() {
 			getBasicRemote();
@@ -1532,8 +1537,7 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public long getSendTimeout() {
-			// TODO Auto-generated method stub
-			return 0;
+			return sendTimeout;
 		}
 
 		@Override
@@ -1629,8 +1633,9 @@ public class SimpleSession implements Session, AsyncCallback {
 
 		@Override
 		public void setSendTimeout(long arg0) {
-			// TODO Auto-generated method stub
-
+			if (arg0 < 0)
+				return;
+			sendTimeout = arg0;
 		}
 
 	}
@@ -1641,7 +1646,8 @@ public class SimpleSession implements Session, AsyncCallback {
 			try {
 				close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (__debugOn)
+					container.log(e, "close() at timeout");
 			}
 	}
 

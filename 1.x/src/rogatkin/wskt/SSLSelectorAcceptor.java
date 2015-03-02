@@ -216,14 +216,14 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 					public int read(byte[] b, int off, int len) throws IOException {
 						if (!readBuff.hasRemaining()) {
 							readBuff.clear();
-							try {
+							//try {
 								int rb = channel.read(readBuff);
 								if (rb < 0)
 									return -1;
-							} catch (IOException io) {
-								io.printStackTrace();
-								throw io;
-							}
+							//} catch (IOException io) {
+								//io.printStackTrace();
+								//throw io;
+							//}
 							//System.err.printf("read %s%n", readBuff);
 							readBuff.flip();
 						}
@@ -415,6 +415,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		private synchronized ByteBuffer wrap(ByteBuffer b) throws SSLException {
 			outCrypt.compact();
 			writeEngineResult = sslEngine.wrap(b, outCrypt);
+			if(writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
+				throw new SSLException("Can't wrap "+b +" in "+outCrypt+", because "+writeEngineResult.getStatus());
 			outCrypt.flip();
 			return outCrypt;
 		}
@@ -564,7 +566,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			if (socketChannel.isOpen())
 				socketChannel.write(wrap(emptybuffer));// FIXME what if not all bytes can be written
 			socketChannel.close();
-			System.err.printf("Socke %s is %b%n", socketChannel, socketChannel.isOpen());
+			//System.err.printf("Socke %s is %b%n", socketChannel, socketChannel.isOpen());
 			//exec.shutdownNow();
 		}
 

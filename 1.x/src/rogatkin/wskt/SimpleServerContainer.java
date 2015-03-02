@@ -198,7 +198,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 		//ArrayList <SimpleSession> copyss = new ArrayList<SimpleSession>(sessions);
 		for (SimpleSession ss : new ArrayList<SimpleSession>(sessions))
 			try {
-				System.err.printf("Closing session %s%n", ss);
+				//System.err.printf("Closing session %s%n", ss);
 				ss.close(cr);
 			} catch (IOException e) {
 

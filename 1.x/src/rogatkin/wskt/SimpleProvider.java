@@ -41,6 +41,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.nio.channels.ByteChannel;
@@ -91,18 +93,22 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	Selector selector;
 	Serve serve;
+	ExecutorService messageFlowExec;
+
+	static final boolean __debugOn = false;
 
 	@Override
 	public void init(Serve s) {
 		serve = s;
 		try {
 			selector = Selector.open();
-			Thread t = new Thread(this, "websockets provider selector");
+			Thread t = new Thread(this, "websocket provider selector");
 			t.setDaemon(true);
 			t.start();
 		} catch (IOException ioe) {
 			throw new RuntimeException("Can't initialize selector, websocket functionality is disabled", ioe);
 		}
+		messageFlowExec = Executors.newCachedThreadPool();
 	}
 
 	@Override
@@ -178,11 +184,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			throws IOException {
 		SocketChannel sc = socket.getChannel();
 		sc.configureBlocking(false);
-		ByteChannel bc = sc; 
+		ByteChannel bc = sc;
 		try {
-			bc = (ByteChannel)socket.getClass().getMethod("getByteChannel").invoke(socket);
-		} catch(Exception e) {
-			e.printStackTrace();
+			bc = (ByteChannel) socket.getClass().getMethod("getByteChannel").invoke(socket);
+		} catch (Exception e) {
+			if (__debugOn)
+				serve.log(e, "No byte channel");
 		}
 		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
 				.getAttribute("javax.websocket.server.ServerContainer");
@@ -207,8 +214,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					try {
 						ss.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Session invalidate"));
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						if (__debugOn)
+							serve.log(e, "At closing on session invalidation");
 					}
 
 				}
@@ -253,6 +260,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	@Override
 	public void destroy() {
+		messageFlowExec.shutdown();
 		try {
 			selector.close();
 		} catch (IOException e) {
@@ -418,7 +426,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	@Override
 	public void run() {
-		while (true) {
+		while (selector.isOpen()) {
 			try {
 				int readyChannels = selector.select(1000);
 				if (readyChannels == 0)
@@ -431,8 +439,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				while (keyIterator.hasNext()) {
 
 					SelectionKey key = keyIterator.next();
-
-					serve.log("key:" + key + " " + key.isValid()+" chan "+key.channel());
+					if (__debugOn)
+						serve.log("key:" + key + " " + key.isValid() + " chan " + key.channel());
 
 					if (!key.isValid()) {
 						continue;
@@ -446,14 +454,16 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					} else if (key.isReadable()) {
 						// a channel is ready for reading						
 						if (key.channel().isOpen()) {
-							((SimpleSession) key.attachment()).run();
+							messageFlowExec.submit(((SimpleSession) key.attachment()));
+							//((SimpleSession) key.attachment()).run();
 						} else {
-							serve.log("Cancel key :" + key + ", channel closed");
+							if (__debugOn)
+								serve.log("Cancel key :" + key + ", channel closed");
 							key.cancel();
 						}
 					} else if (key.isWritable()) {
 						// a channel is ready for writing
-						// TODO perhaps trigger flag in session
+						// TODO perhaps trigger flag in session too execute writing bach
 					}
 
 					keyIterator.remove();
@@ -464,7 +474,5 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					break;
 			}
 		}
-
 	}
-
 }
