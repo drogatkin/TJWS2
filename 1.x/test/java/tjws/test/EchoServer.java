@@ -4,12 +4,14 @@ import java.io.IOException;
  
 import java.util.Date;
 
+import javax.servlet.http.HttpSession;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
- 
+
 /** 
  * @ServerEndpoint gives the relative name for the end point
  * This will be accessed via ws://localhost:8080/EchoChamber/echo
@@ -17,7 +19,7 @@ import javax.websocket.server.ServerEndpoint;
  * "EchoChamber" is the name of the package
  * and "echo" is the address to access this class from the server
  */
-@ServerEndpoint("/echo/{room}") 
+@ServerEndpoint(value="/echo/{room}", configurator = GetHttpSessionConfigurator.class) 
 public class EchoServer {
     /**
      * @OnOpen allows us to intercept the creation of a new session.
@@ -26,10 +28,12 @@ public class EchoServer {
      * successful.
      */
     @OnOpen
-    public void onOpen(Session session){
+    public void onOpen(Session session, EndpointConfig config){
         System.out.println(session.getId() + " has opened a connection"); 
+        boolean htp_sess = config.getUserProperties()
+                .containsKey(HttpSession.class.getName());
         try {
-            session.getBasicRemote().sendText((session.isSecure()?"Secure c":"C")+"onnection Established at "+new Date());
+            session.getBasicRemote().sendText((session.isSecure()?"Secure c":"C")+"onnection Established at "+new Date() +" htp session "+htp_sess);
             session.setMaxIdleTimeout(60*1000);
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -49,6 +53,14 @@ public class EchoServer {
         } catch (IOException ex) {
             ex.printStackTrace();
         }*/
+        String fromShare = "";
+        for (Session s : session.getOpenSessions()) {
+			if (s != this && s.isOpen() && s.getUserProperties().get("SHARE") != null)
+					fromShare += " "+ (String) s.getUserProperties().get("SHARE");
+		}
+        session.getUserProperties().put("SHARE", message);
+        if (fromShare != null)
+        	message += " from others "+fromShare; 
         return message;
     }
  

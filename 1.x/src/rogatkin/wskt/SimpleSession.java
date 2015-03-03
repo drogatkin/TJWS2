@@ -57,6 +57,7 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
 import javax.websocket.OnClose;
@@ -113,6 +114,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	ServerEndpointConfig endpointConfig;
 	String subprotocol;
 	List<Extension> extensions;
+	Map<String, Object> userProperties;
 
 	static final boolean __debugOn = false;
 	static final boolean __parseDebugOn = __debugOn;
@@ -125,6 +127,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		buf.mark();
 		state = FrameState.prepare;
 		handlers = new HashSet<SimpleMessageHandler>();
+		userProperties = new HashMap<String, Object>();
 	}
 
 	public synchronized void run() {
@@ -421,6 +424,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		} finally {
 			if (__debugOn)
 				container.log("Channel closed");
+			userProperties = null;
 			container.removeSession(this);
 			channel.close();
 			channel = null;
@@ -528,7 +532,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 
 	@Override
 	public Map<String, Object> getUserProperties() {
-		return endpointConfig.getUserProperties();
+		return userProperties;
 	}
 
 	@Override
@@ -934,7 +938,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				pmap[pi] = new ParameterEntry();
 				if (t.isAssignableFrom(Session.class)) {
 					pmap[pi].sourceType = SESSION_PARAM;
-				} else if (t.isAssignableFrom(Session.class)) {
+				} else if (t.isAssignableFrom(EndpointConfig.class)) {
 					pmap[pi].sourceType = ENDPOINTCONFIG_PARAM;
 				} else if (t == CloseReason.class) { // TODO exclude from onOpen
 					pmap[pi].sourceType = CLOSEREASON_PARAM;

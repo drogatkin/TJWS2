@@ -48,6 +48,7 @@ import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 /**
  * The container is created one per web application and one for default
@@ -89,9 +90,16 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 			}
 		} else {
 			ServerEndpoint sep = arg0.getAnnotation(ServerEndpoint.class);
+			Configurator configurator = null;
+			if (ServerEndpointConfig.Configurator.class !=sep.configurator())
+				try {
+					configurator = sep.configurator().newInstance();
+				} catch(Exception e) {
+					throw new DeploymentException("Can't instantiate custom Configurator for "+sep.configurator(), e);
+				}
 			addEndpoint(ServerEndpointConfig.Builder.create(arg0, sep.value())
 					.subprotocols(Arrays.asList(sep.subprotocols())).encoders(Arrays.asList(sep.encoders()))
-					.decoders(Arrays.asList(sep.decoders())).build());
+					.decoders(Arrays.asList(sep.decoders())).configurator(configurator).build());
 		}
 
 	}
