@@ -135,12 +135,13 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
 			conn.extendAsyncTimeout(getMaxIdleTimeout());
-			if (__parseDebugOn)
-				container.log("Read len %d", l);
 			if (l < 0)
 				throw new IOException("Closed");
-			else if (l > 0)
+			else if (l > 0) {
+				if (__parseDebugOn)
+					container.log("Read len %d", l);
 				parseFrame();
+			}
 		} catch (IOException e) {
 			container.log(e, "Frame reading");
 			try {
@@ -148,6 +149,15 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			} catch (IOException e1) {
 
 			}
+		} catch(Throwable t) {
+			if (t instanceof ThreadDeath)
+				throw (ThreadDeath)t;
+			boolean handled = false;
+			for (SimpleMessageHandler mh : handlers) {
+				handled |= mh.processError(t);
+			}
+			if (!handled)
+				container.log(t, "Unhandled error");
 		}
 	}
 
@@ -986,7 +996,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					result = onPong.invoke(endpoint, params);
 				} catch (Exception e) {
 					container.log(e, "Error in sending pong");
-					processError(e);
+					if (!processError(e))
+						container.log(e, "Unhandled error");
 				}
 			}
 		}
@@ -1031,7 +1042,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 								} catch (DecodeException e) {
 									if (__debugOn)
 										container.log(e, "in decoding...");
-									processError(e);
+									if (!processError(e))
+										container.log(e, "Unhandled error");
 								}
 						break;
 					case BYTEBUF:
@@ -1054,7 +1066,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					}
 				} catch (Exception e) {
 					container.log(e, "Error in sending binary data");
-					processError(e);
+					if (!processError(e))
+						container.log(e, "Unhandled error");
 				}
 			} else
 				container.log("No handler for binary message %s", b);
@@ -1099,7 +1112,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 								} catch (DecodeException e) {
 									if (__debugOn)
 										container.log(e, "in decoding...");
-									processError(e);
+									if (!processError(e))
+										container.log(e, "Unhandled error");
 								}
 						break;
 					case READER:
@@ -1188,7 +1202,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 		}
 
-		void processError(Throwable error) {
+		boolean processError(Throwable error) {
 			if (onError != null) {
 				Class<?>[] paramts = onError.getParameterTypes();
 				Object[] params = new Object[paramts.length];
@@ -1212,10 +1226,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					if (__debugOn)
 						container.log("Called %s", "on error");
 					result = onError.invoke(endpoint, params);
+					return true;
 				} catch (Exception e) {
 					container.log(e, "Exception in onError");
 				}
-			}
+			}  
+				return false;
 		}
 
 		Object getResult() {
