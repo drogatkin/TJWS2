@@ -55,11 +55,11 @@ public class EchoServer {
         }*/
         String fromShare = "";
         for (Session s : session.getOpenSessions()) {
-			if (s != this && s.isOpen() && s.getUserProperties().get("SHARE") != null)
+			if (s != session && s.isOpen() && s.getUserProperties().get("SHARE") != null)
 					fromShare += " "+ (String) s.getUserProperties().get("SHARE");
 		}
         session.getUserProperties().put("SHARE", message);
-        if (fromShare != null)
+        if (fromShare .length() > 0)
         	message += " from others "+fromShare; 
         return message;
     }
