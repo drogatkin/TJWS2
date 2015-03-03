@@ -2124,9 +2124,9 @@ public class Serve implements ServletContext, Serializable {
 		    if ((errMsg == null || errMsg.indexOf("ocket closed") < 0)
 			    && ioe instanceof java.nio.channels.AsynchronousCloseException == false)
 			if (socket != null)
-			    serve.log("TJWS: IO error: " + ioe + " in processing a request from "
+			    serve.log("TJWS: IO error: " + ioe + " in processing a request " +(reqUriPathUn==null?"(NULL)":reqUriPathUn)+" from "
 				    + socket.getInetAddress() + ":" + socket.getLocalPort() + " / "
-				    + socket.getClass().getName()/* , ioe */);
+				    + socket.getClass().getName()/* , ioe*/ );
 			else
 			    serve.log("TJWS: IO error: " + ioe + "(socket NULL)");
 		    else
@@ -4535,6 +4535,7 @@ public class Serve implements ServletContext, Serializable {
 	    // in.close();
 	    if (STREAM_DEBUG)
 		System.err.println("instream.close() " + closed);
+	    //new Exception("instream.close()").printStackTrace();
 	    if (closed)
 		return; // throw new
 			// IOException("The stream is already closed");

@@ -143,7 +143,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			} catch (Exception e) {
 			}
 		if (isa == null)
-			isa = new InetSocketAddress(port);		
+			isa = new InetSocketAddress(port);
 		// TODO add ARG_BACKLOG
 		channel.socket().bind(isa);
 
@@ -185,7 +185,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			//channel.sslEngine.getSSLParameters();
 			return channel.sslEngine.getSession();
 		}
-		
+
 		@Override
 		public SocketChannel getChannel() {
 			return channel.unwrapChannel();
@@ -217,12 +217,12 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 						if (!readBuff.hasRemaining()) {
 							readBuff.clear();
 							//try {
-								int rb = channel.read(readBuff);
-								if (rb < 0)
-									return -1;
+							int rb = channel.read(readBuff);
+							if (rb < 0)
+								return -1;
 							//} catch (IOException io) {
-								//io.printStackTrace();
-								//throw io;
+							//io.printStackTrace();
+							//throw io;
 							//}
 							//System.err.printf("read %s%n", readBuff);
 							readBuff.flip();
@@ -264,10 +264,12 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 							writeBuff.clear();
 						writeBuff.put(arg0, arg1, arg2);
 						writeBuff.flip();
-						int a = writeBuff.remaining();
-						int c = channel.write(writeBuff);
-						if (c < a)
-							throw new IOException("Could write only " + c + " bytes of " + a);
+						for (int r = writeBuff.remaining(), wc = 0; r > 0; r = writeBuff.remaining()) {
+							int c = channel.write(writeBuff);
+							if (c <= 0)
+								throw new IOException("Could not write only " + wc);
+							wc += c;
+						}
 					}
 
 					@Override
@@ -415,8 +417,9 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		private synchronized ByteBuffer wrap(ByteBuffer b) throws SSLException {
 			outCrypt.compact();
 			writeEngineResult = sslEngine.wrap(b, outCrypt);
-			if(writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
-				throw new SSLException("Can't wrap "+b +" in "+outCrypt+", because "+writeEngineResult.getStatus());
+			if (writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
+				throw new SSLException("Can't wrap " + b + " in " + outCrypt + ", because "
+						+ writeEngineResult.getStatus());
 			outCrypt.flip();
 			return outCrypt;
 		}
@@ -474,7 +477,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 				processHandshake();
 				return 0;
 			}
-			return  socketChannel.write(wrap(src));
+			return socketChannel.write(wrap(src));
 
 		}
 
