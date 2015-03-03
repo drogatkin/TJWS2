@@ -387,6 +387,10 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	}
 
 	public void close(CloseReason reason, byte[] b) throws IOException {
+		//new Exception("attempt close already closed").printStackTrace();
+		if (isOpen() == false) {
+			return;
+		}
 		try {
 			for (SimpleMessageHandler mh : handlers) {
 				mh.processClose(reason);

@@ -137,6 +137,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
 				.getAttribute("javax.websocket.server.ServerContainer");
 		if (container == null) {
+			//serve.getAttribute("javax.websocket.server.ServerContainer");
 			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
 			return;
 		}

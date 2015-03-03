@@ -417,9 +417,9 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		private synchronized ByteBuffer wrap(ByteBuffer b) throws SSLException {
 			outCrypt.compact();
 			writeEngineResult = sslEngine.wrap(b, outCrypt);
-			if (writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
-				throw new SSLException("Can't wrap " + b + " in " + outCrypt + ", because "
-						+ writeEngineResult.getStatus());
+			//if (writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
+				//throw new SSLException("Can't wrap " + b + " in " + outCrypt + ", because "
+					//	+ writeEngineResult.getStatus());
 			outCrypt.flip();
 			return outCrypt;
 		}
