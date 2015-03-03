@@ -729,9 +729,14 @@ public class Serve implements ServletContext, Serializable {
 	String workPath = (String) arguments.get(ARG_WORK_DIRECTORY);
 	if (workPath == null)
 	    workPath = ".";
+	hostName = sanitizeAsFile(hostName);
 	return new File(workPath, hostName + '-'
 		+ (arguments.get(ARG_PORT) == null ? String.valueOf(DEF_PORT) : arguments.get(ARG_PORT))
 		+ (servletContext == null ? "" : "-" + servletContext.getServletContextName()) + "-session.obj");
+    }
+    
+    protected String sanitizeAsFile(String name) {
+    	return name.replaceAll("\\.|:|\\\\|/", "-");
     }
 
     protected void console(String msg) {
