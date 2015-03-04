@@ -131,6 +131,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	}
 
 	public synchronized void run() {
+		if (!isOpen())
+			return;
 		try {
 			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
