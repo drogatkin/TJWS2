@@ -38,6 +38,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.Channels;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -209,39 +210,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		@Override
 		public InputStream getInputStream() throws IOException {
 			if (inp == null)
-				inp = new InputStream() {
-					byte[] oneByte = new byte[1];
-
-					@Override
-					public int read(byte[] b, int off, int len) throws IOException {
-						if (!readBuff.hasRemaining()) {
-							readBuff.clear();
-							//try {
-							int rb = channel.read(readBuff);
-							if (rb < 0)
-								return -1;
-							//} catch (IOException io) {
-							//io.printStackTrace();
-							//throw io;
-							//}
-							//System.err.printf("read %s%n", readBuff);
-							readBuff.flip();
-						}
-						int rl = Math.min(readBuff.remaining(), len);
-						readBuff.get(b, off, rl);
-						return rl;
-					}
-
-					@Override
-					public int read() throws IOException {
-						synchronized (oneByte) {
-							int rb = read(oneByte);
-							if (rb < 0)
-								return -1;
-							return oneByte[0] & 255;
-						}
-					}
-				};
+				inp = Channels.newInputStream(channel);
 			return inp;
 		}
 
@@ -253,33 +222,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		@Override
 		public OutputStream getOutputStream() throws IOException {
 			if (outp == null)
-				outp = new OutputStream() {
-					byte[] oneByte = new byte[1];
-
-					@Override
-					public void write(byte[] arg0, int arg1, int arg2) throws IOException {
-						if (writeBuff.capacity() < arg2)
-							writeBuff = ByteBuffer.allocate(arg2); // TODO in case of very big buffers, process it in chunks
-						else
-							writeBuff.clear();
-						writeBuff.put(arg0, arg1, arg2);
-						writeBuff.flip();
-						for (int r = writeBuff.remaining(), wc = 0; r > 0; r = writeBuff.remaining()) {
-							int c = channel.write(writeBuff);
-							if (c <= 0)
-								throw new IOException("Could not write only " + wc);
-							wc += c;
-						}
-					}
-
-					@Override
-					public void write(int arg0) throws IOException {
-						synchronized (oneByte) {
-							oneByte[0] = (byte) arg0;
-							write(oneByte);
-						}
-					}
-				};
+				outp = Channels.newOutputStream(channel); 
 			return outp;
 		}
 	}
