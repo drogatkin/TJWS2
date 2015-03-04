@@ -557,10 +557,11 @@ regular way.</p>
 packaged socket factories as a reference implementation.</p>
     <p>
         Starting from 1.30 Socket Factory concept was replaced by Acceptor. It allowed to
-        use Selector based processing requests with 10% improved performance. 
-        Four concrete Acceptor implementations are available:</p>
+        use Selector based processing requests with 10% improved performance and required for websocket. 
+        Five concrete Acceptor implementations are available:</p>
     <ul>
-        <li>Acme.Serve.SelectorAcceptor - non secure, Selector based implementation.</li>
+        <li>Acme.Serve.SelectorAcceptor - non secure, channel based implementation (use with websocket in non blocking IO mode).</li>
+        <li>rogatkin.wskt.SSLSelectorAcceptor - secure, channel based implementation (use with websocket in non blocking IO mode).</li>
         <li>Acme.Serve.SimpleAcceptor - non secure, server socket based implementation, is used by
             default.(since 1.31)</li>
         <li>Acme.Serve.SSLAcceptor - secure, SSL socket based implementation.</li>
