@@ -710,6 +710,7 @@ public class Serve implements ServletContext, Serializable {
     	try {
     	    websocketProvider = (WebsocketProvider) Class.forName(provider).newInstance();
     	    websocketProvider.init(this);
+            websocketProvider.deploy(this, null);
     	} catch (ClassNotFoundException cnf) {
     	    log("TJWS: Problem finding websocket provider: " + cnf);
     	} catch (Throwable t) {
@@ -927,7 +928,7 @@ public class Serve implements ServletContext, Serializable {
     	
     	public void destroy();
     	
-    	public void deploy(HttpServlet servlet, List classpathFiles);
+    	public void deploy(ServletContext servletCtx, List classpathFiles);
     }
 
     protected Acceptor createAcceptor() throws IOException {

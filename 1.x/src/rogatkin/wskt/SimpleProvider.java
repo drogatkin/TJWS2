@@ -89,11 +89,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	public static final String WSKT_RFC4122 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+	public static final String PROP_WSKT_MAIN_CONTAINER = "tjws.websocket.container";
+
 	//static final ForkJoinPool mainPool = new ForkJoinPool();
 
 	Selector selector;
 	Serve serve;
 	ExecutorService messageFlowExec;
+
+	boolean rootContainerUse;
 
 	static final boolean __debugOn = false;
 
@@ -108,6 +112,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		} catch (IOException ioe) {
 			throw new RuntimeException("Can't initialize selector, websocket functionality is disabled", ioe);
 		}
+		rootContainerUse = Boolean.getBoolean(System.getProperty(PROP_WSKT_MAIN_CONTAINER, "false"));
+
 		messageFlowExec = Executors.newCachedThreadPool();
 	}
 
@@ -130,22 +136,25 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Sec Key is missed");
 			return;
 		}
-		if (servlet == null) {
+		if (servlet == null && !rootContainerUse) {
 			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No web application associated with " + path);
 			return;
 		}
 		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
 				.getAttribute("javax.websocket.server.ServerContainer");
 		if (container == null) {
-			//serve.getAttribute("javax.websocket.server.ServerContainer");
-			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
+			if (rootContainerUse)
+				container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
+			else
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
 			return;
 		}
+		String contextPath = servlet == null || rootContainerUse ? "" : ((WebAppServlet) servlet).getContextPath();
 		String found = null;
 		int hops = -1;
 		Map<String, String> foundVarMap = null;
 		for (String p : container.endpoints.keySet()) {
-			Map<String, String> varMap = matchTemplate(path, ((WebAppServlet) servlet).getContextPath() + p);
+			Map<String, String> varMap = matchTemplate(path, contextPath + p);
 			if (varMap != null) {
 				if (found == null || hops > varMap.size()) {
 					found = p;
@@ -192,8 +201,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			if (__debugOn)
 				serve.log(e, "No byte channel");
 		}
-		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
-				.getAttribute("javax.websocket.server.ServerContainer");
+		SimpleServerContainer container = null;
+		if (servlet != null)
+			container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
+					.getAttribute("javax.websocket.server.ServerContainer");
+		else if (rootContainerUse)
+			container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
 		ServerEndpointConfig epc = (ServerEndpointConfig) req
 				.getAttribute("javax.websocket.server.ServerEndpointConfig");
 
@@ -271,7 +284,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void deploy(final HttpServlet servlet, final List cp) {
+	public void deploy(final ServletContext servCtx, final List cp) {
 		final SimpleServerContainer ssc = new SimpleServerContainer(this);
 		final HashSet<ServerApplicationConfig> appCfgs = new HashSet<ServerApplicationConfig>();
 		final HashSet<Class<?>> annSeps = new HashSet<Class<?>>();
@@ -279,15 +292,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		new FastClasspathScanner("") {
 			@Override
 			public List<File> getUniqueClasspathElements() {
-				return cp;
+				return cp == null ? super.getUniqueClasspathElements() : cp;
 			}
 
 			@Override
 			public ClassLoader getClassLoader() {
-				if (servlet instanceof WebAppServlet)
-					return ((WebAppServlet) servlet).getClassLoader();
-				else if (servlet != null)
-					return servlet.getClass().getClassLoader();
+				if (servCtx instanceof WebAppServlet)
+					return ((WebAppServlet) servCtx).getClassLoader();
+				else if (servCtx != null)
+					return servCtx.getClass().getClassLoader();
 				return null;
 			}
 		}.matchClassesImplementing(ServerApplicationConfig.class,
@@ -342,9 +355,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 				}
 		}
-		ServletContext servCtx = servlet.getServletConfig().getServletContext();
 		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);
-		servCtx.addListener(ssc);
+		try {
+			servCtx.addListener(ssc);
+		} catch (Error e) {
+			// serve is still on old servlet spec
+		}
 	}
 
 	String getSHA1Base64(String key) {
