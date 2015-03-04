@@ -2,20 +2,20 @@
 <body>
 <h2>TJWS Websocket (JSR 356) extension module version 1.0 beta</h2>
 <h3>Release notes</h3>
-<p>This is first release of JSR 356 implementation in scope of TJWS. The implementation is provided as TJWS extension module and 
+<p>This is first release of JSR 356 implementation in scope of TJWS. The implementation is provided as a TJWS extension module and 
 generally optional. It introduces extra dependency as fast classpath scan library which is used for end points deployment. The library
  is forked at <a href="https://github.com/drogatkin/fast-classpath-scanner">GitHub</a>. 7Bee scripts are provided in the fork. End points
- deployment is provided only in scope of .war deployed applications. The limitation can be reconsidered in future. Since websockets
- use non blocking IO, they work only with SelectorAcceptor acceptor. Error code SC_NOT_IMPLEMENTED (501) will be returned
+ deployment is provided only in scope of .war deployed applications. The limitation can be reconsidered in future. Since websocket
+ uses non blocking IO, they work only with SelectorAcceptor and SSLSelectorAcceptor acceptors. Error code SC_NOT_IMPLEMENTED (501) will be returned
  at handshake for other types of acceptors.
 </p>
 <h3>Known problems and limitations</h3>
 <ol>
 <li>No extensions processing and negotiation</li>
-<li>Debug messages are not cleaned completely from log</li>
+<li>No asynchronous send timeout</li>
 </ol>
 <h3>Build Notes</h3>
-<p>If you prefer build everything yourself, for example for specific Java version, you need also obtain source code of JSR 356 API.
+<p>If you prefer build everything yourself, for example for a specific Java version, then you need also obtain source code of JSR 356 API.
 Use the command: <code>svn checkout https://svn.java.net/svn/websocket-spec~source-code-repository</code>, 7Bee build scripts for 
 the API can be obtained from <a href="https://github.com/drogatkin/7Bee/tree/master/examples/jsr356api">examples/jsr356api</a> of 7Bee distribution.
 </body>

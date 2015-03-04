@@ -526,10 +526,11 @@ support to the server.</p>
 	<li><i>Add command line parameter -socketFactory socket_factory_class_name 
 	and enjoy the show.</i></li>
 </ul>
-<p>There are two SSL supporting socket factories packaged with TJWS - <i>Acme.Serve.SSLServerSocketFactory </i>
-and<i> rogatkin.web.DoubleHeadSocketFactory </i>(available from v 1.17)<i>. </i>First is recommended to use 
+<p>There are three SSL supporting socket factories packaged with TJWS - <i>Acme.Serve.SSLServerSocketFactory </i>
+,<i> rogatkin.web.DoubleHeadSocketFactory </i>(available from v 1.17), and 
+<i>rogatkin.wskt.SSLSelectorAcceptor</i>. First is recommended to use 
 with core TJWS, when second with J2EE deployment module since it provides 
-supporting http and https at the same time and requires Java 5. 7Bee script 
+supporting http and https at the same time and requires Java 5+. Third is required or websocket configuration. 7Bee script 
 contains examples of usage both factories. To use first one type<kbd> bee -Dsecure=true</kbd> and for second <kbd>bee -Ddoublehead=true</kbd>. 
 Additional command line parameters can be specified with each factory like :</p>
 <ol>
@@ -898,7 +899,7 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.110)
+(version 1.110 + websocket beta)
 </p>
 
 <p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
