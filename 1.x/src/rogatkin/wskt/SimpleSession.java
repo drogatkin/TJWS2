@@ -151,9 +151,9 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			} catch (IOException e1) {
 
 			}
-		} catch(Throwable t) {
+		} catch (Throwable t) {
 			if (t instanceof ThreadDeath)
-				throw (ThreadDeath)t;
+				throw (ThreadDeath) t;
 			boolean handled = false;
 			for (SimpleMessageHandler mh : handlers) {
 				handled |= mh.processError(t);
@@ -438,7 +438,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				container.log("Channel closed");
 			userProperties = null;
 			container.removeSession(this);
-			channel.close();
+			try {
+				channel.close();
+			} catch (Exception e) {
+				// eat it
+			}
 			channel = null;
 		}
 	}
@@ -1232,8 +1236,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				} catch (Exception e) {
 					container.log(e, "Exception in onError");
 				}
-			}  
-				return false;
+			}
+			return false;
 		}
 
 		Object getResult() {
