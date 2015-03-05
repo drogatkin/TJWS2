@@ -1400,6 +1400,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
        <parameter name="org.apache.commons.logging.simplelog.defaultlog" value="error" type="property"/>
        <parameter name="org.apache.commons.logging.Log" value="org.apache.commons.logging.impl.SimpleLog"/>
        <parameter name="tjws.fileservlet.usecompression" value=""/>
+       <parameter name="tjws.websocket.container" value="true"/>
        <!--parameter name="jaxp.debug" value="1"/-->
        <!--parameter value="-nka"/-->
        <parameter value="-sp"/>
