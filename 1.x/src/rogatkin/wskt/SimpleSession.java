@@ -145,7 +145,9 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				parseFrame();
 			}
 		} catch (IOException e) {
-			container.log(e, "Frame reading");
+			container.log("Non blocking frame read exception : "+e);
+			if (__parseDebugOn)
+				container.log(e, "");
 			try {
 				close();
 			} catch (IOException e1) {

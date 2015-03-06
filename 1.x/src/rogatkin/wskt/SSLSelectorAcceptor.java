@@ -222,7 +222,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		@Override
 		public OutputStream getOutputStream() throws IOException {
 			if (outp == null)
-				outp = Channels.newOutputStream(channel); 
+				outp = Channels.newOutputStream(channel);
 			return outp;
 		}
 	}
@@ -361,8 +361,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			outCrypt.compact();
 			writeEngineResult = sslEngine.wrap(b, outCrypt);
 			//if (writeEngineResult.getStatus() != SSLEngineResult.Status.OK)
-				//throw new SSLException("Can't wrap " + b + " in " + outCrypt + ", because "
-					//	+ writeEngineResult.getStatus());
+			//throw new SSLException("Can't wrap " + b + " in " + outCrypt + ", because "
+			//	+ writeEngineResult.getStatus());
 			outCrypt.flip();
 			return outCrypt;
 		}
@@ -507,11 +507,14 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		}
 
 		public void close() throws IOException {
-			sslEngine.closeOutbound();
-			sslEngine.getSession().invalidate();
-			if (socketChannel.isOpen())
-				socketChannel.write(wrap(emptybuffer));// FIXME what if not all bytes can be written
-			socketChannel.close();
+			try {
+				sslEngine.closeOutbound();
+				sslEngine.getSession().invalidate();
+				if (socketChannel.isOpen())
+					socketChannel.write(wrap(emptybuffer));// FIXME what if not all bytes can be written
+			} finally {
+				socketChannel.close();
+			}
 			//System.err.printf("Socke %s is %b%n", socketChannel, socketChannel.isOpen());
 			//exec.shutdownNow();
 		}

@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
 
 <head>
@@ -531,11 +531,11 @@ support to the server.</p>
 	and enjoy the show.</i></li>
 </ul>
 <p>There are three SSL supporting socket factories packaged with TJWS - <i>Acme.Serve.SSLServerSocketFactory </i>
-,<i> rogatkin.web.DoubleHeadSocketFactory </i>(available from v 1.17), and 
-<i>rogatkin.wskt.SSLSelectorAcceptor</i>. First is recommended to use 
+,<i> rogatkin.web.DoubleHeadSocketFactory</i> (available from v 1.17), and 
+<i>rogatkin.wskt.SSLSelectorAcceptor</i> (available from v 1.110). First is recommended to use 
 with core TJWS, when second with J2EE deployment module since it provides 
-supporting http and https at the same time and requires Java 5+. Third is required or websocket configuration. 7Bee script 
-contains examples of usage both factories. To use first one type<kbd> bee -Dsecure=true</kbd> and for second <kbd>bee -Ddoublehead=true</kbd>. 
+supporting http and https at the same time and requires Java 5+. Third is required for websocket configuration. 7Bee script 
+contains examples of usage two factories. Command <kbd>bee -Dsecure=true</kbd> runs TJWS using SSLSelectorAcceptor, and <kbd>bee -Ddoublehead=true</kbd> runs  DoubleHeadSocketFactory. 
 Additional command line parameters can be specified with each factory like :</p>
 <ol>
 	<li><u>algorithm</u> - encryption algorithm, SUNX509 when not specified</li>
@@ -1073,4 +1073,4 @@ Rogatkin</a>.Happy web servicing!</p>
 <center>&copy; 2015</center>
 </body>
 </html>
- 
+  

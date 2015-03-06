@@ -470,7 +470,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 					} else if (key.isReadable()) {
 						// a channel is ready for reading						
-						if (key.channel().isOpen()) {
+						if (key.channel().isOpen() && !messageFlowExec.isShutdown()) {
 							messageFlowExec.submit(((SimpleSession) key.attachment()));
 							//((SimpleSession) key.attachment()).run();
 						} else {
