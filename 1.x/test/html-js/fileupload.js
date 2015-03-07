@@ -1,4 +1,4 @@
-var files = [], p = true;
+var files = [];
 var endPoint = "ws" + (self.location.protocol == "https:" ? "s" : "") + "://"
 		+ self.location.hostname
 		+ (self.location.port ? ":" + self.location.port : "")
@@ -11,26 +11,25 @@ function upload(blobOrFile) {
 }
 
 function openSocket() {
-	if (socket)
-		return;
 	socket = new WebSocket(endPoint);
+	
 	socket.onmessage = function(event) {
 		self.postMessage('Websocket : ' + event.data);
 	};
 
 	socket.onclose = function(event) {
+		ready = false;
 	};
 
 	socket.onopen = function() {
 		ready = true;
+		process();
 	};
 }
 
 function process() {
-	for (var j = 0; j < files.length; j++) {
-		var blob = files[j];
-		if (!ready)
-			continue;
+	while (files.length > 0) {
+		var blob = files.shift();
 		socket.send(JSON.stringify({
 			"cmd" : 1,
 			"data" : blob.name
@@ -63,17 +62,18 @@ function process() {
 			"cmd" : 2,
 			"data" : blob.name
 		}));
-		p = (j == files.length - 1) ? true : false;
 		self.postMessage(blob.name + " Uploaded Succesfully");
 	}
 }
 
 self.onmessage = function(e) {
-	openSocket();
 	for (var j = 0; j < e.data.files.length; j++)
 		files.push(e.data.files[j]);
 
-	if (p) {
+	//self.postMessage("Job size: "+files.length);
+			
+	if (ready) {
 		process();
-	}
+	} else
+		openSocket();
 }
