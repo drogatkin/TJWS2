@@ -80,7 +80,7 @@ import Acme.Serve.Serve.ServeConnection;
 public class SimpleSession implements Session, AsyncCallback, Runnable {
 
 	enum FrameState {
-		prepare, header, length, length32, length64, mask, data
+		prepare, header, length, length16, length64, mask, data
 	}
 
 	// ///// TODO encapsulate in a parser class
@@ -143,16 +143,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (__parseDebugOn)
 					container.log("Read len %d", l);
 				parseFrame();
+				return;
 			}
 		} catch (IOException e) {
 			container.log("Non blocking frame read exception : "+e);
 			if (__parseDebugOn)
 				container.log(e, "");
-			try {
-				close();
-			} catch (IOException e1) {
-
-			}
 		} catch (Throwable t) {
 			if (t instanceof ThreadDeath)
 				throw (ThreadDeath) t;
@@ -162,6 +158,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			if (!handled)
 				container.log(t, "Unhandled error");
+		}
+		try {
+			close();
+		} catch (IOException e1) {
+
 		}
 	}
 
@@ -189,7 +190,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				masked = (lb & 0x80) != 0;
 				len = lb & 0x7f;
 				if (len == 126)
-					state = FrameState.length32;
+					state = FrameState.length16;
 				else if (len == 127)
 					state = FrameState.length64;
 				else
@@ -198,11 +199,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (__parseDebugOn)
 					container.log("len %d st %s avail %d", len, state, buf.limit() - buf.position());
 				break;
-			case length32:
+			case length16:
 				avail = buf.remaining();
 				if (avail >= 2) {
 					// buf.order(ByteOrder.BIG_ENDIAN);
-					len = buf.getShort();
+					len = buf.get() & 255;
+					len = (len << 8) | (buf.get() & 255);
 					state = masked ? FrameState.mask : FrameState.data;
 					break;
 				} else {
@@ -212,7 +214,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				avail = buf.remaining();
 				if (avail >= 8) {
 					len = buf.getLong();
-					if (len > Integer.MAX_VALUE)
+					if (len > Integer.MAX_VALUE || len < 0)
 						throw new IllegalArgumentException("Frame length is too long");
 					state = masked ? FrameState.mask : FrameState.data;
 					break;

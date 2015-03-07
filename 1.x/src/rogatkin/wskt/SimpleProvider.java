@@ -145,11 +145,11 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		if (container == null) {
 			if (rootContainerUse)
 				container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
-			else
+			if (container == null)
 				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
 			return;
 		}
-		String contextPath = servlet == null || rootContainerUse ? "" : ((WebAppServlet) servlet).getContextPath();
+		String contextPath = servlet instanceof WebAppServlet? ((WebAppServlet) servlet).getContextPath():"";
 		String found = null;
 		int hops = -1;
 		Map<String, String> foundVarMap = null;

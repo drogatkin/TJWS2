@@ -226,8 +226,13 @@
          <parameter>L</parameter>
          <parameter type="path">&build_directory;/&build_file;</parameter>
          <parameter/>
+         <parameter>L</parameter>
+         <parameter type="path" variable="JSON_LIB"></parameter>
+         <parameter/>
          <parameter>A</parameter>
          <parameter>html-js/*.html</parameter>
+         <parameter>A</parameter>
+         <parameter>html-js/*.js</parameter>
       </function>
     </block>
   </target>
