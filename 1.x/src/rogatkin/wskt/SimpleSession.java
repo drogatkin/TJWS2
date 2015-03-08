@@ -143,12 +143,16 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (__parseDebugOn)
 					container.log("Read len %d", l);
 				parseFrame();
-				return;
 			}
 		} catch (IOException e) {
 			container.log("Non blocking frame read exception : "+e);
 			if (__parseDebugOn)
 				container.log(e, "");
+			try {
+				close();
+			} catch (IOException e1) {
+
+			}
 		} catch (Throwable t) {
 			if (t instanceof ThreadDeath)
 				throw (ThreadDeath) t;
@@ -158,11 +162,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			if (!handled)
 				container.log(t, "Unhandled error");
-		}
-		try {
-			close();
-		} catch (IOException e1) {
+			try {
+				close();
+			} catch (IOException e1) {
 
+			}
 		}
 	}
 

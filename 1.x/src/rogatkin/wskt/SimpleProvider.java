@@ -449,8 +449,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void run() {
 		while (selector.isOpen()) {
 			try {
-				for(SimpleSession ss:penndingSessions) {
-					penndingSessions.remove(ss);
+				for(SimpleSession ss = penndingSessions.poll(); ss != null; ss = penndingSessions.poll()) {
 					SocketChannel sc = null;
 					if (ss.channel instanceof SocketChannel)
 						sc = (SocketChannel)ss.channel;
