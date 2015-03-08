@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -96,6 +97,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	Selector selector;
 	Serve serve;
 	ExecutorService messageFlowExec;
+	ConcurrentLinkedQueue<SimpleSession> penndingSessions;
 
 	boolean rootContainerUse;
 
@@ -105,6 +107,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void init(Serve s) {
 		serve = s;
 		try {
+			penndingSessions = new ConcurrentLinkedQueue<SimpleSession>();
 			selector = Selector.open();
 			Thread t = new Thread(this, "websocket provider selector");
 			t.setDaemon(true);
@@ -267,9 +270,10 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			((ServeConnection) req).spawnAsync(ss);
 		} else
 			serve.log("Request isn't of ServeConnection type " + req.getClass());
+		penndingSessions.add(ss);
 		selector.wakeup();
-		sc.register(selector, SelectionKey.OP_READ, ss);
-		ss.open();
+		//sc.register(selector, SelectionKey.OP_READ, ss);
+		//ss.open();
 	}
 
 	@Override
@@ -445,6 +449,24 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void run() {
 		while (selector.isOpen()) {
 			try {
+				for(SimpleSession ss:penndingSessions) {
+					penndingSessions.remove(ss);
+					SocketChannel sc = null;
+					if (ss.channel instanceof SocketChannel)
+						sc = (SocketChannel)ss.channel;
+					else 
+						try {
+							sc = (SocketChannel) ss.channel.getClass().getMethod("unwrapChannel").invoke(ss.channel);
+						} catch(Exception e) {
+							
+						}
+					if (sc != null) {
+						sc.register(selector, SelectionKey.OP_READ, ss);
+						ss.open();
+					} else
+						serve.log("Session with not proper channel will be closed");
+				}
+				
 				int readyChannels = selector.select(1000);
 				if (readyChannels == 0)
 					continue;
