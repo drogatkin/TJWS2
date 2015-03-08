@@ -70,6 +70,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 	private Selector selector;
 
 	private Iterator readyItor;
+	
+	private boolean clientAuth;
 
 	//protected SSLEngine sslEngine;
 	private SSLContext context;
@@ -102,6 +104,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 					// Accept request
 					SSLEngine sslEngine = context.createSSLEngine();
+					if (clientAuth)
+						sslEngine.setNeedClientAuth(clientAuth);
 					sslEngine.setUseClientMode(false);
 					return new SSLChannelSocket(serverSocket.accept(), sslEngine, exec);
 				}
@@ -129,6 +133,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 	}
 
 	public void init(Map inProperties, Map outProperties) throws IOException {
+		clientAuth = "true".equals(inProperties.get(ARG_CLIENTAUTH));
+		
 		context = initSSLContext(inProperties, outProperties);
 
 		selector = Selector.open();
