@@ -13,9 +13,23 @@
 
   <output id="list"></output>
   <script>
-      var worker = new Worker('fileupload.js');
- worker.onmessage = function(e) {
- alert(e.data);
+     Element.prototype.remove = function() {
+	    this.parentElement.removeChild(this);
+	}
+	NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
+	    for(var i = 0, len = this.length; i < len; i++) {
+	        if(this[i] && this[i].parentElement) {
+	            this[i].parentElement.removeChild(this[i]);
+	        }
+	    }
+	}
+    var worker = new Worker('fileupload.js');
+    worker.onmessage = function(e) {
+	  var li = document.getElementById(escape(e.data.data));
+	  if (li)
+		  li.remove();
+	  else
+          alert(e.data.data);
 }
 worker.onerror =werror;
 function werror(e) {
@@ -34,7 +48,7 @@ function handleFileSelect(evt) {
  // files is a FileList of File objects. List some properties.
  var output = [];
  for (var i = 0, f; f = files[i]; i++) {
-  output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ', f.size, ' bytes, last modified: ', f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a', '</li>');
+  output.push('<li id="',escape(f.name),'"><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ', f.size, ' bytes, last modified: ', f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a', '</li>');
  }
  document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
 }

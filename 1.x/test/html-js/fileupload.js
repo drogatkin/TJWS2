@@ -14,7 +14,7 @@ function openSocket() {
 	socket = new WebSocket(endPoint);
 	
 	socket.onmessage = function(event) {
-		self.postMessage('Websocket : ' + event.data);
+		self.postMessage(JSON.parse(event.data));
 	};
 
 	socket.onclose = function(event) {
@@ -62,7 +62,7 @@ function process() {
 			"cmd" : 2,
 			"data" : blob.name
 		}));
-		self.postMessage(blob.name + " Uploaded Succesfully");
+		//self.postMessage(blob.name + " Uploaded Succesfully");
 	}
 }
 
