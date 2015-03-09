@@ -1,10 +1,17 @@
-   <!DOCTYPE html>
+         <!DOCTYPE html>
 <html>
     <head>
         <title>Fast Upload</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
+        <style>
+           #drop_zone { border: 10px dashed #ccc; width: 100px; min-height: 100px; margin: 20px auto;}
+            #drop_zone.hover { border: 10px dashed #0c0; }
+            #drop_zone img { display: block; margin: 10px auto; }
+            #drop_zone p { margin: 10px; font-size: 14px; }
+   </style>
     </head>
+    
     <body>
           <input type="file" id="files" name="files[]" multiple />
   <div id="drop_zone">
@@ -36,10 +43,10 @@ function werror(e) {
   console.log('ERROR: Line ', e.lineno, ' in ', e.filename, ': ', e.message);
  }
 function handleFileSelect(evt) {
- evt.stopPropagation();
+ //evt.stopPropagation();
  evt.preventDefault();
 
- var files = /*evt.dataTransfer.files||*/evt.target.files;
+ var files = evt.dataTransfer.files||evt.target.files;
  // FileList object.
  try {
  worker.postMessage({
@@ -59,10 +66,11 @@ function handleFileSelect(evt) {
 }
 
 function handleDragOver(evt) {
- evt.stopPropagation();
+ //evt.stopPropagation();
  evt.preventDefault();
  evt.dataTransfer.dropEffect = 'copy';
  // Explicitly show this is a copy.
+ return false;
 }
 
 // Setup the dnd listeners.
@@ -72,4 +80,4 @@ dropZone.addEventListener('drop', handleFileSelect, false);
  document.getElementById('files').addEventListener('change', handleFileSelect, false);
   </script>
     </body>
-</html>           
+</html>                     
