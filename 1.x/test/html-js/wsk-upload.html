@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+   <!DOCTYPE html>
 <html>
     <head>
         <title>Fast Upload</title>
@@ -41,9 +41,14 @@ function handleFileSelect(evt) {
 
  var files = /*evt.dataTransfer.files||*/evt.target.files;
  // FileList object.
+ try {
  worker.postMessage({
  'files' : files
  });
+ } catch(e) {
+     alert('Can\'t spawn files to worker - '+e)
+     return
+ }
  //Sending File list to worker
  // files is a FileList of File objects. List some properties.
  var output = [];
@@ -67,4 +72,4 @@ dropZone.addEventListener('drop', handleFileSelect, false);
  document.getElementById('files').addEventListener('change', handleFileSelect, false);
   </script>
     </body>
-</html>         
+</html>           
