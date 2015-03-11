@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html>
 
 <head>
@@ -750,6 +750,10 @@ with annotated JDO and forms makes creation of rich application possible even fo
                         public void addWarDeployer(String deployerFactory, String throttles) {
                               super.addWarDeployer(deployerFactory, throttles);
                         }
+                        public void addWebsocketProvider() { <i>// add if plan to deploy websocket endpoints</i>
+                            addWebsocketProvider(null);
+                        }
+
                 };
 
 		final MyServ srv = new MyServ();
@@ -762,8 +766,10 @@ with annotated JDO and forms makes creation of rich application possible even fo
 		java.util.Properties properties = new java.util.Properties();
 		properties.put("port", 80);
 		properties.setProperty(Acme.Serve.Serve.ARG_NOHUP, "nohup");
+		properties.setProperty("acceptorImpl", "Acme.Serve.SelectorAcceptor"); <i>// this acceptor is requireed for websocket support</i>
 		srv.<strong>arguments</strong> = properties;
 		srv.<strong>addDefaultServlets</strong>(null); // optional file servlet
+		srv.<strong>addWebsocketProvider()</strong>;  <i>// enable websocket</i>
 		srv.addServlet("/myservlet", new MyServlet()); // optional
 		// the pattern above is exact match, use /myservlet/* for mapping any path startting with /myservlet (Since 1.93)
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -1073,4 +1079,4 @@ Rogatkin</a>.Happy web servicing!</p>
 <center>&copy; 2015</center>
 </body>
 </html>
-  
+   
