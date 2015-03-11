@@ -2313,7 +2313,7 @@ public class Serve implements ServletContext, Serializable {
 					problem("Can't handshake "+wse, SC_INTERNAL_SERVER_ERROR, wse  );
 				}
 			else
-				problem("Websockets are not configured to support", SC_NOT_IMPLEMENTED );
+				problem("Websocket support is not configured", SC_NOT_IMPLEMENTED );
 		} else {
 		if (os[0] != null) { // note, os always not null
 		    // / TODO put time mark here to monitor actual servicing

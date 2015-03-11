@@ -76,7 +76,6 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import rogatkin.web.WebAppServlet;
 import io.github.lukehutch.fastclasspathscanner.*;
 import io.github.lukehutch.fastclasspathscanner.matchprocessor.*;
 
@@ -152,7 +151,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
 			return;
 		}
-		String contextPath = servlet instanceof WebAppServlet? ((WebAppServlet) servlet).getContextPath():"";
+		String contextPath;
+		try {
+			contextPath = (String) servlet.getClass().getMethod("getContextPath").invoke(servlet);
+		} catch (Exception e) {
+			contextPath = "";
+		}
 		String found = null;
 		int hops = -1;
 		Map<String, String> foundVarMap = null;
@@ -296,15 +300,21 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		new FastClasspathScanner("") {
 			@Override
 			public List<File> getUniqueClasspathElements() {
-				return cp == null ? super.getUniqueClasspathElements() : cp;
+				if (cp != null)
+					return cp;
+				List<File> self = super.getUniqueClasspathElements();
+				self.add(new File("."));  // TODO evaluate potential security risk
+				return self;
 			}
 
 			@Override
 			public ClassLoader getClassLoader() {
-				if (servCtx instanceof WebAppServlet)
-					return ((WebAppServlet) servCtx).getClassLoader();
-				else if (servCtx != null)
-					return servCtx.getClass().getClassLoader();
+				if (servCtx != null)
+					try {
+						return (ClassLoader) servCtx.getClass().getMethod("getClassLoader").invoke(servCtx);
+					} catch (Exception e) {
+						return servCtx.getClass().getClassLoader();
+					}
 				return null;
 			}
 		}.matchClassesImplementing(ServerApplicationConfig.class,
@@ -449,15 +459,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public void run() {
 		while (selector.isOpen()) {
 			try {
-				for(SimpleSession ss = penndingSessions.poll(); ss != null; ss = penndingSessions.poll()) {
+				for (SimpleSession ss = penndingSessions.poll(); ss != null; ss = penndingSessions.poll()) {
 					SocketChannel sc = null;
 					if (ss.channel instanceof SocketChannel)
-						sc = (SocketChannel)ss.channel;
-					else 
+						sc = (SocketChannel) ss.channel;
+					else
 						try {
 							sc = (SocketChannel) ss.channel.getClass().getMethod("unwrapChannel").invoke(ss.channel);
-						} catch(Exception e) {
-							
+						} catch (Exception e) {
+
 						}
 					if (sc != null) {
 						sc.register(selector, SelectionKey.OP_READ, ss);
@@ -465,7 +475,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					} else
 						serve.log("Session with not proper channel will be closed");
 				}
-				
+
 				int readyChannels = selector.select(1000);
 				if (readyChannels == 0)
 					continue;
