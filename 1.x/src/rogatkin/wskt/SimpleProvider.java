@@ -286,6 +286,13 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	@Override
 	public void destroy() {
+		if (rootContainerUse)
+			try {
+				((SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer"))
+						.contextDestroyed(null);
+			} catch (Exception e) {
+
+			}
 		messageFlowExec.shutdown();
 		try {
 			selector.close();
@@ -304,11 +311,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		new FastClasspathScanner("") {
 			@Override
 			public List<File> getUniqueClasspathElements() {
-				if (cp != null)
-					return cp;
-				List<File> self = super.getUniqueClasspathElements();
-				self.add(new File(".")); // TODO evaluate potential security risk
-				return self;
+				return cp == null?super.getUniqueClasspathElements():cp;
 			}
 
 			@Override

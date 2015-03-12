@@ -880,7 +880,11 @@ public class Serve implements ServletContext, Serializable {
 	    keepAliveCleaner.clear(); // clear rest, although should be empty
 	    keepAliveCleaner = null;
 	    if (websocketProvider != null)
+	    	try {
 	    	websocketProvider.destroy();
+	    	} catch(Exception e) {
+	    		// just in case
+	    	}
 	}
 	return 0;
     }
