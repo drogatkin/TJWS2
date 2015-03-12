@@ -751,7 +751,7 @@ with annotated JDO and forms makes creation of rich application possible even fo
                               super.addWarDeployer(deployerFactory, throttles);
                         }
                         public void addWebsocketProvider() { <i>// add if plan to deploy websocket endpoints</i>
-                            addWebsocketProvider(null);
+                            addWebsocketProvider(null); <i>// list of class path file components can be provided here</i>
                         }
 
                 };
@@ -768,7 +768,7 @@ with annotated JDO and forms makes creation of rich application possible even fo
 		properties.setProperty(Acme.Serve.Serve.ARG_NOHUP, "nohup");
 		properties.setProperty("acceptorImpl", "Acme.Serve.SelectorAcceptor"); <i>// this acceptor is requireed for websocket support</i>
 		srv.<strong>arguments</strong> = properties;
-		srv.<strong>addDefaultServlets</strong>(null); // optional file servlet
+		srv.<strong>addDefaultServlets</strong>(null); <i>// optional file servlet</i>
 		srv.<strong>addWebsocketProvider()</strong>;  <i>// enable websocket</i>
 		srv.addServlet("/myservlet", new MyServlet()); // optional
 		// the pattern above is exact match, use /myservlet/* for mapping any path startting with /myservlet (Since 1.93)
@@ -910,7 +910,7 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.110 + websocket beta)
+(version 1.111 + websocket RC)
 </p>
 
 <p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
