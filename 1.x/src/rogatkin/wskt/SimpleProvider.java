@@ -114,7 +114,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		} catch (IOException ioe) {
 			throw new RuntimeException("Can't initialize selector, websocket functionality is disabled", ioe);
 		}
-		rootContainerUse = Boolean.getBoolean(System.getProperty(PROP_WSKT_MAIN_CONTAINER, "false"));
+		rootContainerUse = Boolean.getBoolean(PROP_WSKT_MAIN_CONTAINER);
 
 		messageFlowExec = Executors.newCachedThreadPool();
 	}
@@ -138,25 +138,29 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Sec Key is missed");
 			return;
 		}
-		if (servlet == null && !rootContainerUse) {
-			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No web application associated with " + path);
-			return;
-		}
-		SimpleServerContainer container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
-				.getAttribute("javax.websocket.server.ServerContainer");
-		if (container == null) {
-			if (rootContainerUse)
-				container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
-			if (container == null)
-				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
-			return;
-		}
 		String contextPath;
 		try {
 			contextPath = (String) servlet.getClass().getMethod("getContextPath").invoke(servlet);
 		} catch (Exception e) {
-			contextPath = "";
+			if (rootContainerUse)
+				contextPath = "";
+			else {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No endpoints associated with container allowed");
+				return;
+			}
 		}
+		SimpleServerContainer container;
+		if (servlet != null)
+			container = (SimpleServerContainer) servlet.getServletConfig().getServletContext()
+					.getAttribute("javax.websocket.server.ServerContainer");
+		else
+			container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
+
+		if (container == null) {
+			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
+			return;
+		}
+
 		String found = null;
 		int hops = -1;
 		Map<String, String> foundVarMap = null;
@@ -303,7 +307,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 				if (cp != null)
 					return cp;
 				List<File> self = super.getUniqueClasspathElements();
-				self.add(new File("."));  // TODO evaluate potential security risk
+				self.add(new File(".")); // TODO evaluate potential security risk
 				return self;
 			}
 
