@@ -35,7 +35,7 @@ function process() {
 			"data" : blob.name
 		}));
 		const
-		BYTES_PER_CHUNK = 1024 * 1024 * 1;
+		BYTES_PER_CHUNK = 1024 * 1024 * 2;
 		// 1MB chunk sizes.
 		const
 		SIZE = blob.size;

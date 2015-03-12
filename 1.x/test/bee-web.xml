@@ -209,6 +209,14 @@
     </dependency>
     <!-- add more resource change dependencies
      -->
+     <dependency>
+       <expression>
+          <function name="anynewer">
+             <parameter value="html-js" type="path"/>
+             <parameter value="&build_directory;/&webapp_file;" type="path"/>
+          </function>
+       </expression>
+    </dependency>
     <block>
       <echo value="...->&build_directory;/&webapp_file;"/>
       <function name="warit">
