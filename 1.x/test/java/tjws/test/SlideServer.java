@@ -57,10 +57,16 @@ public class SlideServer {
 			else if (slideNo > slides.length - 1)
 				slideNo = slides.length - 1;
 		}
-
-		try (FileInputStream slideIm = new FileInputStream(slides[slideNo]);
+		ses.getUserProperties().put("mode", mode);
+		for(Session s:ses.getOpenSessions()) {
+			if (mode.equals(s.getUserProperties().get("mode")))
+				showSlide(slides[slideNo], s);
+		}
+	}
+	
+	private void showSlide(File slide, Session ses) {
+		try (FileInputStream slideIm = new FileInputStream(slide);
 				OutputStream webIm = ses.getBasicRemote().getSendStream()) {
-			System.out.printf("Showing %s[%d]%n", slides[slideNo], slideNo);
 			Utils.copyStream(slideIm, webIm, 0);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -91,8 +97,6 @@ public class SlideServer {
 			try {
 				return Integer.parseInt(arg0);
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				throw new DecodeException(arg0, "Can't decode", e);
 			}
 		}
@@ -103,8 +107,7 @@ public class SlideServer {
 				decode(arg0);
 				return true;
 			} catch (DecodeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+
 			}
 			return false;
 		}
