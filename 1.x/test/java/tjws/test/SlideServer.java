@@ -11,6 +11,7 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
@@ -27,6 +28,12 @@ import Acme.Utils;
 @ServerEndpoint(value = "/slides/{mode}", decoders = { SlideServer.String2Int.class })
 public class SlideServer {
 
+	@OnOpen
+	public void registerInRoom(Session ses,
+			@PathParam("mode") String mode) {
+		ses.getUserProperties().put("mode", mode);
+	}
+	
 	@OnMessage
 	public void showSlideNo(Integer slideNo, Session ses,
 			@PathParam("mode") String mode) {
@@ -57,7 +64,7 @@ public class SlideServer {
 			else if (slideNo > slides.length - 1)
 				slideNo = slides.length - 1;
 		}
-		ses.getUserProperties().put("mode", mode);
+		
 		for(Session s:ses.getOpenSessions()) {
 			if (mode.equals(s.getUserProperties().get("mode")))
 				showSlide(slides[slideNo], s);
