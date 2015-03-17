@@ -20,23 +20,24 @@ import javax.websocket.server.ServerEndpoint;
 @ServerEndpoint(value = "/upload/{file}", decoders = UploadServer.CmdDecoder.class, encoders=UploadServer.CmdEncoder.class)
 public class UploadServer {
 
+	RandomAccessFile uploadFile;
+	String fileName;
+	
 	@OnMessage
 	public void savePart(byte[] part, Session ses) {
-		RandomAccessFile rf = (RandomAccessFile) ses.getUserProperties().get("upload_file");
-		if (rf == null) {
-			String ufn = (String) ses.getUserProperties().get("file_name");
-			if (ufn != null)
+		if (uploadFile == null) {
+			if (fileName != null)
 				try {
-					rf = new RandomAccessFile(ufn, "rw");
-					ses.getUserProperties().put("upload_file", rf);
+					uploadFile = new RandomAccessFile(fileName, "rw");
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 					return;
 				}
 		}
+		if (uploadFile != null)
 		try {
-			rf.write(part);
+			uploadFile.write(part);
 			System.err.printf("Stored part of %db%n", part.length);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -48,7 +49,7 @@ public class UploadServer {
 	public void processCmd(CMD cmd, Session ses) {
 		switch (cmd.cmd) {
 		case 1: // start
-			ses.getUserProperties().put("file_name", cmd.data);
+			fileName = cmd.data;
 			System.err.printf("Start upload of %s%n", cmd.data);
 			break;
 		case 2: // finish
@@ -61,16 +62,15 @@ public class UploadServer {
 
 	@OnClose
 	public void close(Session ses) {
-		RandomAccessFile rf = (RandomAccessFile) ses.getUserProperties().get("upload_file");
-		if (rf != null) {
+		if (uploadFile != null) {
 			try {
-				rf.close();
+				uploadFile.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			ses.getUserProperties().remove("upload_file");
-			ses.getUserProperties().remove("file_name");
+			uploadFile = null;
+			fileName = null;
 		}
 	}
 
