@@ -1727,7 +1727,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface Identification {
 	public static final String serverName = "D. Rogatkin's TJWS (+Android, JSR356) https://github.com/drogatkin/TJWS2.git ";
 
-	public static final String serverVersion = "Version 1.111 (nightly)";
+	public static final String serverVersion = "Version 1.111 (JSR356 RC)";
 
 	public static final String serverUrl = "http://tjws.sourceforge.net";
 
