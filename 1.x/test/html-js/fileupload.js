@@ -2,13 +2,8 @@ var files = [];
 var endPoint = "ws" + (self.location.protocol == "https:" ? "s" : "") + "://"
 		+ self.location.hostname
 		+ (self.location.port ? ":" + self.location.port : "")
-		+ "/echoserver/upload/*";
+		+ "/echoserver/upload/upload";
 var socket;
-var ready;
-function upload(blobOrFile) {
-	if (ready)
-		socket.send(blobOrFile);
-}
 
 function openSocket() {
 	socket = new WebSocket(endPoint);
@@ -17,14 +12,14 @@ function openSocket() {
 		self.postMessage(JSON.parse(event.data));
 	};
 
-	socket.onclose = function(event) {
-		ready = false;
-	};
-
 	socket.onopen = function() {
-		ready = true;
 		process();
 	};
+}
+
+function ready() {
+	return socket !== undefined
+			&& socket.readyState !== WebSocket.CLOSED
 }
 
 function process() {
@@ -36,7 +31,7 @@ function process() {
 		}));
 		const
 		BYTES_PER_CHUNK = 1024 * 1024 * 2;
-		// 1MB chunk sizes.
+		// 2MB chunk sizes.
 		const
 		SIZE = blob.size;
 
@@ -53,7 +48,7 @@ function process() {
 				var chunk = blob.webkitSlice(start, end);
 			}
 
-			upload(chunk);
+			socket.send(chunk);
 
 			start = end;
 			end = start + BYTES_PER_CHUNK;
@@ -72,7 +67,7 @@ self.onmessage = function(e) {
 
 	//self.postMessage("Job size: "+files.length);
 			
-	if (ready) {
+	if (ready()) {
 		process();
 	} else
 		openSocket();

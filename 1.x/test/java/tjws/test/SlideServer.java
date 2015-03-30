@@ -44,9 +44,9 @@ public class SlideServer {
 		File[] slides = slideDir.listFiles(new FileFilter() {
 			public boolean accept(File pathname) {
 				String n = pathname.getName().toLowerCase();
-				return pathname.isFile() && n.endsWith(".jpg")
+				return pathname.isFile() && (n.endsWith(".jpg")
 						|| n.endsWith(".gif") || n.endsWith(".png")
-						|| n.endsWith(".jpeg");
+						|| n.endsWith(".jpeg"));
 			}
 		});
 		if (slides == null || slides.length == 0) {

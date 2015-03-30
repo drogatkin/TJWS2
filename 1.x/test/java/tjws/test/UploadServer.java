@@ -1,5 +1,6 @@
 package tjws.test;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -15,6 +16,7 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 @ServerEndpoint(value = "/upload/{file}", decoders = UploadServer.CmdDecoder.class, encoders=UploadServer.CmdEncoder.class)
@@ -46,10 +48,15 @@ public class UploadServer {
 	}
 
 	@OnMessage
-	public void processCmd(CMD cmd, Session ses) {
+	public void processCmd(CMD cmd, Session ses, @PathParam("file") String uploadDir) {
 		switch (cmd.cmd) {
 		case 1: // start
 			fileName = cmd.data;
+			if (uploadDir != null && uploadDir.isEmpty() == false) {
+				// assure dir
+				new File(uploadDir).mkdirs();
+				fileName = uploadDir + File.separatorChar + fileName;
+			}
 			System.err.printf("Start upload of %s%n", cmd.data);
 			break;
 		case 2: // finish
