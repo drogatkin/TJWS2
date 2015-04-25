@@ -427,7 +427,6 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 				return 0;
 			}
 			return socketChannel.write(wrap(src));
-
 		}
 
 		/**

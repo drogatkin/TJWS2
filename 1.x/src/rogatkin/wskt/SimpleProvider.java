@@ -27,9 +27,13 @@ package rogatkin.wskt;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -301,7 +305,6 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void deploy(final ServletContext servCtx, final List cp) {
 		final SimpleServerContainer ssc = new SimpleServerContainer(this);
@@ -311,7 +314,26 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		new FastClasspathScanner("") {
 			@Override
 			public List<File> getUniqueClasspathElements() {
-				return cp == null?super.getUniqueClasspathElements():cp;
+				if (cp == null) {
+					if (servCtx != null) {
+						ClassLoader ccl = servCtx.getClass().getClassLoader();
+						if (ccl instanceof URLClassLoader) {
+							URL[] urls = ((URLClassLoader) ccl).getURLs();
+							if (urls != null && urls.length > 0) {
+								ArrayList<File> result = new ArrayList<File>(urls.length);
+								for (URL url : urls)
+									try {
+										result.add(new File(URLDecoder.decode(url.getFile(), "UTF-8")));
+									} catch (UnsupportedEncodingException e) {
+										serve.log("Can't add path component " + url + " :" + e);
+									}
+								return result;
+							}
+						}
+					}
+					return super.getUniqueClasspathElements();
+				}
+				return cp;
 			}
 
 			@Override
@@ -408,6 +430,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			//System.err.printf("Success %s%n", result);
 			return result;
 		}
+		//System.err.printf("unsucc %s%n", parsed);
 		return null;
 	}
 
@@ -436,7 +459,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			case s_invar:
 				if (c == '}') {
 					vi++;
-					regExp += "((?:[a-z0-9-\\._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
+					regExp += "((?:[a-zA-Z0-9-\\._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
 					st = s_inuri;
 					result.put(vi, varName);
 				} else {

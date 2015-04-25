@@ -1347,7 +1347,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				try {
 					for (int len = bb.remaining(); len > 0; len = bb.remaining()) {
 						int lc = channel.write(bb);
-						if (lc <= 0)
+						if (lc < 0)
 							throw new IOException("Can't sent complete buffer, remmaining " + len);
 					}
 				} finally {
