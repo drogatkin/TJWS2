@@ -1669,7 +1669,7 @@ public class Serve implements ServletContext, Serializable {
 				} catch (Exception e) {
 				}
 			}
-		    if (closed || conn.keepAlive == false || (ct - conn.lastWait > d && conn.lastRun < conn.lastWait)
+		    if (conn.lastRun < conn.lastWait && (closed || conn.keepAlive == false || (ct - conn.lastWait > d))
 			    || stopped
 		    /* || conn.timesRequested > maxUse */) {
 			i.remove();
@@ -2331,6 +2331,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		}
 	    } finally {
+	    	lastRun = 0;
 		currentRegistry.set(null); // remove
 	    }
 	}
