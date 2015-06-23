@@ -2331,7 +2331,6 @@ public class Serve implements ServletContext, Serializable {
 		}
 		}
 	    } finally {
-	    	lastRun = 0;
 		currentRegistry.set(null); // remove
 	    }
 	}
