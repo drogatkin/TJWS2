@@ -442,8 +442,9 @@ public class Serve implements ServletContext, Serializable {
     // pattern, which can contain wildcards, and the class name of the Servlet
     // to launch when a matching URL comes in. Patterns are checked for
     // matches in the order they were added, and only the first match is run.
-    public void addServlet(String urlPat, String className) {
+    public javax.servlet.ServletRegistration.Dynamic addServlet(String urlPat, String className) {
 	addServlet(urlPat, className, (Hashtable) null);
+	return null;
     }
 
     /**
@@ -516,8 +517,9 @@ public class Serve implements ServletContext, Serializable {
      * @param servlet
      *            already instantiated servlet but init
      */
-    public void addServlet(String urlPat, Servlet servlet) {
+    public javax.servlet.ServletRegistration.Dynamic addServlet(String urlPat, Servlet servlet) {
 	addServlet(urlPat, servlet, (String) null);
+	return null;
     }
 
     /**

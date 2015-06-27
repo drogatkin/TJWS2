@@ -139,6 +139,8 @@
         <value>&build_directory;</value>
         <value variable="PATH SEPARATOR"/>
         <value variable="SERVLET_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="SERVLET_LIB_30_COMPAT"/>
      </operator>
   </expression>
 

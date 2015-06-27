@@ -1,0 +1,4 @@
+TJWS websocket release 1.111
+
+Major goal of this release is providing stable version of websocket support.
+under GitHub https://github.com/drogatkin/TJWS2/tree/master/1.x 

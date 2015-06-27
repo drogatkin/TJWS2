@@ -1,0 +1,3 @@
+TJWS  version 1.111
+
+1. Websocket container setup for default context
