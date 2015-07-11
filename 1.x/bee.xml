@@ -108,6 +108,16 @@
        </function>
      </block>
   </target>
+  
+  <target name="check compatibility" dir="TJWS_HOME" comment="assure that compatibility jar is built">
+      <dependency>
+         <function name="anynewer">
+            <parameter value="compatibility/build/compat-jsr315+.jar"/>
+            <parameter value="compatibility/bee.xml"/>
+         </function>
+      </dependency>
+      <task name="compatib build" exec="bee jar" dir="compatibility"/>
+  </target>
 
   <expression variable="tjws sources">
       <operator name="array">
@@ -177,6 +187,7 @@
 
   <target name="compile" dir="TJWS_HOME" comment="Core module compilation">
     <dependency target="check lib"/>
+    <dependency target="check compatibility"/>
     <dependency variable="tjws sources"/>
     <echo>Compiling core...</echo>
     <task exec="javac">
