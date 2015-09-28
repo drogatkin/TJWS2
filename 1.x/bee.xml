@@ -1220,6 +1220,12 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
             <parameter>org.bouncycastle.jce.provider.BouncyCastleProvider</parameter>
           </function>
        </expression> 
+       <expression name="key alias">
+          <function name="ask">
+            <parameter>Key alias name[selfsigned]? </parameter>
+            <parameter>selfsigned</parameter>
+          </function>
+       </expression> 
 
        <expression name="keytool">
           <operator name="append">
@@ -1240,7 +1246,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
          <parameter>-validity</parameter>
          <parameter>360</parameter>
          <parameter>-alias</parameter>
-         <parameter>selfsigned</parameter>
+         <parameter variable="key alias"/>
          <parameter>-keypass</parameter>
          <parameter variable="keystore pass"/>
          <parameter>-storepass</parameter>

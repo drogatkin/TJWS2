@@ -100,5 +100,19 @@ tomcat/util/scan/ entire package content
       <li>You need also copy  files from <i>src/jasper7</i> of the distribution <i>src</i> directory over existing target files. Please note that 
       <i>SimpleInstanceManager.java</i> belongs to a new package, so its (e.g. tjws) directory has to be added in source tree.</li>
      </ul> 
+   <h3>
+        Using Jasper from Tomcat 7.0.6x (JSP 2.3)</h3>
+    <p>More files are required from org.apache.tomcat.util. Add classes from this directory and also the following subdirectories:</p>
+    <pre>
+descriptor
+digester
+file
+res
+scan
+security
+    </pre>
+    <p> The rest is similar as for previous builds, however use overwriting content from <strong>jasper7-6x</strong>.</p>
+        
+          
 </body>
 </html>
