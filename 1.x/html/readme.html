@@ -177,8 +177,8 @@ less critical in size deployment is possible to use J2EE deployment module and
 JSP module. Originally provided GNU JSP providers have been withdrawn from latest TJWS version for keeping pure
 BSD license, however GNU JSP providers can be reached in previous versions. I do not support them anyway.
 Only <a href="#jasper">Jasper</a> is currently supported as JSP provider. However I separate it to avoid any licensing issues.
-Base module, and J2EE deployment modules have sizes 100K, and 72K
-correspondingly. Jasper's size is about 580K. (I am still looking for help to separate Jasper on runtime and JSP parsing and compilation parts,
+Base module, and J2EE deployment modules have sizes 110K, and 80K
+correspondingly. Jasper's size is about 930K. (I am still looking for help to separate Jasper on runtime and JSP parsing and compilation parts,
 it could be beneficial for Android deployment.) App server services module adds 46Kb. And finally websocket module adds 65Kb</p>
 <a name="configuration"></a><h4>
     Configuration</h4>
@@ -619,6 +619,7 @@ packaged socket factories as a reference implementation.</p>
   <li>ejb-local-ref - no</li>
   <li>new JSR315 - yes</li>
   <li>new JSR356 - yes</li>
+  <li>multipart-form - this is non standard tag carries a function of a casual multipart request processing similar to Resin</li>
 </ul>
 <a name="appservices"></a>
 <h4>App server services</h4>

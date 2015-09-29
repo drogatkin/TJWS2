@@ -909,7 +909,19 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			Node mp = (Node)xp.evaluate(prefix + "multipart-form", document, XPathConstants.NODE);
 			boolean casualMultipart = mp != null &&
 					mp.hasAttributes() && mp.getAttributes().getNamedItem("enable") != null &&
-					"true".equals(mp.getAttributes().getNamedItem("enable").getTextContent() );	
+					"true".equals(mp.getAttributes().getNamedItem("enable").getTextContent() );
+			long maxUpload = 0;
+			if (casualMultipart) {
+				mp = mp.getAttributes().getNamedItem("upload-max");
+				if (mp != null)
+					try {
+						maxUpload = Long.parseLong(mp.getTextContent());
+						if (maxUpload < 0)
+							maxUpload = 0;
+					} catch (Exception e) {
+
+					}
+			}
 			// process filters
 			nodes = (NodeList) xp.evaluate(prefix + "filter", document,
 					XPathConstants.NODESET);
@@ -947,7 +959,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							(String) xp.evaluate(prefix + "param-value",
 									params.item(p), XPathConstants.STRING));
 				}
-				fad.multipartEnabled = casualMultipart;
+				fad.multipartEnabled = casualMultipart; 
+				fad.multipartMaxRequest = maxUpload << 10; 
 				result.filters.add(fad);
 			}
 			// process filter's mapping
@@ -1147,6 +1160,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			} else
 				jsp =result.addJSPServlet(null);
 			jsp.multipartEnabled = casualMultipart;
+			jsp.multipartMaxRequest = maxUpload << 10;
 			
 			if (wasDefault != null) {
 				// re-add at the end
