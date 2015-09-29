@@ -1002,6 +1002,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					String jspFile = (String) xp.evaluate(prefix + "jsp-file",
 							n, XPathConstants.STRING);
 					if (jspFile != null) {
+						// TODO link to a predefined servlet making jsp call
 						result.log(String
 								.format("Not supported servlet option jsp-file %s for %s, ignored.",
 										jspFile, sad.name));
@@ -1129,14 +1130,19 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					+ "jsp-property-group/" + prefix + "url-pattern", document,
 					XPathConstants.NODESET);
 			nodesLen = nodes.getLength();
+			ServletAccessDescr jsp;
 			if (nodesLen > 0) {
 				List<String> jspPats = new ArrayList<String>(nodesLen);
 				for (int i = 0; i < nodesLen; i++) {
 					jspPats.add(nodes.item(i).getTextContent());
 				}
-				result.addJSPServlet(jspPats);
+				jsp = result.addJSPServlet(jspPats);
 			} else
-				result.addJSPServlet(null);
+				jsp =result.addJSPServlet(null);
+			Node mp = (Node)xp.evaluate(prefix + "multipart-form", document, XPathConstants.NODE);
+			jsp.multipartEnabled = mp != null &&
+					mp.hasAttributes() && mp.getAttributes().getNamedItem("enable") != null &&
+					"true".equals(mp.getAttributes().getNamedItem("enable").getTextContent() );	
 			if (wasDefault != null) {
 				// re-add at the end
 				result.servlets.remove(wasDefault);
@@ -1587,7 +1593,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		}
 	}
 
-	protected void addJSPServlet(List<String> patterns) {
+	protected ServletAccessDescr addJSPServlet(List<String> patterns) {
 		ServletAccessDescr sad = createDescriptor();
 		// get class name from serve
 		sad.initParams = new HashMap<String, String>(10);
@@ -1632,6 +1638,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		}
 		sad.add(new MappingEntry("/", jspPat));
 		servlets.add(sad);
+		return sad;
 	}
 
 	protected ServletAccessDescr createDescriptor() {
