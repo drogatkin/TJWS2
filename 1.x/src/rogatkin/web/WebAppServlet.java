@@ -904,6 +904,12 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 										result));
 					}
 				}
+			
+			// read global multi part
+			Node mp = (Node)xp.evaluate(prefix + "multipart-form", document, XPathConstants.NODE);
+			boolean casualMultipart = mp != null &&
+					mp.hasAttributes() && mp.getAttributes().getNamedItem("enable") != null &&
+					"true".equals(mp.getAttributes().getNamedItem("enable").getTextContent() );	
 			// process filters
 			nodes = (NodeList) xp.evaluate(prefix + "filter", document,
 					XPathConstants.NODESET);
@@ -941,6 +947,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							(String) xp.evaluate(prefix + "param-value",
 									params.item(p), XPathConstants.STRING));
 				}
+				fad.multipartEnabled = casualMultipart;
 				result.filters.add(fad);
 			}
 			// process filter's mapping
@@ -1139,10 +1146,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				jsp = result.addJSPServlet(jspPats);
 			} else
 				jsp =result.addJSPServlet(null);
-			Node mp = (Node)xp.evaluate(prefix + "multipart-form", document, XPathConstants.NODE);
-			jsp.multipartEnabled = mp != null &&
-					mp.hasAttributes() && mp.getAttributes().getNamedItem("enable") != null &&
-					"true".equals(mp.getAttributes().getNamedItem("enable").getTextContent() );	
+			jsp.multipartEnabled = casualMultipart;
+			
 			if (wasDefault != null) {
 				// re-add at the end
 				result.servlets.remove(wasDefault);
