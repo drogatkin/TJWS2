@@ -122,7 +122,7 @@ public class Multipart {
 
 		ByteArrayOutputStream cos = new ByteArrayOutputStream(1024 * 4);
 
-		String name;
+		String name, filename;
 
 		File partFile;
 
@@ -179,6 +179,12 @@ public class Multipart {
 					int eq = value.indexOf('"', ni + "name=\"".length());
 					// TODO name can be encoded so right approach is decoding it here
 					name = value.substring(ni + "name=\"".length(), eq);
+					
+					ni = value.toLowerCase().indexOf("filename=\"");
+					if (ni >= 0) {
+					    eq = value.indexOf('"', ni + "filename=\"".length());
+					    filename = value.substring(ni + "filename=\"".length(), eq);
+					}
 				}
 				// TODO Analyze content-type multipart/mixed defining new boundary, so they need to be stacked
 			} while (true);
@@ -394,7 +400,11 @@ public class Multipart {
 					partFile = targetFile;
 			}
 		}
-
+       // no override to kepp 3.0 compatible
+		public String getSubmittedFileName() {
+			return filename;
+		}
+		
 		@Override
 		public String toString() {
 			return "Part '" + name + "' of "+fileSize+" :" + (cos != null ? cos.toString() : partFile);
