@@ -592,7 +592,7 @@ public class Serve implements ServletContext, Serializable {
 		    sc++;
 		}
 	    }
-	    if (sc > 0)
+	    if (sc > 0 && ssclThread != null)
 	    	ssclThread.interrupt();
 	    log("TJWS: invalidated " + sc + " sessions for context " + servletContext, null);
 	} catch (IOException ioe) {

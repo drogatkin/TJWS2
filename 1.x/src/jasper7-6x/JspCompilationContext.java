@@ -433,6 +433,7 @@ public class JspCompilationContext {
             }
             return Long.valueOf(f.lastModified());
         }
+
         URLConnection uc = null;
         try {
             URL jspUrl = getResource(resource);
@@ -440,11 +441,17 @@ public class JspCompilationContext {
                 incrementRemoved();
                 return Long.valueOf(result);
             }
-            uc = jspUrl.openConnection();
-            if (uc instanceof JarURLConnection) {
-                result = ((JarURLConnection) uc).getJarEntry().getTime();
+            File resFile = new File(jspUrl.getFile()); // TJWS on Android
+	    if (resFile.exists()) {
+		result = resFile.lastModified();
+                //System.err.printf("Android for %s is %d%n", jspUrl, result);                
             } else {
-                result = uc.getLastModified();
+                uc = jspUrl.openConnection();
+                if (uc instanceof JarURLConnection) {
+                   result = ((JarURLConnection) uc).getJarEntry().getTime();
+                } else {
+                   result = uc.getLastModified();
+                }
             }
         } catch (IOException e) {
             if (log.isDebugEnabled()) {
