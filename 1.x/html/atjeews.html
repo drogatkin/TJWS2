@@ -27,15 +27,17 @@ have a separate team porting applications there. Adobe is also persuading same a
 Cloud computing is very popular nowadays, but not many people realize that cloud can be just in your pocket. So be first who entered in the new era.
 <h3>What do I need to get started with Atjeews?</h3>
 <p>
-You need to download Atjeews.apk. (It can be done from SorceForge site as a standalone application archive, or download it from TJWS installation).
-However if you have Google play account, then you can take it from <a href="https://play.google.com/store/apps/details?id=rogatkin.mobile.web">there</a>.
+You need to install Atjeews.apk.
+You can either get it from <a href="https://play.google.com/store/apps/details?id=rogatkin.mobile.web&hl=en" traget="_blank">Google Play</a> or
+build from <a href="https://github.com/drogatkin/Atjeews" target="_blank">GitHub repository</a>.
+
 Android will take care of installing the archive. Server isn't enabled after launch to safety reason. Enable it first checking off 
 corresponding box. The server comes with pre installed <strong>Settings</strong> servlet. 
 You can access it after launch and manipulate with Atjeews settings, enable HTTPD servlet, deploy web applications and manage
 serviced IP addresses. 
 
 <p>Note that if you'd like to password protect <strong>settings</strong> servlet access (good idea), user name will be empty string, so
-leave this filed blank (not filled), when browser request your access credentials.
+leave this field blank (not filled), when a browser requests your access credentials.
 There is youtube video helping to get started with Atjeews, especially for people not having any computer background.
 <h3>How can I create web application to deploy under Atjeews?</h3>
 <p> 
@@ -55,23 +57,18 @@ Android SDK have to be installed on computer where such conversion happens.
 </p>
 <h3>How run Atjeews using SSL</h3>
 <p>First step is obtaining web server certificate. It has to carry host name of Android device and be signed by CA.
-However for testing or personal purpose, certificate can be generated using <i>gencert</i> target of 7Bee script. The certificate keystore file
-has to be uploaded to server and placed in directory /sdcard/atjeews/key. (Atjeews home directory is actually configurable)and can be set to external-sdcard.) 
-Most convenient way is using <strong>webfolder</strong> application for that.
-However when emulator is used and upload capabilities can't be used,  keystore location URL can be specified in deployment URL to make the file transfer under
-emulator file system. Since file isn't .war, actual
-deployment won't happen, however keystore file will be uploaded in /sdcard/atjeews/webapps directory of Android device.
-And now again <strong>webfolder</strong> can be used to move keystore file in required location doing the following steps:</p>
-<ol>
-  <li>Create directory <strong>key</strong> in /sdcard/atjeews directory</li>
-  <li>Copy and paste uploaded keystore file in /sdcard/atjeews/key directory</li>
-  <li>Delete keystore from /sdcard/atjeews/webapps</li>
-</ol><p>
+However for testing or personal purpose, a certificate can be generated using <i>gencert</i> target of 7Bee script.
+ The certificate keystore file
+has to be uploaded to a server. Use <i>Settings</i>> screen and upload keystore file. 
+It is important that your key containing keystore file has name <strong>keystore</strong>.
+ Atjeews will manage it properly and stash it.</p>
+<p>
 Since Android doesn't support JKS keystore format, the file has to be generated in BKS format. So 7Bee environment
 variable BC_PROVIDER_LIB has to point to Bouncy Castle provider jar file corresponding to your JDK version. Unlimited key policy
 file has to be downloaded and applied when JDK is used from Oracle site. The link to unlimited key policy file is on
 bottom of JDK download page. Instead of using 7Bee
-script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password is hardcoded in Atjeews to <i>changeme</i>.
+script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password has to be <i>changeme</i> or matvhing to 
+Settings password when set. Therefore if you decide to change or set password after deploying keystore, then you need to update keystore file with proper password.
 Android and any other browser will warn you about not CA signed certificate, so eventually it is recommended to get it signed by CA.
 </p>
 <p>Since certificate carries device host name as CN attribute, Android device host name has to be fixed somehow, for example in DHCP.</p>
