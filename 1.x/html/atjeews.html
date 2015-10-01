@@ -64,7 +64,8 @@ It is important that your key containing keystore file has name <strong>keystore
  Atjeews will manage it properly and stash it.</p>
 <p>
 Since Android doesn't support JKS keystore format, the file has to be generated in BKS format. So 7Bee environment
-variable BC_PROVIDER_LIB has to point to Bouncy Castle provider jar file corresponding to your JDK version. Unlimited key policy
+variable BC_PROVIDER_LIB has to point to Bouncy Castle provider jar file corresponding to your JDK version. 
+(Note that you need Bouncy Castle provider jar of version 1.46, otherwise you will get error incorrect store version).Unlimited key policy
 file has to be downloaded and applied when JDK is used from Oracle site. The link to unlimited key policy file is on
 bottom of JDK download page. Instead of using 7Bee
 script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password has to be <i>changeme</i> or matvhing to 
