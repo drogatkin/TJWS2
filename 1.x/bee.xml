@@ -109,14 +109,18 @@
      </block>
   </target>
   
+  <variable name="compatib dir" type="path">./compatibility</variable>
+  
   <target name="check compatibility" dir="TJWS_HOME" comment="assure that compatibility jar is built">
       <dependency>
          <function name="anynewer">
-            <parameter value="compatibility/build/compat-jsr315+.jar"/>
-            <parameter value="compatibility/bee.xml"/>
+            <parameter value="./compatibility/build/compat-jsr315+.jar"/>
+            <parameter value="./compatibility/bee.xml"/>
          </function>
       </dependency>
-      <task name="compatib build" exec="bee jar" dir="compatibility"/>
+      <task name="compatib build" exec="bee" dir="compatib dir">
+          <parameter>jar</parameter>
+      </task>
   </target>
 
   <expression variable="tjws sources">
