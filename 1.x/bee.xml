@@ -1494,7 +1494,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
                        <value value="-org.apache.jasper.servlet.JspServlet.classpath"/>
                        <value value="%classpath%"/>
                        <value value="-org.apache.jasper.servlet.JspServlet.scratchdir"/>
-                       <value value="%deploydir%/WEB-INF"/>
+                       <value value="%deploydir%/META-INF/jsp-classes"/>
                      </operator>
                    </block>
                  </if>

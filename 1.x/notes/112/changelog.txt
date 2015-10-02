@@ -1,0 +1,6 @@
+TJWS  version 1.112
+
+1. Complete WebSocket implementation of asynchronous send
+2. Added latest Jasper support (from Tomcat 7.63)
+3. Improved Part support for multiparts post, including 
+   global enabling option covering JSP and filters.
