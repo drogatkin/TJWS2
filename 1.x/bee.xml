@@ -110,7 +110,23 @@
   </target>
   
   <variable name="compatib dir" type="path">./compatibility</variable>
-  
+  <expression name="bee start">
+      <if>
+        <expression>
+           <operator name="eq">
+             <value variable="PATH SEPARATOR"/>
+             <value>/</value>
+           </operator>
+         </expression>
+         <then>
+           <value>bee</value>
+         </then>
+         <else>
+           <value>bee.bat</value>
+         </else>
+     </if>
+   </expression>
+             
   <target name="check compatibility" dir="TJWS_HOME" comment="assure that compatibility jar is built">
       <dependency>
          <function name="anynewer">
@@ -118,7 +134,7 @@
             <parameter value="./compatibility/bee.xml"/>
          </function>
       </dependency>
-      <task name="compatib build" exec="bee" dir="compatib dir">
+      <task name="compatib build" exec="bee start" dir="compatib dir">
           <parameter>jar</parameter>
       </task>
   </target>
@@ -790,7 +806,7 @@
              </operator>
          </expression>
        </parameter>    
-       <parameter value="javax" type="dir"/>
+       <parameter value="javax/websocket" type="dir"/>
        <parameter value="-C"/>
        <parameter>
          <expression>
@@ -934,7 +950,7 @@
              </operator>
          </expression>
        </parameter>    
-       <parameter value="javax" type="dir"/>
+       <parameter value="javax/websocket" type="dir"/>
        <parameter value="-C"/>
        <parameter>
          <expression>
