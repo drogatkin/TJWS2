@@ -115,7 +115,7 @@
         <expression>
            <operator name="eq">
              <value variable="PATH SEPARATOR"/>
-             <value>/</value>
+             <value>:</value>
            </operator>
          </expression>
          <then>
