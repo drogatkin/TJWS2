@@ -540,6 +540,25 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		}
 	}
 
+	protected static class JspForwarder extends HttpServlet {
+		String jsp;
+		@Override
+		public void init(ServletConfig conf) throws ServletException {
+			super.init(conf);
+			jsp = conf.getInitParameter("jsp-file");
+			if (jsp == null || jsp.toLowerCase().endsWith(".jsp") == false)
+				throw new ServletException("Not properly configured JSP forwarder");
+			if (jsp.startsWith("/") == false)
+				jsp = "/" + jsp;
+		}
+
+		@Override
+		protected void service(HttpServletRequest hreq, HttpServletResponse hresp) throws ServletException, IOException {
+			// TODO clean forward attributes wrapping request
+			hreq.getRequestDispatcher(jsp).forward(hreq, hresp);
+		}
+	}
+	
 	protected WebAppServlet(String context) {
 		this.contextPath = "/" + context;
 		attributes = new Hashtable<String, Object>();
@@ -1018,15 +1037,12 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 						XPathConstants.STRING);
 				sad.className = toNormalizedString(xp.evaluate(prefix + "servlet-class",
 						n, XPathConstants.STRING));
+				String jspFile = null;
 				if (sad.className == null || sad.className.length() == 0) {
-					String jspFile = (String) xp.evaluate(prefix + "jsp-file",
+					jspFile = (String) xp.evaluate(prefix + "jsp-file",
 							n, XPathConstants.STRING);
 					if (jspFile != null) {
-						// TODO link to a predefined servlet making jsp call
-						result.log(String
-								.format("Not supported servlet option jsp-file %s for %s, ignored.",
-										jspFile, sad.name));
-						continue;
+						sad.className = JspForwarder.class.getName();
 					} else
 						throw new ServletException(
 								String.format(
@@ -1059,13 +1075,18 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 
 				NodeList params = (NodeList) xp.evaluate(prefix + "init-param",
 						n, XPathConstants.NODESET);
-				sad.initParams = new HashMap<String, String>(params.getLength());
+				sad.initParams = new HashMap<String, String>(params.getLength()+(jspFile==null?0:1));
 				for (int p = 0; p < params.getLength(); p++) {
 					sad.initParams.put(
 							(String) xp.evaluate(prefix + "param-name",
 									params.item(p), XPathConstants.STRING),
 							(String) xp.evaluate(prefix + "param-value",
 									params.item(p), XPathConstants.STRING));
+				}
+				if (jspFile != null) {
+					if (sad.initParams.containsKey("jsp-file"))
+						throw new ServletException("Conflicting iniit parameter jsp-file for JSP servlet "+sad);
+					sad.initParams.put("jsp-file", jspFile);
 				}
 				NodeList multiparts = (NodeList) xp.evaluate(prefix
 						+ "multipart-config", n, XPathConstants.NODESET);
