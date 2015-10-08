@@ -65,10 +65,10 @@ It is important that your key containing keystore file has name <strong>keystore
 <p>
 Since Android doesn't support JKS keystore format, the file has to be generated in BKS format. So 7Bee environment
 variable BC_PROVIDER_LIB has to point to Bouncy Castle provider jar file corresponding to your JDK version. 
-(Note that you need Bouncy Castle provider jar of version 1.46, otherwise you will get error incorrect store version).Unlimited key policy
+(Note that you need Bouncy Castle provider jar of version 1.46, otherwise you will get error incorrect store version). Unlimited key policy
 file has to be downloaded and applied when JDK is used from Oracle site. The link to unlimited key policy file is on
 bottom of JDK download page. Instead of using 7Bee
-script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password has to be <i>changeme</i> or matvhing to 
+script, Portecle keytool GUI wrapper can be used. Please note that currently keystore password has to be <i>changeme</i> or matching to 
 Settings password when set. Therefore if you decide to change or set password after deploying keystore, then you need to update keystore file with proper password.
 Android and any other browser will warn you about not CA signed certificate, so eventually it is recommended to get it signed by CA.
 </p>
@@ -79,8 +79,9 @@ required for development such applications. However I would provide a good start
 Please download the guide from <a href="./Creation web application for Atrjeews.pdf">here</a>.
 </p>
 <p>If you access Atjeews application from a desktop and use Internet Explorer then make sure you do not use 
-Android assigned host name as android_&lt;8 bytes hex number&gt;. Internet Explorer has a bug preventing
-sending cookies to such named hosts. Other browsers work well with this type of names. As a work around can be
+Android assigned host name as android_&lt;8 bytes hex number&gt;. This host name doesn't follow respective RFC having underscore in the name.
+Internet Explorer has awareness of that and doesn't send
+cookies to such named hosts. Other browsers may not aware and send cookies. As a work around can be
 either use IP address, or root Android and change default host name, or provide DNS alias, or the best one as
 switch to a browser of other vendor.</p>
 <h3>What should I aware at long run?</h3>
