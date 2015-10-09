@@ -1364,6 +1364,16 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
     </task>
   </target>
 
+  <target name="endpoints" dir="TJWS_HOME" comment="scans websocket endpoints for mobile deployment">
+    <dependency target="wskt"/>
+    <dependency value="true"/>
+    <echo>Scanning and generatiing endpoints list...</echo>
+    <task name="main" code="rogatkin.wskt.EndPointScanner" path="run app class path">
+      <parameter variable="~#args#~"/>
+    </task>
+  </target>
+
+
   <target name="runapp" dir="TJWS_HOME" comment="run jndi test">
     <dependency target="jar"/>
     <dependency target="app"/>

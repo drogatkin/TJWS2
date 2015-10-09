@@ -663,7 +663,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							if (pp == null) {
 								pmap[pi].sourceType = TEXT;
 								if (onText != null)
-									throw new IllegalArgumentException("Only one text messages handler is allowed");
+									throw new IllegalStateException("A text message handler has already been configured");
 								onText = m;
 								paramMapText = pmap;
 								primeText = true;
@@ -683,30 +683,32 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							partReq = true;
 						} else if (t == byte[].class) {
 							if (onBin != null)
-								throw new IllegalArgumentException("Only one binary messages handler is allowed");
+								throw new IllegalStateException("A binary message handler has already been configured");
 							pmap[pi].sourceType = BIN;
 							onBin = m;
 							paramMapBin = pmap;
 							primeBin = true;
 						} else if (t.isAssignableFrom(Reader.class)) {
 							if (onText != null)
-								throw new IllegalArgumentException("Only one text messages handler is allowed");
+								throw new IllegalStateException("A text message handler has already been configured");
 							onText = m;
 							pmap[pi].sourceType = READER;
 							paramMapText = pmap;
 						} else if (t == ByteBuffer.class) {
 							if (onBin != null)
-								throw new IllegalArgumentException("Only one binary messages handler is allowed");
+								throw new IllegalStateException("A binary message handler has already been configured");
 							onBin = m;
 							pmap[pi].sourceType = BYTEBUF;
 							paramMapBin = pmap;
 						} else if (t == InputStream.class) {
 							if (onBin != null)
-								throw new IllegalArgumentException("Only one binary messages handler is allowed");
+								throw new IllegalStateException("A binary message handler has already been configured");
 							onBin = m;
 							pmap[pi].sourceType = INPUT;
 							paramMapBin = pmap;
 						} else if (t == PongMessage.class) {
+							if (onPong != null)
+								throw new IllegalStateException("A pong message handler has already been configured");
 							pmap[pi].sourceType = PONG;
 							onPong = m;
 							paramMapPong = pmap;
@@ -715,7 +717,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 								Set<Decoder> decoders = matchDecoders(t, Decoder.Text.class, String.class);
 								if (decoders.size() > 0) {
 									if (onText != null)
-										throw new IllegalStateException("Only one text messages handler is allowed");
+										throw new IllegalStateException("A text message handler has already been configured");
 									onText = m;
 									pmap[pi].decoder = decoders;
 									pmap[pi].sourceType = DECODER;
@@ -724,7 +726,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 									decoders = matchDecoders(t, Decoder.TextStream.class, Reader.class);
 									if (decoders.size() > 0) {
 										if (onText != null)
-											throw new IllegalStateException("Only one text messages handler is allowed");
+											throw new IllegalStateException("A text message handler has already been configured");
 										onText = m;
 										pmap[pi].decoder = decoders;
 										pmap[pi].sourceType = DECODER;
@@ -733,8 +735,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 										decoders = matchDecoders(t, Decoder.Binary.class, ByteBuffer.class);
 										if (decoders.size() > 0) {
 											if (onBin != null)
-												throw new IllegalArgumentException(
-														"Only one binary messages handler is allowed");
+												throw new IllegalStateException("A binary message handler has already been configured");
 											onBin = m;
 											pmap[pi].decoder = decoders;
 											pmap[pi].sourceType = DECODER;
@@ -743,8 +744,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 											decoders = matchDecoders(t, Decoder.BinaryStream.class, InputStream.class);
 											if (decoders.size() > 0) {
 												if (onBin != null)
-													throw new IllegalArgumentException(
-															"Only one binary messages handler is allowed");
+													throw new IllegalStateException("A binary message handler has already been configured");
 												onBin = m;
 												pmap[pi].decoder = decoders;
 												pmap[pi].sourceType = DECODER;
