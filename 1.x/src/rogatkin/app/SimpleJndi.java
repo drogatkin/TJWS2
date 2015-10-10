@@ -302,9 +302,6 @@ public class SimpleJndi implements InitialContextFactory {
 							remoteContext.bind1(arg0, (org.omg.CORBA.Object) arg1);
 						} catch (naming_exception ne1) {
 							throw new javax.naming.NameNotFoundException("Can't bind in remote repository");
-						} catch (org.omg.CORBA.UserException ce) {
-							ce.printStackTrace();
-							throw new NamingException();
 						}
 					else if (arg1 instanceof org.omg.PortableServer.Servant)
 						try {//System.err.printf("!-->Bind%s%n", arg1);

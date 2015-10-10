@@ -97,12 +97,12 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 	//static final ForkJoinPool mainPool = new ForkJoinPool();
 
-	Selector selector;
-	Serve serve;
-	ExecutorService messageFlowExec;
-	ConcurrentLinkedQueue<SimpleSession> penndingSessions;
+	protected Selector selector;
+	protected Serve serve;
+	protected ExecutorService messageFlowExec;
+	protected ConcurrentLinkedQueue<SimpleSession> penndingSessions;
 
-	boolean rootContainerUse;
+	protected boolean rootContainerUse;
 
 	static final boolean __debugOn = false;
 

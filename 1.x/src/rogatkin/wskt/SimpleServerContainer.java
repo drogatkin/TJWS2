@@ -71,7 +71,7 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	long idleTimeout;
 	long asyncTimeout;
 
-	SimpleServerContainer(SimpleProvider simpleProvider) {
+	public SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
 		endpoints = new HashMap<String, ServerEndpointConfig>();
 		sessions = new HashSet<SimpleSession>();

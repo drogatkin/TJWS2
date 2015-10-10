@@ -26,6 +26,10 @@ public class EndPointScanner {
 	protected static final char[] CR = { '\r', '\n' };
 
 	public static void main(String... args) {
+		if (args.length != 2) {
+			usage();
+			System.exit(1);
+		}
 		File web_inf = new File(args[0]);
 		if (web_inf.exists() == false || web_inf.isAbsolute() == false) {
 			System.out.printf("Argument %s doesn't point ot valid WEB-INF directory%n", args[0]);
@@ -57,12 +61,14 @@ public class EndPointScanner {
 		}
 	}
 
-	void usage() {
-
+	static void usage() {
+		System.out.printf("Usage: EndPointScanner <WEB-INF directory> <scan info file>%n");
 	}
 
 	public void scan(final List<File> cp, final Writer w) {
 		new FastClasspathScanner("") {
+			URLClassLoader classLoader;
+
 			@Override
 			public List<File> getUniqueClasspathElements() {
 				return cp;
@@ -70,16 +76,34 @@ public class EndPointScanner {
 
 			@Override
 			public ClassLoader getClassLoader() {
-				URL[] urls = new URL[cp.size()];
-				for(int j=0, n=cp.size(); j<n;j++)
+				if (classLoader == null) {
+					URL[] urls = new URL[cp.size()];
+					for (int j = 0, n = cp.size(); j < n; j++)
+						try {
+							urls[j] = cp.get(j).toURI().toURL();
+						} catch (MalformedURLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					classLoader = new URLClassLoader(urls);
+				}
+				return classLoader;
+			}
+
+			@Override
+			public void scan() {
+				try {
+					super.scan();
+				} finally {
 					try {
-						urls[j]=cp.get(j).toURI().toURL();
-					} catch (MalformedURLException e) {
+						classLoader.close();
+					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				return new URLClassLoader(urls);
+				}
 			}
+
 		}.matchClassesImplementing(ServerApplicationConfig.class,
 				new InterfaceMatchProcessor<ServerApplicationConfig>() {
 
