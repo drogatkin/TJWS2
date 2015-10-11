@@ -1,0 +1,4 @@
+TJWS  version 1.113
+
+1. Preprocess app using WebSocket to find EndPoints for further Android deploy
+2. Support of servlet which is JSP based

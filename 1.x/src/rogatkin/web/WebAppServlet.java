@@ -619,6 +619,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		final WebAppServlet result = new WebAppServlet(context);
 		result.server = server;
 		try {
+			// initialize deployDir
 			result.makeCP(deployDir); // /web-app
 			if (appContextDelegator != null) {
 				File contextDef = new File(deployDir, "META-INF/context.xml");
@@ -1759,6 +1760,10 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				return url;
 			}
 		};
+	}
+	
+	public File getDeploymentDir() {
+		return deployDir;
 	}
 
 	void dispatch(String path, ServletRequest request, ServletResponse response)
