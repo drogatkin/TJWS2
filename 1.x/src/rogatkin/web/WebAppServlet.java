@@ -555,6 +555,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		@Override
 		protected void service(HttpServletRequest hreq, HttpServletResponse hresp) throws ServletException, IOException {
 			// TODO clean forward attributes wrapping request
+			//System.err.printf("%s-%s%n", hreq.getRequestURI(), hreq.getRequestURL());
+			hreq.setAttribute("javax.servlet.tjws.servlet-jsp", true);
 			hreq.getRequestDispatcher(jsp).forward(hreq, hresp);
 		}
 	}
@@ -2539,8 +2541,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			if (_DEBUG)
 				printRequestChain(request);
 			// try{Thread.sleep(1000);}catch(Exception e) {}
+			boolean toJsp = request.getAttribute("javax.servlet.tjws.servlet-jsp") != null;
 			sfc.doFilter(new DispatchedRequest((HttpServletRequest) request,
-					dispType), response);
+					toJsp?DispatcherType.INCLUDE:dispType), response);
 			// servlet.service(new DispatchedRequest((HttpServletRequest)
 			// request, true), response);
 		}

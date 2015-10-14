@@ -544,7 +544,7 @@ public class Main extends Serve {
 						if (dsctokenzr.hasMoreTokens()) {
 							String servletname = dsctokenzr.nextToken();
 
-							if (dsctokenzr.hasMoreTokens()) {
+							while (dsctokenzr.hasMoreTokens()) {
 								String lt = dsctokenzr.nextToken();
 								if (lt.equalsIgnoreCase("code")) {
 									if (dsctokenzr.hasMoreTokens())
@@ -557,18 +557,21 @@ public class Main extends Serve {
 											key = key.substring(1);
 										//System.err.println("Key:"+key);
 										try {
-										   initparams.put(key, dsctokenzr.nextToken(",").substring(1));
+										   initparams.put(key, dsctokenzr.nextToken(",").substring(1).replaceAll("%2c",  ","));
+										   //System.err.println("Key:"+key+" val:"+initparams.get(key));										
 										} catch(NoSuchElementException nse) {
 											initparams.put(key,"");
 											break;
 										}
 									}
-									//System.err.println("init:"+initparams);
+									//System.err.println("init:"+initparams+" for "+servletname);
 									parameterstbl.put(servletname, initparams);
-								} else
+								} else {
+									servletname +='.'+lt;
 									serve
-											.log("Unrecognized token " + lt + " in " + servletdsc
-													+ ", the line's skipped");
+									.log("No expected token (code|initArgs), "+lt+" added to servlet "
+											+ servletname +" for line: "+servletdsc);
+								}
 							}
 						}
 					}
@@ -580,6 +583,7 @@ public class Main extends Serve {
 			String servletname;
 			while (se.hasMoreElements()) {
 				servletname = (String) se.nextElement();
+				//System.err.println("Adding servlet fro "+servletname+" as "+servletstbl.get(servletname));
 				serve.addServlet(servletname, (String) servletstbl.get(servletname), (Hashtable) parameterstbl
 						.get(servletname));
 			}
