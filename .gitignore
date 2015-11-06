@@ -5,3 +5,5 @@
 1.x/*.log
 1.x/test/lib/
 1.x/webapps/
+*.class
+1.x/src/rogatkin/app/remote/* 
