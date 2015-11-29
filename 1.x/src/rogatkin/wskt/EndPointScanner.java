@@ -96,7 +96,8 @@ public class EndPointScanner {
 					super.scan();
 				} finally {
 					try {
-						classLoader.close();
+						if (classLoader != null)
+							classLoader.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
