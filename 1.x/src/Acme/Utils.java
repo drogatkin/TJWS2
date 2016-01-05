@@ -626,21 +626,27 @@ public class Utils {
 	}
 
 	// / Copy the input to the output until EOF.
-	public static void copyStream(InputStream in, OutputStream out, long maxLen) throws IOException {
+	public static long copyStream(InputStream in, OutputStream out, long maxLen) throws IOException {
 		byte[] buf = new byte[COPY_BUF_SIZE];
 		int len;
+                long tot = 0;
 		if (maxLen <= 0)
-			while ((len = in.read(buf)) > 0)
+			while ((len = in.read(buf)) > 0) {
 				out.write(buf, 0, len);
+				tot += len;
+			}
 		else
 			while ((len = in.read(buf)) > 0)
 				if (len <= maxLen) {
 					out.write(buf, 0, len);
 					maxLen -= len;
+					tot += len;
 				} else {
 					out.write(buf, 0, (int) maxLen);
+					tot += maxLen;
 					break;
 				}
+		return tot;
 	}
 
 	// / Copy the input to the output until EOF.
