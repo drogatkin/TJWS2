@@ -171,6 +171,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	protected String contextName;
 
 	protected String contextPath;
+	
+	protected String virtualHost;
 
 	//protected String origContextName, origContextPath;
 
@@ -678,6 +680,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				result.contextPath = "";
 				result.contextName = "";
 			}
+			result.virtualHost = virtualHost;
 			Node metadataAttr = document.getAttributes().getNamedItem(
 					"metadata-complete");
 			if (metadataAttr != null)
@@ -2297,6 +2300,10 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		throw new UnsupportedOperationException();
 	}
 
+	public String getVirtualServerName() {
+		return virtualHost;
+	}
+	
 	/**
 	 * Gets the SessionCookieConfig object through which various properties of
 	 * the session tracking cookies created on behalf of this ServletContext may
