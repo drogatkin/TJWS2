@@ -93,13 +93,13 @@ td#cmd {border-style: none none solid none; border-width: 1px; border-color: #0a
         Introduction</h4>
     <p>
         The Miniature Java Web Server is built as a servlet container with HTTPD servlet providing
-        standard Web server functionality. The server is pretty small as in Java code
-as in result byte code. General purpose of the Web server is running and
+        standard Web server functionality. The server is a small as in Java code
+as in a result byte code. General purpose of the Web server is running and
 debugging servlets. However, it can be used as a regular web server for sites 
 with low to medium load. I found also
 very convenient shipping a servlet based product packaging with the server, so a user
 can start a product just after unwrapping. You can try a <a href="http://knitknot.info/" target="_blank">web
-site</a> hosted on this server on Amazon EC2. This web server also works on PDA and smart phones as Android and Blackberry based, or on Windows CE based when JVM installed.
+site</a> hosted on this server on a private Cloud. This web server also works on PDA and smart phones as Android and Blackberry based, or on Windows CE based when JVM installed.
  It gives additional flexibility for your phone, since using WebFolder (<a href="http://www.slideshare.net/slideshow/embed_code/12142606" target="_blank">WebBee</a> web app)
  
  can simplify file synchronization and provide control of your phone from web.</p>
@@ -261,7 +261,7 @@ specify which one to use</td>
 stop</td>
   </tr>
   <tr><td class="style2"><b>c</b></td>
-     <td id="cmd">specifies web path of CGI scripts directory</td>
+     <td id="cmd">specifies a web path of <a href="cgi.html">CGI</a> scripts directory</td>
   </tr>
   <tr><td class="style2"><b>e</b></td>
      <td id="cmd">provides session timeout in minutes and can be negative. Negative value
@@ -322,11 +322,11 @@ loading servlet</td>
      <td id="cmd">max number of a connection use in keep-alive</td>
   </tr>
   <tr><td class="style3"><b>sh</b></td>
-     <td id="cmd" class="style4">HTTP only attribute for session cookie. Can improve sequrity. Session
+     <td id="cmd" class="style4">HTTP only attribute for session cookie. Can improve a security. A session
      cookie doesn't carry this attribute by default. Since 1.90</td>
   </tr>
  <tr><td class="style3"><b>ss</b></td>
-     <td id="cmd" class="style4">Secure only attribute for session cookie. Can improve sequrity. Session
+     <td id="cmd" class="style4">Secure only attribute for session cookie. Can improve a security. A session
      cookie doesn't carry this attribute by default. Since 1.99</td>
   </tr>
   
@@ -421,7 +421,7 @@ implementation and other modules of the server</td>
 <p>
     <strong>tjws.proxy.ssl</strong> - this definition specifies that server should process
     X-Forwarded-xxxx headers for calculation remote and server addresses. If value of the property 'y',
-    then SSL is considered to be handled by proxy server. (Since 1.71)</p>
+    then SSL is considered to be handled by a proxy server. (Since 1.71)</p>
 <p>
     <strong>java.protocol.handler.pkgs</strong> - this definition is used by SSL 
     socket factories implementations to define a different protocol handler 
@@ -475,7 +475,7 @@ implementation and other modules of the server</td>
     <p>
         <strong>tjws.wardeploy.dynamically</strong> - this definition advises J2EE deployer for
         monitoring .war files updates and redeploy corresponding applications without the server
-        restart. Optional value of this definition specifies time interval in seconds between checkings. Since 1.50</p>
+        restart. Optional value of this definition specifies time interval in seconds between checks. Since 1.50</p>
      <p>
         <strong>tjws.wardeploy.noincremental</strong> - instructs TJWS redeploy entire web application when newer version of
         .war detected. Default is incremental deployment overriding only older files and not touching added. Since 1.93</p>
@@ -491,7 +491,7 @@ implementation and other modules of the server</td>
         <strong>tjws.app.orb.arguments</strong> - this definition can provide comma
         separated parameters used for ORB initialization. Since 1.50</p>
     <p><strong>tjws.app.main</strong> - name of main class started with offering app server services. TJWS supports not
-    only web applications, any desktop Java application can get benefist of app server services
+    only web applications, any desktop Java application can get benefits of app server services
     as JNDI and container managed JDBC connections. Since 1.50
     </p>
     <p><strong>tjws.app.main.classpath</strong> - class path for main application class specified
