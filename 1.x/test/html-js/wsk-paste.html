@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Image paste test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script>
+		var webSocket;
+		window
+				.addEventListener(
+						'paste',
+						//document.onpaste = 
+						function(event) {
+							var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+							console
+									.log('cb:'
+											+ JSON
+													.stringify(items)
+											+ ' '
+											+ JSON
+													.stringify(event.clipboardData.types)); // will give you the mime types
+							for (index in items) {
+								var item = items[index];
+								if (item.kind === 'file') {
+									var blob = item
+											.getAsFile();
+									var reader = new FileReader();
+									reader.onload = function(
+											event) {
+										console
+												.log(event.target.result)
+										var n = document
+												.getElementById('filename');
+										if (n.value) {
+											getWebsocket()
+													.send(
+															n.value);
+											getWebsocket()
+													.send(
+															blob);
+										}
+										document
+												.getElementById('ws_image').src = event.target.result;
+									}; // data url!
+									reader
+											.readAsDataURL(blob);
+								}
+							}
+						});
+		function handlepaste(elem, e) {
+			console.log('cb-ff:'
+					+ JSON.stringify(elem) + ' '
+					+ JSON.stringify(e));
+		}
+
+		function getWebsocket() {
+			if (webSocket === undefined
+					|| webSocket.readyState === WebSocket.CLOSED) {
+				webSocket = new WebSocket(
+						'ws'
+								+ (window.location.protocol == 'https:' ? 's'
+										: '')
+								+ '://'
+								+ window.location.hostname
+								+ (window.location.port ? ":"
+										+ window.location.port
+										: "")
+								+ '/echoserver/paste/image');
+			}
+			return webSocket;
+		}
+		</script>
+    </head>
+    <body>
+        
+        <div contenteditable='true' onpaste="handlepaste(event)">
+        <input type="text" id="filename"/>
+        </div>
+		<img id="ws_image">
+	</div>
+        </div>
+        </body>
