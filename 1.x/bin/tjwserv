@@ -12,7 +12,7 @@
 
 RETVAL=0;
 
-JDK_HOME=$(readlink -f /usr/bin/java | dirname | dirname)
+JDK_HOME=$(readlink -f /usr/bin/java | xargs dirname | xargs dirname)
 tjws=/opt/tjws
 cp=$tjws/lib/javax.servlet.jar:$tjws/lib/war.jar:$tjws/lib/webserver.jar:$tjws/lib/app.jar:$tjws/lib/class-scanner.jar:$tjws/lib/wskt.jar:$tjws/lib/javax.websocket-client-api.jar:$tjws/lib/javax.websocket-server-api.jar:$tjws/lib/jsp.jar:$tjws/lib/jasper.jar:$JDK_HOME/lib/tools.jar
 log=/var/log/tjws
