@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
  <!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
-    "http://knitknot.info/DTD/bee.dtd" [
+    "https://raw.githubusercontent.com/drogatkin/7Bee/master/bee.dtd" [
       <!ENTITY env SYSTEM "./env.xml">
       <!ENTITY build_directory "lib">
       <!ENTITY launchername "webapplauncher">

@@ -61,6 +61,7 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.SocketTimeoutException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.text.ParseException;
@@ -225,7 +226,7 @@ public class Serve implements ServletContext, Serializable {
 
     public static final String ARG_SESSION_SEED = "SessionSeed";
     
-    public static final String ARG_SESSION_SEED_SIZE = "SessionAutoSeedSize";
+    public static final String ARG_SESSION_SEED_ALG = "SecureRandomAlgorithm";
 
     public static final String ARG_HTTPONLY_SC = "sessionhttponly";
     
@@ -354,16 +355,29 @@ public class Serve implements ServletContext, Serializable {
 	expiredIn = arguments.get(ARG_SESSION_TIMEOUT) != null ? ((Integer) arguments.get(ARG_SESSION_TIMEOUT))
 		.intValue() : DEF_SESSION_TIMEOUT;
 	String seed = (String) arguments.get(ARG_SESSION_SEED);
-	if (seed != null)
+	String randomProvider = (String) arguments.get(ARG_SESSION_SEED_ALG); //"SHA1PRNG";
+	int seedLen = 0;
+	try {
+		seedLen = Integer.parseInt(seed);
+	} catch(Exception e) {
+		
+	}
+	if (seed != null && seedLen == 0)
 		srandom = new SecureRandom(seed.getBytes());
 	else {
-		seed = (String) arguments.get(ARG_SESSION_SEED);
-		int seedLen = seed != null?Integer.parseInt(seed):100;
-		srandom = new SecureRandom();
-		byte bseed[] = srandom.generateSeed(seedLen);
-		srandom = new SecureRandom( bseed );
+		if (randomProvider != null)
+			try {
+				srandom = SecureRandom.getInstance(randomProvider);
+			} catch (NoSuchAlgorithmException e) {
+				log("TJWS: Unsupported or incorrect secure rndom algorithm: "+randomProvider+"("+e+"), a default is used" );
+			}
+		if (srandom == null)
+			srandom = new SecureRandom();
+		seedLen = seedLen<=0?100:seedLen;
+		byte bseed[] = null;
+		srandom.setSeed(bseed = srandom.generateSeed(seedLen));
 		srandom.nextBytes(bseed);
-		srandom = new SecureRandom( bseed );
+		srandom.setSeed(bseed);
 	}
 	httpSessCookie = arguments.get(ARG_HTTPONLY_SC) != null;
 	secureSessCookie = arguments.get(ARG_SECUREONLY_SC) != null;
