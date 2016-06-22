@@ -24,6 +24,7 @@ start() {
 echo "Starting TJWS"
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
+# remove ending '&' when used as service run script
 $tjws_cmd&
 }
 

@@ -1,0 +1,12 @@
+[Unit]
+Description=TJWS Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/tjws/tjwserv start
+Type=simple
+ExecStop=/usr/local/tjws/tjwserv stop
+ExecReload=/usr/local/tjws/tjwserv restart
+
+[Install]
+WantedBy=multi-user.target
