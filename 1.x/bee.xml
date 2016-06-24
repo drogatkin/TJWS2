@@ -1387,9 +1387,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <parameter name="tjws.wardeploy.as-root" value="ROOT"/>
       <parameter name="tjws.proxy.ssl">n</parameter>
       <parameter name="java.naming.provider.url" value="http://localhost:2012"/>
-      <parameter name="javamelody.datasources" value="java:comp/env/jdbc/mysql/resumefair"/>
-      <parameter>-dataSource</parameter>
-      <parameter>mediachest_ds.properties</parameter>
+      <!--parameter name="javamelody.datasources" value="java:comp/env/jdbc/mysql/resumefair"/-->
       <!-- ***************  apps debugging  ****************  -->
       <parameter>-dataSource</parameter>
       <parameter>datasource.properties</parameter>
@@ -1419,12 +1417,12 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <!--parameter value="-nka"/-->
       <parameter value="-acceptorImpl"/>
       <parameter value="Acme.Serve.SelectorAcceptor"/>
-      <parameter value="-j"/>
+      <!--parameter value="-j"/>
       <parameter value="org.apache.jasper.servlet.JspServlet"/>
       <parameter value="-org.apache.jasper.servlet.JspServlet.classpath"/>
       <parameter value="%classpath%"/>
       <parameter value="-org.apache.jasper.servlet.JspServlet.scratchdir"/>
-      <parameter value="%deploydir%/WEB-INF"/>
+      <parameter value="%deploydir%/WEB-INF"/-->
       <parameter variable="~#args#~"/>
     </task>
   </target>
