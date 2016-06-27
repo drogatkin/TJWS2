@@ -820,6 +820,9 @@
        <parameter value="-C"/>
        <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
        <parameter value="io" type="dir"/>
+       <parameter value="-C"/>
+       <parameter value="resources" type="dir"/>
+       <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
     </task>
     <if>
       <expression>
@@ -964,6 +967,9 @@
        <parameter value="-C"/>
        <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
        <parameter value="io" type="dir"/>
+       <parameter value="-C"/>
+       <parameter value="resources" type="dir"/>
+       <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
     </task>
     <if>
       <expression>
