@@ -105,7 +105,10 @@ public class Main extends Serve {
 				arguments.put(ARG_ALIASES, args[argn]);
 			} else if (args[argn].equals("-b") && argn + 1 < argc) {
 				++argn;
-				arguments.put(ARG_BINDADDRESS, args[argn]);
+				if (arguments.containsKey(ARG_BINDADDRESS)) 
+					messages = appendMessage(messages, "Multiple usage of a bind address. "+args[argn]+" ignored\n");
+				else
+					arguments.put(ARG_BINDADDRESS, args[argn]);
 			} else if (args[argn].equals("-k") && argn + 1 < argc) {
 				++argn;
 				arguments.put(ARG_BACKLOG, args[argn]/*new Integer(args[argn])*/);
@@ -204,9 +207,16 @@ public class Main extends Serve {
 			} else if (args[argn].equals("-g") && argn + 1 < argc) {
 				arguments.put(ARG_LOGROLLING_LINES, Integer.valueOf(args[++argn]));
 			} else if (args[argn].startsWith("-")) { // free args, note it generate problem since free arguments can match internal arguments
-				if (args[argn].length() > 1)
-					arguments.put(args[argn].substring(1),// .toUpperCase(),
+				if (args[argn].length() > 1) {
+					String name = args[argn].substring(1);
+					if (arguments.containsKey(name))
+						messages = appendMessage(messages, "Multiple usage of  '-"+name+"'="+args[++argn]+ " ignored\n");
+					else
+						arguments.put(name,// .toUpperCase(),
 							argn < argc - 1 ? args[++argn] : "");
+				//System.out.println("Added free arg:"+args[argn-1]+"="+args[argn]);
+				} else
+					messages = appendMessage(messages, "Parameter '-' ignored, perhaps extra blank separator was used.\n");
 			} else
 				usage();
 

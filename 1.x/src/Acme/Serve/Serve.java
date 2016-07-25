@@ -746,6 +746,8 @@ public class Serve implements ServletContext, Serializable {
 	String workPath = (String) arguments.get(ARG_WORK_DIRECTORY);
 	if (workPath == null)
 	    workPath = ".";
+	if (hostName == null)
+		hostName="unknown";
 	hostName = sanitizeAsFile(hostName);
 	return new File(workPath, hostName + '-'
 		+ (arguments.get(ARG_PORT) == null ? String.valueOf(DEF_PORT) : arguments.get(ARG_PORT))
@@ -788,7 +790,7 @@ public class Serve implements ServletContext, Serializable {
 	} catch (Throwable /* IllegalArgumentException */e) {
 		if (e instanceof ThreadDeath)
 				throw (ThreadDeath) e;
-	    log("TJWS: Acceptor: " + e);
+	    log("TJWS:  Acceptor ["+acceptor+": " + e);
 	    acceptor = null;
 	    if (e instanceof java.net.BindException)
 	    	return 3;
