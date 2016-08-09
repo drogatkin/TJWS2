@@ -374,6 +374,7 @@ public class Main extends Serve {
 		if (tempFile != null && tempFile.isAbsolute() == false)
 			tempFile = new File(workPath, tempFile.getPath());
 		final File servFile = tempFile;
+		// TODO analyze possible race condition
 		if (servFile != null)
 			new Thread(new Runnable() {
 				public void run() {

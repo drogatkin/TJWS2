@@ -689,7 +689,7 @@ public class Serve implements ServletContext, Serializable {
     public void addDefaultServlets(String cgi, String throttles) throws IOException {
 	// TODO: provide user specified CGI directory
 	if (cgi != null) {
-	    if (getServlet("/" + cgi) == null)
+	    if (getServlet("/" + cgi +"/*") == null)
 		addServlet("/" + cgi + "/*", new Acme.Serve.CgiServlet());
 	    else
 		log("TJWS: Servlet for path '/" + cgi + "' already defined and no default will be used.");
