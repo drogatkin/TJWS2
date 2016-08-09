@@ -604,7 +604,7 @@ public class Main extends Serve {
 	
 	static class RollingOutputStream extends FilterOutputStream {
 		private int rollingThresh;
-		private String nameBase;
+		private File nameBase;
 		private volatile int currentLine;
 		private int numRoll;
 
@@ -613,8 +613,8 @@ public class Main extends Serve {
 			rollingThresh = rollingSize;
 			if (rollingThresh < 1000)
 				rollingThresh = 1000;
-			nameBase = file.getPath();
-			out = new FileOutputStream(file);
+			nameBase = file;
+			out = new FileOutputStream(nameBase);
 		}
 
 		//@Override 1.4
