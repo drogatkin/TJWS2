@@ -623,10 +623,14 @@ public class Main extends Serve {
 			if (currentLine++ > rollingThresh) {
 				synchronized (this) {
 					if (currentLine++ > rollingThresh) {
-						OutputStream out2 = out;
-						out = new FileOutputStream(nameBase + "." + (numRoll++));
-						out2.close();
-						currentLine = 0;
+						out.close();
+						if (nameBase.renameTo(new File(nameBase.getPath()+ "." + (numRoll++)))) {
+							out = new FileOutputStream(nameBase);
+							currentLine = 0;
+						} else {
+							// TODO warn that roll didn't happen - overwriting
+							out = new FileOutputStream(nameBase);
+						}
 					}
 				}
 			}
