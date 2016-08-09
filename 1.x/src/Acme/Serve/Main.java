@@ -603,7 +603,7 @@ public class Main extends Serve {
 	
 	static class RollingOutputStream extends FilterOutputStream {
 		private int rollingThresh;
-		private String nameBase;
+		private File nameBase;
 		private volatile int currentLine;
 		private int numRoll;
 
@@ -612,8 +612,8 @@ public class Main extends Serve {
 			rollingThresh = rollingSize;
 			if (rollingThresh < 1000)
 				rollingThresh = 1000;
-			nameBase = file.getPath();
-			out = new FileOutputStream(file);
+			nameBase = file;
+			out = new FileOutputStream(nameBase);
 		}
 
 		//@Override 1.4
@@ -622,10 +622,14 @@ public class Main extends Serve {
 			if (currentLine++ > rollingThresh) {
 				synchronized (this) {
 					if (currentLine++ > rollingThresh) {
-						OutputStream out2 = out;
-						out = new FileOutputStream(nameBase + "." + (numRoll++));
-						out2.close();
-						currentLine = 0;
+						out.close();
+						if (nameBase.renameTo(new File(nameBase.getPath()+ "." + (numRoll++)))) {
+							out = new FileOutputStream(nameBase);
+							currentLine = 0;
+						} else {
+							// TODO warn that roll didn't happen - overwriting
+							out = new FileOutputStream(nameBase);
+						}
 					}
 				}
 			}
