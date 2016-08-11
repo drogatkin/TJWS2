@@ -1,0 +1,5 @@
+TJWS  version 1.114
+
+1. Secure random seeding can be customized providing algorithm names
+2. Fixed Jasper bug not creating scratch directory
+3. A launcher script corrected by adding missed resources
