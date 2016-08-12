@@ -1058,6 +1058,16 @@ public class Utils {
 		return System.getProperty("java.class.path");
 	}
 
+	public static int parseInt(Object num, int def) {
+		if (num instanceof Number)
+			return ((Number)num).intValue();
+		try {
+			return Integer.parseInt(num.toString());
+		} catch (Exception e) {
+			return def;
+		}
+	}
+
 	public static final String toFile(URL url) {
 		if (url.getProtocol().indexOf("file") < 0)
 			return null;
@@ -1103,13 +1113,9 @@ public class Utils {
 		 *            where property THREADSINPOOL gives max threads Note if THREADSINPOOL not integers, or negative then DEF_MAX_POOLED_THREAD used
 		 */
 		public ThreadPool(Properties properties, ThreadFactory threadfactory) {
-			try {
-				maxThreads = Integer.parseInt(properties.getProperty(MAXNOTHREAD));
+				maxThreads = parseInt(properties.getProperty(MAXNOTHREAD), DEF_MAX_POOLED_THREAD);
 				if (maxThreads < 0)
 					maxThreads = DEF_MAX_POOLED_THREAD;
-			} catch (Exception e) {
-				maxThreads = DEF_MAX_POOLED_THREAD;
-			}
 			freeThreads = new ArrayList(maxThreads);
 			busyThreads = new HashMap(maxThreads);
 			this.threadFactory = threadfactory;

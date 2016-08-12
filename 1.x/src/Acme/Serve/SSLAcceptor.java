@@ -42,6 +42,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 
+import Acme.Utils;
 import Acme.Serve.Serve.Acceptor;
 
 public class SSLAcceptor implements Acceptor {
@@ -66,6 +67,8 @@ public class SSLAcceptor implements Acceptor {
 	public static final String ARG_PROTOCOL = "protocol"; // TLS
 
 	public static final String ARG_BACKLOG = Serve.ARG_BACKLOG;
+	
+	public static final String ARG_SOTIMEOUT = "socket-timeout";
 
 	public static final String ARG_IFADDRESS = "ifAddress";
 
@@ -115,6 +118,8 @@ public class SSLAcceptor implements Acceptor {
 	 * Password for accessing the key store file.
 	 */
 	private static final String KEYSTOREPASS = "changeme";
+	
+	protected static final int SO_TIMEOIUT = 1 * 60 * 1000;
 
 	/**
 	 * Pathname to the key store file to be used.
@@ -122,6 +127,8 @@ public class SSLAcceptor implements Acceptor {
 	protected String keystoreFile = System.getProperty("user.home") + File.separator + ".keystore";
 
 	protected ServerSocket socket;
+	
+	protected static int sotimeout;
 
 	protected boolean android, jsse10;
 
@@ -132,7 +139,7 @@ public class SSLAcceptor implements Acceptor {
 	public Socket accept() throws IOException {
 		Socket result = socket.accept();
 		if (result != null)
-			result.setSoTimeout(5 * 60 * 1000);
+			result.setSoTimeout(sotimeout);
 		return result;
 	}
 
@@ -148,15 +155,8 @@ public class SSLAcceptor implements Acceptor {
 		// Create the proxy and return
 		javax.net.ssl.SSLServerSocketFactory sslSoc = initSSLContext(inProperties, outProperties)
 				.getServerSocketFactory();
-		int port = PORT;
-		if (inProperties.get(ARG_PORT) != null)
-			try {
-				port = Integer.parseInt((String) inProperties.get(ARG_PORT));
-			} catch (NumberFormatException nfe) {
-
-			}
-		else if (inProperties.get(Serve.ARG_PORT) != null)
-			port = ((Integer) inProperties.get(Serve.ARG_PORT)).intValue();
+		int port = Utils.parseInt(inProperties.get(ARG_PORT),  Utils.parseInt(inProperties.get(Serve.ARG_PORT), PORT));
+		
 		if (inProperties.get(ARG_BACKLOG) == null)
 			if (inProperties.get(ARG_IFADDRESS) == null)
 				socket = sslSoc.createServerSocket(port);
@@ -164,14 +164,15 @@ public class SSLAcceptor implements Acceptor {
 				socket = sslSoc.createServerSocket(port, BACKLOG,
 						InetAddress.getByName((String) inProperties.get(ARG_IFADDRESS)));
 		else if (inProperties.get(ARG_IFADDRESS) == null)
-			socket = sslSoc.createServerSocket(port, new Integer((String) inProperties.get(ARG_BACKLOG)).intValue());
+			socket = sslSoc.createServerSocket(port, Utils.parseInt(inProperties.get(ARG_BACKLOG), BACKLOG));
 		else
-			socket = sslSoc.createServerSocket(port, new Integer((String) inProperties.get(ARG_BACKLOG)).intValue(),
+			socket = sslSoc.createServerSocket(port, Utils.parseInt(inProperties.get(ARG_BACKLOG), BACKLOG),
 					InetAddress.getByName((String) inProperties.get(ARG_IFADDRESS)));
 
 		initServerSocket(socket, "true".equals(inProperties.get(ARG_CLIENTAUTH)));
 		if (outProperties != null)
 			outProperties.put(Serve.ARG_BINDADDRESS, socket.getInetAddress().getHostName());
+		sotimeout = Utils.parseInt(inProperties.get(ARG_SOTIMEOUT), SO_TIMEOIUT);
 	}
 
 	protected SSLContext initSSLContext(Map inProperties, Map outProperties) throws IOException {

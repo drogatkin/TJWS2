@@ -48,13 +48,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -64,6 +61,7 @@ import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
+import Acme.Utils;
 import Acme.Serve.SSLAcceptor;
 import Acme.Serve.Serve;
 
@@ -144,8 +142,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 		channel = ServerSocketChannel.open();
 		channel.configureBlocking(false);
-		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue()
-				: Serve.DEF_PORT;
+		int port =  Utils.parseInt(inProperties.get(ARG_PORT),  Utils.parseInt(inProperties.get(Serve.ARG_PORT), PORT));
+		sotimeout = Utils.parseInt(inProperties.get(ARG_SOTIMEOUT), SO_TIMEOIUT);
 		InetSocketAddress isa = null;
 		if (inProperties.get(Serve.ARG_BINDADDRESS) != null)
 			try {
@@ -181,6 +179,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 		protected SSLChannelSocket(Socket socket, SSLEngine sslEngine, ExecutorService exec) throws IOException {
 			this.socket = socket;
+			socket.setSoTimeout(sotimeout); 
 			channel = new SSLSocketChannel(socket.getChannel(), sslEngine, exec, null);
 			readBuff = ByteBuffer.allocate(1024 * 16);
 			readBuff.flip();
@@ -247,7 +246,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 		protected List<Future<?>> tasks;
 
-		/** raw payload incomming */
+		/** raw payload incoming */
 		protected ByteBuffer inData;
 		/** encrypted data outgoing */
 		protected ByteBuffer outCrypt;
@@ -294,32 +293,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			createBuffers(sslEngine.getSession());
 			// kick off handshake
 			socketChannel.write(wrap(emptybuffer));// initializes res
-			// TODO since handshake is called from multiple points, timeout should be in it
-			try {
-				IOException ioe = exec.submit(new Callable<IOException>() {
-
-					@Override
-					public IOException call() throws Exception {
-						try {
-							processHandshake();
-						} catch (IOException e) {
-							return e;
-						}
-						return null;
-					}}).get(10, TimeUnit.SECONDS); // TODO make handshake timeout configurable
-				if (ioe != null)
-					throw ioe;
-			} catch (Exception e) {
-				try {
-					socketChannel.close();
-				} catch(Exception e1) {
-					
-				}
-				if (e instanceof IOException)
-					throw (IOException)e;
-				throw new IOException("Exception in handshake", e);
-			}
-			
+			processHandshake();
 		}
 
 		private void consumeFutureUninterruptible(Future<?> f) {
