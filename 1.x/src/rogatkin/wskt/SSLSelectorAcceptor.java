@@ -496,7 +496,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			else
 				inCrypt.compact();
 
-			if (isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW)
+			if (!isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW)
 				if (socketChannel.read(inCrypt) == -1) {
 					return -1;
 				}

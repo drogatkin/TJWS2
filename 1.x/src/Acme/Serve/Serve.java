@@ -34,7 +34,6 @@
 
 package Acme.Serve;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -4336,7 +4335,7 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	public ServeInputStream(InputStream in, ServeConnection conn) {
 	    this.conn = conn;
-	    this.in = new BufferedInputStream(in);
+	    this.in = in;
 	}
 
 	void refresh() {
