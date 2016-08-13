@@ -68,7 +68,7 @@ public class SSLAcceptor implements Acceptor {
 
 	public static final String ARG_BACKLOG = Serve.ARG_BACKLOG;
 	
-	public static final String ARG_SOTIMEOUT = "socket-timeout";
+	public static final String ARG_SO_HS_TIMEOUT = "socket-handshake-timeout";
 
 	public static final String ARG_IFADDRESS = "ifAddress";
 
@@ -119,7 +119,10 @@ public class SSLAcceptor implements Acceptor {
 	 */
 	private static final String KEYSTOREPASS = "changeme";
 	
-	protected static final int SO_TIMEOIUT = 1 * 60 * 1000;
+	/**
+	 *  default socket SSL handshake timeout preventing DoS attacks
+	 */
+	protected static final int SO_HS_TIMEOIUT = 30 * 1000;
 
 	/**
 	 * Pathname to the key store file to be used.
@@ -128,7 +131,7 @@ public class SSLAcceptor implements Acceptor {
 
 	protected ServerSocket socket;
 	
-	protected static int sotimeout;
+	protected static int so_hs_timeout;
 
 	protected boolean android, jsse10;
 
@@ -137,10 +140,7 @@ public class SSLAcceptor implements Acceptor {
 	}
 
 	public Socket accept() throws IOException {
-		Socket result = socket.accept();
-		if (result != null)
-			result.setSoTimeout(sotimeout);
-		return result;
+		return socket.accept();
 	}
 
 	public void destroy() throws IOException {
@@ -172,7 +172,8 @@ public class SSLAcceptor implements Acceptor {
 		initServerSocket(socket, "true".equals(inProperties.get(ARG_CLIENTAUTH)));
 		if (outProperties != null)
 			outProperties.put(Serve.ARG_BINDADDRESS, socket.getInetAddress().getHostName());
-		sotimeout = Utils.parseInt(inProperties.get(ARG_SOTIMEOUT), SO_TIMEOIUT);
+		// note it isn't use for the implementation since there is no control over handshake
+		so_hs_timeout = Utils.parseInt(inProperties.get(ARG_SO_HS_TIMEOUT), SO_HS_TIMEOIUT);
 	}
 
 	protected SSLContext initSSLContext(Map inProperties, Map outProperties) throws IOException {

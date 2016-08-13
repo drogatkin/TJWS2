@@ -36,6 +36,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
@@ -143,7 +144,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		channel = ServerSocketChannel.open();
 		channel.configureBlocking(false);
 		int port =  Utils.parseInt(inProperties.get(ARG_PORT),  Utils.parseInt(inProperties.get(Serve.ARG_PORT), PORT));
-		sotimeout = Utils.parseInt(inProperties.get(ARG_SOTIMEOUT), SO_TIMEOIUT);
+		so_hs_timeout = Utils.parseInt(inProperties.get(ARG_SO_HS_TIMEOUT), SO_HS_TIMEOIUT);
 		InetSocketAddress isa = null;
 		if (inProperties.get(Serve.ARG_BINDADDRESS) != null)
 			try {
@@ -179,7 +180,6 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 		protected SSLChannelSocket(Socket socket, SSLEngine sslEngine, ExecutorService exec) throws IOException {
 			this.socket = socket;
-			socket.setSoTimeout(sotimeout); 
 			channel = new SSLSocketChannel(socket.getChannel(), sslEngine, exec, null);
 			readBuff = ByteBuffer.allocate(1024 * 16);
 			readBuff.flip();
@@ -225,6 +225,16 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		int printFilter(int c) {
 			//System.err.printf("%c", c);
 			return c;
+		}
+
+		@Override
+		public void setSoTimeout(int timeout) throws SocketException {
+			socket.setSoTimeout(timeout); 
+		}
+
+		@Override
+		public int getSoTimeout() throws SocketException {
+			return socket.getSoTimeout();
 		}
 
 		@Override
@@ -338,10 +348,21 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 			if (sslEngine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
 				if (!isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW) {
+					
 					inCrypt.compact();
-					int read = socketChannel.read(inCrypt);
-					if (read == -1) {
-						throw new IOException("connection closed unexpectedly by peer");
+					int timeout = socketChannel.socket().getSoTimeout();
+					try {
+						socketChannel.socket().setSoTimeout(so_hs_timeout); // prevent system hangs 
+						int read = socketChannel.read(inCrypt);
+						if (read == -1) {
+							throw new IOException("connection closed unexpectedly by peer");
+						}
+					} finally {
+						try {
+						   socketChannel.socket().setSoTimeout(timeout);
+						} catch( SocketException se ) {
+							
+						}
 					}
 					inCrypt.flip();
 				}

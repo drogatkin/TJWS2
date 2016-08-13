@@ -338,30 +338,15 @@ public class Serve implements ServletContext, Serializable {
 	});
 	setAccessLogged();
 	keepAlive = arguments.get(ARG_KEEPALIVE) == null || ((Boolean) arguments.get(ARG_KEEPALIVE)).booleanValue();
-	int timeoutKeepAliveSec;
-	try {
-	    timeoutKeepAliveSec = Integer.parseInt((String) arguments.get(ARG_KEEPALIVE_TIMEOUT));
-	} catch (Exception ex) {
-	    timeoutKeepAliveSec = 30;
-	}
+	int timeoutKeepAliveSec = Utils.parseInt(arguments.get(ARG_KEEPALIVE_TIMEOUT), 30);
 	timeoutKeepAlive = timeoutKeepAliveSec * 1000;
-	try {
-	    maxAliveConnUse = Integer.parseInt((String) arguments.get(ARG_MAX_CONN_USE));
-	} catch (Exception ex) {
-	    maxAliveConnUse = DEF_MAX_CONN_USE;
-	}
+	maxAliveConnUse = Utils.parseInt(arguments.get(ARG_MAX_CONN_USE), DEF_MAX_CONN_USE);
 	keepAliveHdrParams = "timeout=" + timeoutKeepAliveSec + ", max=" + maxAliveConnUse;
 
-	expiredIn = arguments.get(ARG_SESSION_TIMEOUT) != null ? ((Integer) arguments.get(ARG_SESSION_TIMEOUT))
-		.intValue() : DEF_SESSION_TIMEOUT;
+	expiredIn = Utils.parseInt(arguments.get(ARG_SESSION_TIMEOUT), DEF_SESSION_TIMEOUT);
 	String seed = (String) arguments.get(ARG_SESSION_SEED);
 	String randomProvider = (String) arguments.get(ARG_SESSION_SEED_ALG); //"SHA1PRNG";
-	int seedLen = 0;
-	try {
-		seedLen = Integer.parseInt(seed);
-	} catch(Exception e) {
-		
-	}
+	int seedLen = Utils.parseInt(seed, 0);
 	if (seed != null && seedLen == 0)
 		srandom = new SecureRandom(seed.getBytes());
 	else {
