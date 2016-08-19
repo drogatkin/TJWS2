@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -624,7 +625,7 @@ public class Main extends Serve {
 				synchronized (this) {
 					if (currentLine++ > rollingThresh) {
 						out.close();
-						if (nameBase.renameTo(new File(nameBase.getPath()+ "." + (numRoll++)))) {
+						if (nameBase.renameTo(new File(nameBase.getPath()+ "." + new DecimalFormat("0000").format(numRoll++)))) {
 							out = new FileOutputStream(nameBase);
 							currentLine = 0;
 						} else {
