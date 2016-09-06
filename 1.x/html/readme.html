@@ -911,20 +911,19 @@ Please note that Nginx doesn't support keep alive for proxy requests yet, so you
   <h4><a name="download"></a>Download</h4>
 <p>Please 
 <a href="http://sourceforge.net/projects/tjws/files/">download</a> 
-(version 1.113)
+(version 1.114)
 </p>
 
-<p>Android version of the server with couple of web applications added in webroot/android directory of the distribution.
-The version is also available for separate download so you can install it directly to your phone or tablet. I am
-preparing a video helping to use Atjeews on your mobile devices.
+<p>Visit Atjeews at <a href="https://github.com/drogatkin/Atjeews" target="_blank">GitHub</a> for Android version of the server and download APK at
+ <a href="https://play.google.com/store/apps/details?id=rogatkin.mobile.web">Google Play</a>.
 </p>
 <p><a href="https://github.com/drogatkin/TJWS2/tree/master/1.x" target="_blank">Sources</a>  of TJWS are available on GitHub</p>
 <p><font color="#800000">Note:</font> Base TJWS is Java 2 (JDK 1.2) compatible, SSL 
 module requires extra classes introduced in JDK 1.3-1.4. Base TJWS runs also on servlet specification 2.3, when
-the rest of server is 3.0 version compatible. It makes building of TJWS a bit tricky. Some methods originally introduced in
+the rest of server is 3.1 version compatible. It makes building of TJWS a bit tricky. Some methods originally introduced in
 TJWS are conflicting with JSR 315, so the author is looking how to eliminate this conflict with a minimal impact
 of backward compatibility. J2EE war deployment 
-requires Java 5 (JDK 1.5, 1.6, 1.7, or 1.8). If you would like to make own build, then you will need to download <a href="http://knitknot.info/download/7bee/bee-1.1.1.zip">7Bee</a> Java
+requires Java 5 (JDK 1.5, 1.6, 1.7, or 1.8). If you would like to make own build, then you will need to download <a href="https://github.com/drogatkin/7Bee">7Bee</a> Java
 based build tool. The env.xml assumes target 1.4 for TJWS and 
 <font color="#FF0000"><b>1.7</b></font> for the 
 rest. It may need being edited to provide SDK paths and targets. Modify variable '<i>j2ee 

@@ -1422,7 +1422,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <parameter>-sh</parameter>
       <!--parameter value="-nka"/-->
       <parameter value="-acceptorImpl"/>
-      <parameter value="Acme.Serve.SelectorAcceptor"/>
+      <parameter value="Acme.Serve.SelectorAcceptor"/> 
       <!--parameter value="-j"/>
       <parameter value="org.apache.jasper.servlet.JspServlet"/>
       <parameter value="-org.apache.jasper.servlet.JspServlet.classpath"/>
