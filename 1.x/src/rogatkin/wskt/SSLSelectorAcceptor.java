@@ -180,6 +180,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 		protected SSLChannelSocket(Socket socket, SSLEngine sslEngine, ExecutorService exec) throws IOException {
 			this.socket = socket;
+			setSoTimeout(so_hs_timeout);
 			channel = new SSLSocketChannel(socket.getChannel(), sslEngine, exec, null);
 			readBuff = ByteBuffer.allocate(1024 * 16);
 			readBuff.flip();
@@ -303,7 +304,8 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 			createBuffers(sslEngine.getSession());
 			// kick off handshake
 			socketChannel.write(wrap(emptybuffer));// initializes res
-			processHandshake();
+			// TODO put it in thread
+			//processHandshake();
 		}
 
 		private void consumeFutureUninterruptible(Future<?> f) {
@@ -348,21 +350,10 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 
 			if (sslEngine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
 				if (!isBlocking() || readEngineResult.getStatus() == Status.BUFFER_UNDERFLOW) {
-					
 					inCrypt.compact();
-					int timeout = socketChannel.socket().getSoTimeout();
-					try {
-						socketChannel.socket().setSoTimeout(so_hs_timeout); // prevent system hangs 
-						int read = socketChannel.read(inCrypt);
-						if (read == -1) {
-							throw new IOException("connection closed unexpectedly by peer");
-						}
-					} finally {
-						try {
-						   socketChannel.socket().setSoTimeout(timeout);
-						} catch( SocketException se ) {
-							
-						}
+					int read = socketChannel.read(inCrypt);
+					if (read == -1) {
+						throw new IOException("connection closed unexpectedly by peer");
 					}
 					inCrypt.flip();
 				}

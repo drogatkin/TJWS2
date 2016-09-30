@@ -95,10 +95,10 @@ public class EndPointScanner {
 				try {
 					super.scan();
 				} finally {
-					try {
+					try { 
 						if (classLoader != null)
-							classLoader.close();
-					} catch (IOException e) {
+							classLoader.getClass().getMethod("close").invoke(classLoader);
+					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
