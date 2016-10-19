@@ -166,60 +166,68 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 
     protected void init(ClassLoader classLoader) throws Exception {
 	String classPath = dataSourceProperties.getProperty("driver-class-path");
-	if (classPath == null) {
-		//if (classLoader != null)
-	    //Class.forName(dataSourceProperties.getProperty("driver-class"), true, classLoader);
-		//else
-		Class.forName(dataSourceProperties.getProperty("driver-class"));
-	    driver = DriverManager.getDriver(dataSourceProperties.getProperty("url"));
-	} else {
-	    String[] classPaths = classPath.split(File.pathSeparator);
-	    URL[] urls = new URL[classPaths.length];
-	    for (int i = 0; i < urls.length; i++)
-		urls[i] = new URL("file:" + classPaths[i]);
-	    if (CP_DEFAULT.equalsIgnoreCase(classPath)) {
-		driver = (Driver) Class.forName(dataSourceProperties.getProperty("driver-class"), true,
-				classLoader==null?Thread.currentThread().getContextClassLoader():classLoader).newInstance();
-		appCP = true;
-	    } else
-		driver = (Driver) Class.forName(dataSourceProperties.getProperty("driver-class"), true,
-			classLoader = new URLClassLoader(urls, DriverManager.class.getClassLoader())).newInstance();
+		if (classPath == null) {
+			//if (classLoader != null)
+			//Class.forName(dataSourceProperties.getProperty("driver-class"), true, classLoader);
+			//else
+			String driverClass = dataSourceProperties.getProperty("driver-class");
+			if (driverClass == null)
+				return; // no data source
+			Class.forName(driverClass);
+			driver = DriverManager.getDriver(dataSourceProperties.getProperty("url"));
+		} else {
+			String[] classPaths = classPath.split(File.pathSeparator);
+			URL[] urls = new URL[classPaths.length];
+			for (int i = 0; i < urls.length; i++)
+				urls[i] = new URL("file:" + classPaths[i]);
+			if (CP_DEFAULT.equalsIgnoreCase(classPath)) {
+				driver = (Driver) Class
+						.forName(dataSourceProperties.getProperty("driver-class"), true,
+								classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader)
+						.newInstance();
+				appCP = true;
+			} else
+				driver = (Driver) Class
+						.forName(dataSourceProperties.getProperty("driver-class"), true,
+								classLoader = new URLClassLoader(urls, DriverManager.class.getClassLoader()))
+						.newInstance();
+		}
+		conectionProperties = new Properties();
+		if (dataSourceProperties.getProperty("user") != null) {
+			conectionProperties.setProperty("user", dataSourceProperties.getProperty("user"));
+			if (dataSourceProperties.getProperty("password") != null)
+				conectionProperties.setProperty("password", dataSourceProperties.getProperty("password"));
+		}
+		try {
+			setTimeout(Integer.parseInt(dataSourceProperties.getProperty("access-timeout")));
+		} catch (Exception e) {
+		}
+		try {
+			capacity = Integer.parseInt(dataSourceProperties.getProperty("pool-size"));
+			this.pool = new ArrayBlockingQueue<Connection>(capacity, true);
+			this.borrowed = new ArrayList<Connection>(capacity);
+		} catch (Exception e) {
+			capacity = DEFAULT_CAPACITY;
+		}
+		validateQuery = dataSourceProperties.getProperty("prob-query");
+		String conValClass = dataSourceProperties.getProperty("exception-handler");
+		if (conValClass != null)
+			connectionValidateMethod = (classLoader == null ? Class.forName(conValClass)
+					: Class.forName(conValClass, true, classLoader)).getMethod("validate", SQLException.class,
+							Connection.class);
+		String jndiName = dataSourceProperties.getProperty("jndi-name");
+		if (jndiName != null) {
+			if (jndiName.startsWith("jdbc/"))
+				jndiName = "java:comp/env/" + jndiName;
+			InitialContext ic = new InitialContext();
+			try {
+				ic.lookup(jndiName);
+				ic.rebind(jndiName, this);
+			} catch (NamingException ne) {
+				ic.bind(jndiName, this);
+			}
+		}
 	}
-	conectionProperties = new Properties();
-	if (dataSourceProperties.getProperty("user") != null) {
-	    conectionProperties.setProperty("user", dataSourceProperties.getProperty("user"));
-	    if (dataSourceProperties.getProperty("password") != null)
-		conectionProperties.setProperty("password", dataSourceProperties.getProperty("password"));
-	}
-	try {
-	    setTimeout(Integer.parseInt(dataSourceProperties.getProperty("access-timeout")));
-	} catch (Exception e) {
-	}
-	try {
-	    capacity = Integer.parseInt(dataSourceProperties.getProperty("pool-size"));
-	    this.pool = new ArrayBlockingQueue<Connection>(capacity, true);
-	    this.borrowed = new ArrayList<Connection>(capacity);
-	} catch (Exception e) {
-	    capacity = DEFAULT_CAPACITY;
-	}
-	validateQuery = dataSourceProperties.getProperty("prob-query");
-	String conValClass = dataSourceProperties.getProperty("exception-handler");
-	if (conValClass != null)
-	    connectionValidateMethod = (classLoader == null ? Class.forName(conValClass) : Class.forName(conValClass,
-		    true, classLoader)).getMethod("validate", SQLException.class, Connection.class);
-	String jndiName = dataSourceProperties.getProperty("jndi-name");
-	if (jndiName != null) {
-	    if (jndiName.startsWith("jdbc/"))
-		jndiName = "java:comp/env/" + jndiName;
-	    InitialContext ic = new InitialContext();
-	    try {
-	      ic.lookup(jndiName);
-	      ic.rebind(jndiName, this);
-	    } catch (NamingException ne) {
-		ic.bind(jndiName, this);
-	    }
-	}
-    }
 
     public Connection getConnection() throws SQLException {
 	Connection realConn = validateQuery == null ? get() : getValidated();
