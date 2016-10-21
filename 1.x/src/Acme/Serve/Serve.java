@@ -2171,7 +2171,7 @@ public class Serve implements ServletContext, Serializable {
 	    // Read the first line of the request.
 	    socket.setSoTimeout(serve.timeoutKeepAlive);
 	    len = in.readLine(lineBytes, 0, lineBytes.length);
-	    if (len == -1 || len == 0) {
+	    if (len <= 0) {
 		if (keepAlive) {
 		    keepAlive = false;
 		    // connection seems be closed

@@ -331,7 +331,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		 * handshake. Thats why it's called both from the
 		 * {@link #read(ByteBuffer)} and {@link #write(ByteBuffer)}
 		 **/
-		private synchronized void processHandshake() throws IOException {
+		private void processHandshake() throws IOException {
 			if (sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
 				return; // since this may be called either from a reading or a writing thread and because this method is synchronized it is necessary to double check if we are still handshaking.
 			if (!tasks.isEmpty()) {

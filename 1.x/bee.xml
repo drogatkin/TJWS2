@@ -642,6 +642,13 @@
      </operator>
   </expression>
 
+  <expression variable="servlet xml defs">
+     <operator name="append">
+        <value variable="SERVLET_SRC"/>
+        <value>/javax/servlet/resources/*</value>
+     </operator>
+  </expression>
+
   <expression variable="servlet res root">
      <operator name="append">
         <value variable="SERVLET_SRC"/>
@@ -848,6 +855,9 @@
        <parameter value="-C"/>
        <parameter variable="JASPER_SRC" type="dir"/>
        <parameter>org/apache/jasper/resources</parameter>
+       <parameter value="-C"/>
+       <parameter variable="JASPER_SRC" type="dir"/>
+       <parameter>javax/servlet/resources</parameter>
        </task>
       </block>
     </if>
