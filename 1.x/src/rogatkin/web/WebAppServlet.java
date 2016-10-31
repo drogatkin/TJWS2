@@ -622,6 +622,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		XPath xp = XPathFactory.newInstance().newXPath();
 		final WebAppServlet result = new WebAppServlet(context);
 		result.server = server;
+		FileInputStream webxml = null;
+		boolean error = true;
 		try {
 			// initialize deployDir
 			result.makeCP(deployDir); // /web-app
@@ -631,7 +633,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					appContextDelegator.add(context, new WebApp.MetaContext(contextDef.getPath(), result.ucl));
 			}
 			Node document = (Node) xp.evaluate("/*",
-					 new InputSource(new FileInputStream(new File(deployDir,
+					 new InputSource(webxml = new FileInputStream(new File(deployDir,
 							"WEB-INF/web.xml"))), XPathConstants.NODE);
 			// TODO process "web-fragment.xml" as well
 			final String namespaceURI = document.getNamespaceURI();
@@ -1255,12 +1257,21 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			nodes = (NodeList) xp.evaluate(prefix + "ejb-ref", document,
 					XPathConstants.NODESET);
 			nodesLen = nodes.getLength();
+			error = false;
 		} catch (IOException ioe) {
 			throw new ServletException("A problem in reading web.xml.", ioe);
 		} catch (XPathExpressionException xpe) {
-			server.log("", xpe);
+			//server.log("", xpe);
 			throw new ServletException("A problem in parsing web.xml.", xpe);
 		}  finally {
+			if (webxml != null) 
+				try {
+					webxml.close();
+				} catch(Exception e) {}
+			if (error) 
+				try {
+					result.destroy();
+				} catch(Exception e) {}
 		}
 		result.scc = new SessionCookieConfigImpl(result);
 		return deploywebsocket(result, deployDir, context, server, virtualHost);
