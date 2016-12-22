@@ -60,6 +60,8 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Partial;
+import javax.websocket.MessageHandler.Whole;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -396,6 +398,18 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		}
 		handlers.add(new SimpleMessageHandler(arg0));
 
+	}
+	
+	@Override
+	public <T> void addMessageHandler(Class<T> handClass, Whole<T> whole) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public <T> void addMessageHandler(Class<T> handClass, Partial<T> partial) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -1697,4 +1711,5 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	public String getRemoteAddr() {
 		return conn.getRemoteAddr();
 	}
+
 }

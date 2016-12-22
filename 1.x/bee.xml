@@ -130,8 +130,8 @@
   <target name="check compatibility" dir="TJWS_HOME" comment="assure that compatibility jar is built">
       <dependency>
          <function name="anynewer">
-            <parameter value="./compatibility/build/compat-jsr315+.jar"/>
-            <parameter value="./compatibility/bee.xml"/>
+            <parameter value="./compatibility/bee.xml" type="path"/>
+            <parameter value="./compatibility/build/compat-jsr315+.jar" type="path"/>
          </function>
       </dependency>
       <task name="compatib build" exec="bee start" dir="compatib dir">
