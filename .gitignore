@@ -1,4 +1,4 @@
-1.x//bin/
+1.x/bin/
 .project
 .classpath
 1.x/lib/
@@ -8,6 +8,7 @@
 *.class
 1.x/src/rogatkin/app/remote/*
 1.x/.temp_repo/
+1.x/test/.temp_repo/
 1.x/compatibility/build/
 bin/
 *.obj

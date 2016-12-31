@@ -195,8 +195,8 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 
 		resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
 		resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
-		resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
-				+ Serve.ServeConnection.UPGRADE);
+		//resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
+			//	+ Serve.ServeConnection.UPGRADE);
 		//resp.addHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.UPGRADE);
 		if (container.getDefaultMaxSessionIdleTimeout() > 0)
 			resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=" + container.getDefaultMaxSessionIdleTimeout()

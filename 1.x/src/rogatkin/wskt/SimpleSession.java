@@ -1536,7 +1536,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			bb.put(mb);
 			bb.flip();
 			if (__debugOn)
-				container.log("Send frame %s of %d %s hdr: 0%x%x", text, bb.remaining(), bb, bb.get(0), bb.get(1));
+				container.log("Create frame %s of %d %s hdr: 0%x%x", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
 		}
 

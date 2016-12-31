@@ -36,7 +36,9 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws"+(window.location.protocol=="https:"?"s":"")+"://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/echo"+"/room-234");
+                var wsUrl = "ws"+(window.location.protocol=="https:"?"s":"")+"://"+window.location.hostname+(window.location.port?":"+window.location.port:"")+"/echoserver/echo"+"/room-234"
+                //alert(wsUrl)
+                webSocket = new WebSocket(wsUrl);
                  
                 /**
                  * Binds functions to the listeners for the websocket.
@@ -56,7 +58,7 @@
                 };
 
                 webSocket.onclose = function(event){
-                    writeResponse("Connection closed");
+                    writeResponse("Connection closed:"+event.code);
                 };
             }
             

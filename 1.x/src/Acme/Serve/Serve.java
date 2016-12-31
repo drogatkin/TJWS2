@@ -2373,10 +2373,10 @@ public class Serve implements ServletContext, Serializable {
 
 	private boolean assureHeaders() {
 	    if (reqMime)
-		setHeader("MIME-Version", "1.0");
+	    	setHeader("MIME-Version", "1.0");
 	    setDateHeader("Date", System.currentTimeMillis());
 	    setHeader("Server", Serve.Identification.serverName + "/" + Serve.Identification.serverVersion);
-	    if (keepAlive && serve.isKeepAlive()) {
+	    if (keepAlive && serve.isKeepAlive() && !websocketUpgrade) {
 		if (reqMime) {
 		    setHeader(CONNECTION, KEEPALIVE); // set for 1.1 too,
 						      // because some client
@@ -2386,6 +2386,9 @@ public class Serve implements ServletContext, Serializable {
 			setHeader(KEEPALIVE, serve.getKeepAliveParamStr());
 		}
 		return true;
+	    } else if (websocketUpgrade) {
+	    	setHeader(CONNECTION, UPGRADE);
+	    	return true;
 	    } else
 		setHeader(CONNECTION, "close");
 	    return false;
