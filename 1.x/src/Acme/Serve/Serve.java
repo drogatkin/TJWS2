@@ -2265,11 +2265,7 @@ public class Serve implements ServletContext, Serializable {
 		if (mark < reqUriPathUn.length() - 1)
 		    reqQuery = reqUriPathUn.substring(mark + 1);
 		reqUriPathUn = reqUriPathUn.substring(0, mark);
-	    } else {
-	    	mark = reqUriPathUn.indexOf('#');
-	    	if (mark > -1) 
-	    		reqUriPathUn = reqUriPathUn.substring(0, mark);
-	    }
+	    } 
 	    reqUriPath = Utils.decode(reqUriPathUn, UTF8);
 	    // TDOD check if reqUriPathUn starts with http://host:port
 	    if (CHUNKED.equalsIgnoreCase(getHeader(TRANSFERENCODING))) {

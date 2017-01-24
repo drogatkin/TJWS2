@@ -3510,6 +3510,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			sp = cl;
 		}
 		int pp = uri.indexOf('?', sp); // + sl
+		pp = -1; // query is already separated and can be only part of forward
 		int ph = -1;// uri.indexOf('#', sp); // + sl
 		if (ph >= 0 && ((pp >= 0 && ph < pp) || pp < 0))
 			pp = ph;
