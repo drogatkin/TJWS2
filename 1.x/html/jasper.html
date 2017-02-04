@@ -75,7 +75,7 @@ These are basic steps you need to do for integration with Jasper JSP provider
     </ol>
     <h3>
         Using Jasper from Tomcat 7.0.x (JSP 2.3)</h3>
-    <ol>
+    
     <p>Unfortunately Tomcat team did worse job and tied Jasper more with rest of Tomcat code.
        So generally you should follow Jasper 6.0.x instructions with the following changes:</p>
       <ul>
@@ -111,8 +111,13 @@ res
 scan
 security
     </pre>
-    <p> The rest is similar as for previous builds, however use overwriting content from <strong>jasper7-6x</strong>.</p>
-        
+    <p> The rest is similar as for previous builds, however use overwriting content from <strong>jasper7-6x</strong>.</p> 
+<h3>Using Jasper from Tomcat 7.0.7x (JSP 2.3)</h3>
+    <p>More files are required from org.apache.tomcat.util. Add classes from this directory and also the following subdirectories:</p>
+    <pre>
+buf
+    </pre>
+    <p> The rest is similar as for previous builds, however use overwriting content from <strong>jasper7-7x</strong>.</p>
           
 </body>
 </html>
