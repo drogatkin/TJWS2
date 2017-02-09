@@ -1,0 +1,4 @@
+TJWS release 1.115
+
+This release is focused on portability between platforms and also validation
+of all running configurations.

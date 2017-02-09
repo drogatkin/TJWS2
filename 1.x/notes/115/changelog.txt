@@ -1,0 +1,8 @@
+TJWS  version 1.115
+
+1. Websocket handshake response removed keep alive conflicting
+   with Safari
+2. Added Jasper 7.7x integration notes
+3. Query part removal removed from J2EE servlet since it is provided by
+   a base server
+4. 
