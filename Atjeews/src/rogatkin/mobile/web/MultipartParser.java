@@ -66,8 +66,10 @@ public class MultipartParser {
 				break main_loop;
 			// read --------------boundary
 			int ec = sis.readLine(buffer, contentRead, contentLength - contentRead);
-			if (ec < 0)
+			if (ec < 0) {
 				break main_loop;
+			}
+			
 			String s = new String(buffer, contentRead, ec, "UTF-8");
 			contentRead += ec;
 			int p = s.indexOf(boundary);

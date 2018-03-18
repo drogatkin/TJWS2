@@ -3040,14 +3040,18 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	 * @return
 	 */
 	static public String extractPath(String uri, String context, String servlet, boolean info) throws UnsupportedEncodingException {
-		uri = Utils.decode(uri, Serve.UTF8);
-		if (_DEBUG)
+		uri = Utils.decode(uri, IOHelper.UTF_8);
+		if (_DEBUG) {
 			System.err.printf("Extract path URI: %s, context: %s, servlet: %s, action: %b\n", uri, context, servlet, info);
+		}
+		
 		int cl = context.length();
 		int sl = servlet.length();
 		int sp = uri.indexOf(servlet, cl);
-		if (_DEBUG)
+		if (_DEBUG) {
 			System.err.printf("servlet pos: %d%n", sp);
+		}
+		
 		if (sp < 0) {
 			// if ("/".equals(servlet))
 			// sp = cl-1;
@@ -3055,28 +3059,43 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			sp = cl;
 		}
 		int pp = uri.indexOf('?', sp); // + sl
-		pp = -1; // query is already separated and can be only part of forward
-		int ph = -1;// uri.indexOf('#', sp); // + sl
-		if (ph >= 0 && ((pp >= 0 && ph < pp) || pp < 0))
+		// query is already separated and can be only part of forward
+		pp = -1;
+		// uri.indexOf('#', sp); // + sl
+		int ph = -1;
+		if (ph >= 0 && ((pp >= 0 && ph < pp) || pp < 0)) {
 			pp = ph;
+		}
+		
 		int ip = uri.indexOf('/', sp + sl - (servlet.endsWith("/") ? 1 : 0));
-		if (_DEBUG)
+		if (_DEBUG) {
 			System.err.printf("servlet pos %d, info pos: %d, param pos: %d %n", sp, ip, pp);
+		}
+		
 		if (info == false) {
-			if (servlet.equals("/") || ip < 0)
-				if (pp > 0)
+			if (servlet.equals("/") || ip < 0) {
+				if (pp > 0) {
 					return uri.substring(sp, pp);
-				else
+				} else {
 					return uri.substring(sp);
-			if (pp < 0)
+				}
+			}
+			
+			if (pp < 0) {
 				return uri.substring(sp, ip);
+			}
 			
 			return uri.substring(sp, pp);
 		}
-		if (servlet.equals("/") || ip < 0 || (pp > 0 && ip > pp))
+		
+		if (servlet.equals("/") || ip < 0 || (pp > 0 && ip > pp)) {
 			return null;
-		if (pp < 0)
+		}
+		
+		if (pp < 0) {
 			return uri.substring(ip);
+		}
+		
 		return uri.substring(ip, pp);
 	}
 	

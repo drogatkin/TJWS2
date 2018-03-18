@@ -76,15 +76,16 @@ import javax.websocket.WebSocketContainer;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpointConfig;
 
+import Acme.IOHelper;
 import Acme.Serve.Serve.AsyncCallback;
 import Acme.Serve.Serve.ServeConnection;
 
 public class SimpleSession implements Session, AsyncCallback, Runnable {
-
+	
 	enum FrameState {
 		prepare, header, length, length16, length64, mask, data
 	}
-
+	
 	// ///// TODO encapsulate in a parser class
 	ByteBuffer buf;
 	boolean frameFinal;
@@ -100,11 +101,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	// /////////////////////////////////
 	ByteChannel channel;
 	ServeConnection conn; // temporary
-
+	
 	HashSet<SimpleMessageHandler> handlers;
-
+	
 	String id;
-
+	
 	long idleTimeout;
 	Map<String, List<String>> paramsMap;
 	Map<String, String> pathParamsMap;
@@ -117,10 +118,10 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	String subprotocol;
 	List<Extension> extensions;
 	Map<String, Object> userProperties;
-
+	
 	static final boolean __debugOn = false;
 	static final boolean __parseDebugOn = __debugOn;
-
+	
 	SimpleSession(ByteChannel sc, SimpleServerContainer c) {
 		channel = sc;
 		container = c;
@@ -131,10 +132,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		handlers = new HashSet<SimpleMessageHandler>();
 		userProperties = new HashMap<String, Object>();
 	}
-
+	
 	public synchronized void run() {
-		if (!isOpen())
+		if (!isOpen()) {
 			return;
+		}
+		
 		try {
 			conn.extendAsyncTimeout(-1);
 			int l = channel.read(buf);
@@ -147,13 +150,13 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				parseFrame();
 			}
 		} catch (IOException e) {
-			container.log("Non blocking frame read exception : "+e);
+			container.log("Non blocking frame read exception : " + e);
 			if (__parseDebugOn)
 				container.log(e, "");
 			try {
 				close();
 			} catch (IOException e1) {
-
+				
 			}
 		} catch (Throwable t) {
 			if (t instanceof ThreadDeath)
@@ -167,11 +170,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			try {
 				close();
 			} catch (IOException e1) {
-
+				
 			}
 		}
 	}
-
+	
 	void parseFrame() {
 		int lim = buf.position();
 		buf.reset();
@@ -179,187 +182,188 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		// buf.flip();
 		int avail;
 		boolean forceOp = false;
-		readmore: while (buf.hasRemaining() || forceOp) {
+		readmore:
+		while (buf.hasRemaining() || forceOp) {
 			switch (state) {
-			case header:
-			case prepare:
-				byte hb = buf.get();
-				if (__parseDebugOn)
-					container.log("hdr 0%x", hb);
-				frameFinal = (hb & 0x80) != 0;
-				oper = hb & 0x0f;
-				state = FrameState.length;
-				dataLen = 0;
-				break;
-			case length:
-				byte lb = buf.get();
-				masked = (lb & 0x80) != 0;
-				len = lb & 0x7f;
-				if (len == 126)
-					state = FrameState.length16;
-				else if (len == 127)
-					state = FrameState.length64;
-				else
-					state = masked ? FrameState.mask : FrameState.data;
-				forceOp = !masked;
-				if (__parseDebugOn)
-					container.log("len %d st %s avail %d", len, state, buf.limit() - buf.position());
-				break;
-			case length16:
-				avail = buf.remaining();
-				if (avail >= 2) {
-					// buf.order(ByteOrder.BIG_ENDIAN);
-					len = buf.get() & 255;
-					len = (len << 8) | (buf.get() & 255);
-					state = masked ? FrameState.mask : FrameState.data;
+				case header:
+				case prepare:
+					byte hb = buf.get();
+					if (__parseDebugOn)
+						container.log("hdr 0%x", hb);
+					frameFinal = (hb & 0x80) != 0;
+					oper = hb & 0x0f;
+					state = FrameState.length;
+					dataLen = 0;
 					break;
-				} else {
-					break readmore;
-				}
-			case length64:
-				avail = buf.remaining();
-				if (avail >= 8) {
-					len = buf.getLong();
-					if (len > Integer.MAX_VALUE || len < 0)
-						throw new IllegalArgumentException("Frame length is too long");
-					state = masked ? FrameState.mask : FrameState.data;
+				case length:
+					byte lb = buf.get();
+					masked = (lb & 0x80) != 0;
+					len = lb & 0x7f;
+					if (len == 126)
+						state = FrameState.length16;
+					else if (len == 127)
+						state = FrameState.length64;
+					else
+						state = masked ? FrameState.mask : FrameState.data;
+					forceOp = !masked;
+					if (__parseDebugOn)
+						container.log("len %d st %s avail %d", len, state, buf.limit() - buf.position());
 					break;
-				} else
-					break readmore;
-			case mask:
-				avail = buf.remaining();
-				if (avail >= 4) {
-					mask = buf.getInt();
-					state = FrameState.data;
-					// break;
-				} else
-					break readmore;
-			case data:
-				if (__parseDebugOn)
-					container.log("data oper 0%x len %d", oper, len);
-				boolean contin = false;
-				// if (contin)
-				// oper = frameText ? 1 : 2;
-
-				avail = buf.remaining();
-				if (dataLen == 0) {
-					if (avail >= len) {
-						data = new byte[(int) len];
-						buf.get(data);
-						dataLen = (int) len;
+				case length16:
+					avail = buf.remaining();
+					if (avail >= 2) {
+						// buf.order(ByteOrder.BIG_ENDIAN);
+						len = buf.get() & 255;
+						len = (len << 8) | (buf.get() & 255);
+						state = masked ? FrameState.mask : FrameState.data;
+						break;
 					} else {
-						data = new byte[(int) avail];
-						buf.get(data);
-						dataLen = avail;
+						break readmore;
 					}
-				} else {
-					int sl = (int) Math.min(avail, len - dataLen);
-					data = Arrays.copyOf(data, dataLen + sl);
-					buf.get(data, dataLen, sl);
-					dataLen += sl;
-				}
-				if (dataLen == len) { // all data
-					state = FrameState.header;
-					if (masked) {
-						int mp = 0;
-						for (int p = 0; p < data.length; p++)
-							data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
-					}
-					switch (oper) {
-					case 1:
-						frameText = true;
+				case length64:
+					avail = buf.remaining();
+					if (avail >= 8) {
+						len = buf.getLong();
+						if (len > Integer.MAX_VALUE || len < 0)
+							throw new IllegalArgumentException("Frame length is too long");
+						state = masked ? FrameState.mask : FrameState.data;
 						break;
-					case 2:
-						frameText = false;
-						break;
-					}
-					switch (oper) {
-					case 8: // close
-						CloseReason cr = null;
-						if (data != null && data.length >= 2) {
-							short reason = (short) ((data[1] & 255) + (data[0] << 8));
-							String msg;
-							if (data.length > 2) {
-								msg = bytesToString(Arrays.copyOfRange(data, 2, data.length));
-							} else
-								msg = "";
-							cr = new CloseReason(CloseCodes.getCloseCode(reason), msg);
-						}
-						if (__parseDebugOn)
-							container.log("close(%s)", cr);
-						try {
-							close(cr, data); // echo is handled by close
-						} catch (IOException e1) {
-
-						}
-						break;
-					case 0x9: // ping
-						try {
-							((SimpleBasic) getBasicRemote()).sendEcho((byte) 10, data);
-						} catch (IOException e1) {
-							container.log(e1, "Problem in returning pong");
-						}
-						break;
-					case 0xa: // pong
-						for (SimpleMessageHandler mh : handlers) {
-							// System.err.printf("process pong %s%n", mh);
-							mh.processPong(data);
-						}
-						break;
-					case 0:
-						contin = true;
-					case 1:
-					case 2:
-						boolean partConsumed = false;
-						if (frameText) {
-							for (SimpleMessageHandler mh : handlers) {
-								partConsumed |= mh.processText(bytesToString(data), frameFinal);
-								if (__parseDebugOn)
-									container.log("process text part %s - %b", mh, partConsumed);
-							}
+					} else
+						break readmore;
+				case mask:
+					avail = buf.remaining();
+					if (avail >= 4) {
+						mask = buf.getInt();
+						state = FrameState.data;
+						// break;
+					} else
+						break readmore;
+				case data:
+					if (__parseDebugOn)
+						container.log("data oper 0%x len %d", oper, len);
+					boolean contin = false;
+					// if (contin)
+					// oper = frameText ? 1 : 2;
+					
+					avail = buf.remaining();
+					if (dataLen == 0) {
+						if (avail >= len) {
+							data = new byte[(int) len];
+							buf.get(data);
+							dataLen = (int) len;
 						} else {
-							for (SimpleMessageHandler mh : handlers) {
-								partConsumed |= mh.processBinary(data, frameFinal);
-								if (__parseDebugOn)
-									container.log("process binary part %s - %b", mh, partConsumed);
-							}
+							data = new byte[(int) avail];
+							buf.get(data);
+							dataLen = avail;
 						}
-						if (partConsumed == false) {
-							if (!contin)
-								completeData = data;
-							else {
-								completeData = Arrays.copyOf(completeData, completeData.length + data.length);
-								System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
-							}
-							if (frameFinal) {
+					} else {
+						int sl = (int) Math.min(avail, len - dataLen);
+						data = Arrays.copyOf(data, dataLen + sl);
+						buf.get(data, dataLen, sl);
+						dataLen += sl;
+					}
+					if (dataLen == len) { // all data
+						state = FrameState.header;
+						if (masked) {
+							int mp = 0;
+							for (int p = 0; p < data.length; p++)
+								data[p] = (byte) (data[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
+						}
+						switch (oper) {
+							case 1:
+								frameText = true;
+								break;
+							case 2:
+								frameText = false;
+								break;
+						}
+						switch (oper) {
+							case 8: // close
+								CloseReason cr = null;
+								if (data != null && data.length >= 2) {
+									short reason = (short) ((data[1] & 255) + (data[0] << 8));
+									String msg;
+									if (data.length > 2) {
+										msg = bytesToString(Arrays.copyOfRange(data, 2, data.length));
+									} else
+										msg = "";
+									cr = new CloseReason(CloseCodes.getCloseCode(reason), msg);
+								}
+								if (__parseDebugOn)
+									container.log("close(%s)", cr);
+								try {
+									close(cr, data); // echo is handled by close
+								} catch (IOException e1) {
+									
+								}
+								break;
+							case 0x9: // ping
+								try {
+									((SimpleBasic) getBasicRemote()).sendEcho((byte) 10, data);
+								} catch (IOException e1) {
+									container.log(e1, "Problem in returning pong");
+								}
+								break;
+							case 0xa: // pong
+								for (SimpleMessageHandler mh : handlers) {
+									// System.err.printf("process pong %s%n",
+									// mh);
+									mh.processPong(data);
+								}
+								break;
+							case 0:
+								contin = true;
+							case 1:
+							case 2:
+								boolean partConsumed = false;
 								if (frameText) {
 									for (SimpleMessageHandler mh : handlers) {
-										mh.processText(bytesToString(completeData));
+										partConsumed |= mh.processText(bytesToString(data), frameFinal);
 										if (__parseDebugOn)
-											container.log("process text %s", mh);
+											container.log("process text part %s - %b", mh, partConsumed);
 									}
 								} else {
 									for (SimpleMessageHandler mh : handlers) {
-										mh.processBinary(completeData);
+										partConsumed |= mh.processBinary(data, frameFinal);
 										if (__parseDebugOn)
-											container.log("process binary %s", mh);
+											container.log("process binary part %s - %b", mh, partConsumed);
 									}
 								}
-							}
+								if (partConsumed == false) {
+									if (!contin)
+										completeData = data;
+									else {
+										completeData = Arrays.copyOf(completeData, completeData.length + data.length);
+										System.arraycopy(data, 0, completeData, completeData.length - data.length, data.length);
+									}
+									if (frameFinal) {
+										if (frameText) {
+											for (SimpleMessageHandler mh : handlers) {
+												mh.processText(bytesToString(completeData));
+												if (__parseDebugOn)
+													container.log("process text %s", mh);
+											}
+										} else {
+											for (SimpleMessageHandler mh : handlers) {
+												mh.processBinary(completeData);
+												if (__parseDebugOn)
+													container.log("process binary %s", mh);
+											}
+										}
+									}
+								}
+								break;
+							default:
+								container.log("Invalid frame op 0%x, len %d", oper, len);
+								try {
+									close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:" + oper));
+								} catch (IOException e) {
+									container.log(e, "Exception at closing");
+								}
+								break readmore;
 						}
-						break;
-					default:
-						container.log("Invalid frame op 0%x, len %d", oper, len);
-						try {
-							close(new CloseReason(CloseReason.CloseCodes.PROTOCOL_ERROR, "Unsupported frame operation:"
-									+ oper));
-						} catch (IOException e) {
-							container.log(e, "Exception at closing");
-						}
-						break readmore;
 					}
-				}
-				forceOp = false;
+					forceOp = false;
 			}
 		}
 		if (__parseDebugOn)
@@ -373,22 +377,22 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			buf.mark();
 		}
 	}
-
+	
 	String bytesToString(byte[] b) {
 		try {
-			return new String(b, "UTF-8");
+			return new String(b, IOHelper.UTF_8);
 		} catch (UnsupportedEncodingException e) {
 			return new String(data);
 		}
 	}
-
+	
 	void addMessageHandler(ServerEndpointConfig arg0) throws IllegalStateException {
 		if (endpointConfig != null)
 			throw new IllegalStateException("Only one endpoint can be associated with session/connection");
 		endpointConfig = arg0;
 		handlers.add(new SimpleMessageHandler());
 	}
-
+	
 	@Override
 	public void addMessageHandler(MessageHandler arg0) throws IllegalStateException {
 		SimpleMessageHandler smh = new SimpleMessageHandler(arg0);
@@ -397,7 +401,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				throw new IllegalStateException("Only one handler of each type allowed");
 		}
 		handlers.add(new SimpleMessageHandler(arg0));
-
+		
 	}
 	
 	@Override
@@ -405,26 +409,26 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	@Override
 	public <T> void addMessageHandler(Class<T> handClass, Partial<T> partial) {
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	@Override
 	public void close() throws IOException {
 		close(null);
-
+		
 	}
-
+	
 	@Override
 	public void close(CloseReason reason) throws IOException {
 		close(reason, null);
 	}
-
+	
 	public void close(CloseReason reason, byte[] b) throws IOException {
-		//new Exception("attempt close already closed").printStackTrace();
+		// new Exception("attempt close already closed").printStackTrace();
 		if (isOpen() == false) {
 			return;
 		}
@@ -468,13 +472,13 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			channel = null;
 		}
 	}
-
+	
 	@Override
 	public Async getAsyncRemote() {
 		// TODO maybe cache
 		return new SimpleAsync();
 	}
-
+	
 	@Override
 	public Basic getBasicRemote() {
 		// TODO investigate if possible to use from different threads
@@ -482,32 +486,32 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			basicRemote = new SimpleBasic();
 		return basicRemote;
 	}
-
+	
 	@Override
 	public WebSocketContainer getContainer() {
 		return container;
 	}
-
+	
 	@Override
 	public String getId() {
 		return id;
 	}
-
+	
 	@Override
 	public int getMaxBinaryMessageBufferSize() {
 		return buf.capacity();
 	}
-
+	
 	@Override
 	public long getMaxIdleTimeout() {
 		return idleTimeout;
 	}
-
+	
 	@Override
 	public int getMaxTextMessageBufferSize() {
 		return buf.capacity();
 	}
-
+	
 	@Override
 	public Set<MessageHandler> getMessageHandlers() {
 		HashSet<MessageHandler> result = new HashSet<MessageHandler>();
@@ -517,17 +521,17 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		}
 		return result;
 	}
-
+	
 	@Override
 	public List<Extension> getNegotiatedExtensions() {
 		return extensions;
 	}
-
+	
 	@Override
 	public String getNegotiatedSubprotocol() {
 		return subprotocol;
 	}
-
+	
 	@Override
 	public Set<Session> getOpenSessions() {
 		HashSet<Session> result = new HashSet<Session>();
@@ -537,52 +541,52 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		}
 		return result;
 	}
-
+	
 	@Override
 	public Map<String, String> getPathParameters() {
 		return pathParamsMap;
 	}
-
+	
 	@Override
 	public String getProtocolVersion() {
 		return "13";
 	}
-
+	
 	@Override
 	public String getQueryString() {
 		return query;
 	}
-
+	
 	@Override
 	public Map<String, List<String>> getRequestParameterMap() {
 		return paramsMap;
 	}
-
+	
 	@Override
 	public URI getRequestURI() {
 		return uri;
 	}
-
+	
 	@Override
 	public Principal getUserPrincipal() {
 		return principal;
 	}
-
+	
 	@Override
 	public Map<String, Object> getUserProperties() {
 		return userProperties;
 	}
-
+	
 	@Override
 	public boolean isOpen() {
 		return channel != null && channel.isOpen();
 	}
-
+	
 	@Override
 	public boolean isSecure() {
 		return conn.isSecure();
 	}
-
+	
 	@Override
 	public void removeMessageHandler(MessageHandler arg0) {
 		for (SimpleMessageHandler smh : handlers) {
@@ -592,38 +596,38 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 		}
 	}
-
+	
 	@Override
 	public void setMaxBinaryMessageBufferSize(int arg0) {
 		if (buf.capacity() < arg0 && buf.remaining() == 0)
 			buf = ByteBuffer.allocate(arg0);
 	}
-
+	
 	@Override
 	public void setMaxIdleTimeout(long arg0) {
 		idleTimeout = arg0;
 	}
-
+	
 	@Override
 	public void setMaxTextMessageBufferSize(int arg0) {
 		if (buf.capacity() < arg0 && buf.remaining() == 0)
 			buf = ByteBuffer.allocate(arg0);
 	}
-
+	
 	static class ParameterEntry {
 		ParameterEntry(int type) {
 			sourceType = type;
 		}
-
+		
 		ParameterEntry() {
-
+			
 		}
-
+		
 		int sourceType;
 		String sourceName;
 		Set<Decoder> decoder;
 	}
-
+	
 	class SimpleMessageHandler implements MessageHandler {
 		private static final int TEXT = 1;
 		private static final int BIN = 2;
@@ -638,20 +642,21 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		private static final int READER = 11;
 		private static final int BYTEBUF = 12;
 		private static final int INPUT = 13;
-
+		
 		Method onText, onBin, onPong;
 		Method onOpen;
 		Method onClose;
 		Method onError;
 		boolean partText, partBin;
-
-		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong, paramMapBin;
-
+		
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose,
+						paramMapError, paramMapPong, paramMapBin;
+		
 		Object endpoint;
 		Object result;
-
+		
 		// ServerEndpointConfig endpointConfig;
-
+		
 		SimpleMessageHandler() {
 			Class<?> epc = endpointConfig.getEndpointClass();
 			try {
@@ -669,7 +674,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					Annotation[][] annots = m.getParameterAnnotations();
 					Class<?>[] params = m.getParameterTypes();
 					ParameterEntry[] pmap = new ParameterEntry[params.length];
-					boolean partReq = false, primeText = false, primeBin = false;
+					boolean partReq = false, primeText = false,
+									primeBin = false;
 					for (Class<?> t : params) {
 						pmap[pi] = new ParameterEntry();
 						if (t == String.class) {
@@ -685,7 +691,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 								// if (pathParamsMap.containsKey(pp.value()) ==
 								// false)
 								// throw new
-								// IllegalArgumentException("Not supported variable "
+								// IllegalArgumentException("Not supported
+								// variable "
 								// + pp.value());
 								pmap[pi].sourceName = pp.value();
 								pmap[pi].sourceType = PATH_PARAM;
@@ -767,7 +774,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 										}
 									}
 								}
-
+								
 							}
 						}
 						pi++;
@@ -785,9 +792,9 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					paramMapClose = creatParamMap(onClose);
 				}
 			}
-
+			
 		}
-
+		
 		boolean sameType(SimpleMessageHandler smh) {
 			if (smh.onText != null)
 				if (onText != null)
@@ -799,12 +806,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					return partBin == smh.partBin;
 			return false;
 		}
-
+		
 		void destroy() {
 			destroyDecoders(paramMapText);
 			destroyDecoders(paramMapBin);
 		}
-
+		
 		void destroyDecoders(ParameterEntry[] pmap) {
 			if (pmap != null)
 				for (ParameterEntry pe : pmap) {
@@ -813,11 +820,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							decoder.destroy();
 				}
 		}
-
+		
 		SimpleMessageHandler(MessageHandler mh) {
 			initHandler(mh);
 		}
-
+		
 		void initHandler(MessageHandler mh) {
 			boolean partial = mh instanceof MessageHandler.Partial;
 			Class<?> mhc = mh.getClass();
@@ -826,116 +833,116 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					continue;
 				Class<?>[] pts = m.getParameterTypes();
 				switch (pts.length) {
-				case 2:
-					if (!partial)
-						continue;
-					if (pts[1] != boolean.class)
-						continue;
-				case 1:
-					if (pts[0] == String.class) {
-						onText = m;
-						endpoint = mh;
-						paramMapText = new ParameterEntry[pts.length];
-						paramMapText[0] = new ParameterEntry(TEXT);
-						if (partial) {
-							paramMapText[1] = new ParameterEntry(BOOLEAN);
-							partText = true;
-						}
-					} else if (pts[0].isAssignableFrom(Reader.class)) {
-						onText = m;
-						endpoint = mh;
-						paramMapText = new ParameterEntry[pts.length];
-						paramMapText[0] = new ParameterEntry(READER);
-						if (partial) {
-							paramMapText[1] = new ParameterEntry(BOOLEAN);
-							partText = true;
-						}
-					} else if (pts[0] == PongMessage.class) {
-						if (partial)
-							throw new IllegalArgumentException("Pong message handler has to be Whole");
-						onPong = m;
-						endpoint = mh;
-						paramMapPong = new ParameterEntry[1];
-						paramMapPong[0] = new ParameterEntry(PONG);
-					} else if (pts[0] == byte[].class) {
-						onBin = m;
-						endpoint = mh;
-						paramMapBin = new ParameterEntry[pts.length];
-						paramMapBin[0] = new ParameterEntry(BIN);
-						if (partial) {
-							paramMapBin[1] = new ParameterEntry(BOOLEAN);
-							partBin = true;
-						}
-					} else if (pts[0] == ByteBuffer.class) {
-						onBin = m;
-						endpoint = mh;
-						paramMapBin = new ParameterEntry[pts.length];
-						paramMapBin[0] = new ParameterEntry(BYTEBUF);
-						if (partial) {
-							paramMapBin[1] = new ParameterEntry(BOOLEAN);
-							partBin = true;
-						}
-					} else {
-						if (endpointConfig.getDecoders() == null)
-							break;
-						Set<Decoder> decs = matchDecoders(pts[0], Decoder.Text.class, String.class);
-						if (decs.size() > 0) {
+					case 2:
+						if (!partial)
+							continue;
+						if (pts[1] != boolean.class)
+							continue;
+					case 1:
+						if (pts[0] == String.class) {
 							onText = m;
 							endpoint = mh;
 							paramMapText = new ParameterEntry[pts.length];
-							paramMapText[0] = new ParameterEntry(DECODER);
-							paramMapText[0].decoder = decs;
+							paramMapText[0] = new ParameterEntry(TEXT);
 							if (partial) {
 								paramMapText[1] = new ParameterEntry(BOOLEAN);
 								partText = true;
 							}
-							break;
-						}
-						decs = matchDecoders(pts[0], Decoder.TextStream.class, Reader.class);
-						if (decs.size() > 0) {
+						} else if (pts[0].isAssignableFrom(Reader.class)) {
 							onText = m;
 							endpoint = mh;
 							paramMapText = new ParameterEntry[pts.length];
-							paramMapText[0] = new ParameterEntry(DECODER);
-							paramMapText[0].decoder = decs;
+							paramMapText[0] = new ParameterEntry(READER);
 							if (partial) {
 								paramMapText[1] = new ParameterEntry(BOOLEAN);
 								partText = true;
 							}
-							break;
-						}
-						decs = matchDecoders(pts[0], Decoder.Binary.class, ByteBuffer.class);
-						if (decs.size() > 0) {
+						} else if (pts[0] == PongMessage.class) {
+							if (partial)
+								throw new IllegalArgumentException("Pong message handler has to be Whole");
+							onPong = m;
+							endpoint = mh;
+							paramMapPong = new ParameterEntry[1];
+							paramMapPong[0] = new ParameterEntry(PONG);
+						} else if (pts[0] == byte[].class) {
 							onBin = m;
 							endpoint = mh;
 							paramMapBin = new ParameterEntry[pts.length];
-							paramMapBin[0] = new ParameterEntry(DECODER);
-							paramMapBin[0].decoder = decs;
+							paramMapBin[0] = new ParameterEntry(BIN);
 							if (partial) {
 								paramMapBin[1] = new ParameterEntry(BOOLEAN);
 								partBin = true;
 							}
-							break;
-						}
-						decs = matchDecoders(pts[0], Decoder.BinaryStream.class, InputStream.class);
-						if (decs.size() > 0) {
+						} else if (pts[0] == ByteBuffer.class) {
 							onBin = m;
 							endpoint = mh;
 							paramMapBin = new ParameterEntry[pts.length];
-							paramMapBin[0] = new ParameterEntry(DECODER);
-							paramMapBin[0].decoder = decs;
+							paramMapBin[0] = new ParameterEntry(BYTEBUF);
 							if (partial) {
 								paramMapBin[1] = new ParameterEntry(BOOLEAN);
 								partBin = true;
 							}
-							break;
+						} else {
+							if (endpointConfig.getDecoders() == null)
+								break;
+							Set<Decoder> decs = matchDecoders(pts[0], Decoder.Text.class, String.class);
+							if (decs.size() > 0) {
+								onText = m;
+								endpoint = mh;
+								paramMapText = new ParameterEntry[pts.length];
+								paramMapText[0] = new ParameterEntry(DECODER);
+								paramMapText[0].decoder = decs;
+								if (partial) {
+									paramMapText[1] = new ParameterEntry(BOOLEAN);
+									partText = true;
+								}
+								break;
+							}
+							decs = matchDecoders(pts[0], Decoder.TextStream.class, Reader.class);
+							if (decs.size() > 0) {
+								onText = m;
+								endpoint = mh;
+								paramMapText = new ParameterEntry[pts.length];
+								paramMapText[0] = new ParameterEntry(DECODER);
+								paramMapText[0].decoder = decs;
+								if (partial) {
+									paramMapText[1] = new ParameterEntry(BOOLEAN);
+									partText = true;
+								}
+								break;
+							}
+							decs = matchDecoders(pts[0], Decoder.Binary.class, ByteBuffer.class);
+							if (decs.size() > 0) {
+								onBin = m;
+								endpoint = mh;
+								paramMapBin = new ParameterEntry[pts.length];
+								paramMapBin[0] = new ParameterEntry(DECODER);
+								paramMapBin[0].decoder = decs;
+								if (partial) {
+									paramMapBin[1] = new ParameterEntry(BOOLEAN);
+									partBin = true;
+								}
+								break;
+							}
+							decs = matchDecoders(pts[0], Decoder.BinaryStream.class, InputStream.class);
+							if (decs.size() > 0) {
+								onBin = m;
+								endpoint = mh;
+								paramMapBin = new ParameterEntry[pts.length];
+								paramMapBin[0] = new ParameterEntry(DECODER);
+								paramMapBin[0].decoder = decs;
+								if (partial) {
+									paramMapBin[1] = new ParameterEntry(BOOLEAN);
+									partBin = true;
+								}
+								break;
+							}
 						}
-					}
-					break;
+						break;
 				}
 			}
 		}
-
+		
 		Set<Decoder> matchDecoders(Class<?> type, Class<? extends Decoder> dt, Class<?> param) {
 			HashSet<Decoder> result = new HashSet<Decoder>();
 			for (Class<? extends Decoder> dc : endpointConfig.getDecoders()) {
@@ -958,7 +965,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			return result;
 		}
-
+		
 		Annotation getFromList(Annotation[] annots, Class<?> targAnnot) {
 			if (annots != null)
 				for (Annotation a : annots)
@@ -966,7 +973,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 						return a;
 			return null;
 		}
-
+		
 		ParameterEntry[] creatParamMap(Method m) {
 			Annotation[][] annots = m.getParameterAnnotations();
 			Class<?>[] params = m.getParameterTypes();
@@ -998,27 +1005,27 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			return pmap;
 		}
-
+		
 		void processPong(final byte[] b) {
 			if (onPong != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
 				for (int pi = 0; pi < params.length; pi++)
 					switch (paramMapPong[pi].sourceType) {
-					case PONG:
-						params[pi] = new PongMessage() {
-
-							@Override
-							public ByteBuffer getApplicationData() {
-								// TODO Auto-generated method stub
-								return ByteBuffer.wrap(b);
-							}
-
-						};
-						break;
-					case PATH_PARAM:
-						params[pi] = pathParamsMap.get(paramMapPong[pi].sourceName);
-						break;
+						case PONG:
+							params[pi] = new PongMessage() {
+								
+								@Override
+								public ByteBuffer getApplicationData() {
+									// TODO Auto-generated method stub
+									return ByteBuffer.wrap(b);
+								}
+								
+							};
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapPong[pi].sourceName);
+							break;
 					}
 				try {
 					result = onPong.invoke(endpoint, params);
@@ -1029,7 +1036,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			}
 		}
-
+		
 		boolean processBinary(byte[] b, boolean f) {
 			if (onBin != null && partBin) {
 				processBinary(b, f);
@@ -1037,52 +1044,52 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			return false;
 		}
-
+		
 		void processBinary(byte[] b) {
 			processBinary(b, null);
 		}
-
+		
 		void processBinary(byte[] b, Boolean part) {
 			if (onBin != null) {
 				Class<?>[] paramts = onBin.getParameterTypes();
 				Object[] params = new Object[paramts.length];
 				for (int pi = 0; pi < params.length; pi++)
 					switch (paramMapBin[pi].sourceType) {
-					case BIN:
-						params[pi] = b;
-						break;
-					case SESSION_PARAM:
-						params[pi] = SimpleSession.this;
-						break;
-					case PATH_PARAM:
-						params[pi] = pathParamsMap.get(paramMapBin[pi].sourceName);
-						break;
-					case BOOLEAN:
-						params[pi] = part;
-						break;
-					case DECODER:
-						ByteBuffer bb = ByteBuffer.wrap(b);
-						for (Decoder decoder : paramMapBin[pi].decoder)
-							if (((Decoder.Binary) decoder).willDecode(bb))
-								try {
-									params[pi] = ((Decoder.Binary) decoder).decode(bb);
-									break;
-								} catch (DecodeException e) {
-									if (__debugOn)
-										container.log(e, "in decoding...");
-									if (!processError(e))
-										container.log(e, "Unhandled error");
-								}
-						break;
-					case BYTEBUF:
-						params[pi] = ByteBuffer.wrap(b);
-						break;
-					case INPUT:
-						params[pi] = new ByteArrayInputStream(b);
-						break;
-					default:
-						container.log("Unmapped binary parameter %d at calling %s", pi, onBin);
-						params[pi] = null;
+						case BIN:
+							params[pi] = b;
+							break;
+						case SESSION_PARAM:
+							params[pi] = SimpleSession.this;
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapBin[pi].sourceName);
+							break;
+						case BOOLEAN:
+							params[pi] = part;
+							break;
+						case DECODER:
+							ByteBuffer bb = ByteBuffer.wrap(b);
+							for (Decoder decoder : paramMapBin[pi].decoder)
+								if (((Decoder.Binary) decoder).willDecode(bb))
+									try {
+										params[pi] = ((Decoder.Binary) decoder).decode(bb);
+										break;
+									} catch (DecodeException e) {
+										if (__debugOn)
+											container.log(e, "in decoding...");
+										if (!processError(e))
+											container.log(e, "Unhandled error");
+									}
+							break;
+						case BYTEBUF:
+							params[pi] = ByteBuffer.wrap(b);
+							break;
+						case INPUT:
+							params[pi] = new ByteArrayInputStream(b);
+							break;
+						default:
+							container.log("Unmapped binary parameter %d at calling %s", pi, onBin);
+							params[pi] = null;
 					}
 				try {
 					if (__debugOn)
@@ -1100,7 +1107,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			} else
 				container.log("No handler for binary message %s", b);
 		}
-
+		
 		boolean processText(String t, boolean f) {
 			if (onText != null && partText) {
 				processText(t, f);
@@ -1108,48 +1115,48 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			return false;
 		}
-
+		
 		void processText(String t) {
 			processText(t, null);
 		}
-
+		
 		void processText(String t, Boolean part) {
 			if (onText != null) {
 				Class<?>[] paramts = onText.getParameterTypes();
 				Object[] params = new Object[paramts.length];
 				for (int pi = 0; pi < params.length; pi++)
 					switch (paramMapText[pi].sourceType) {
-					case TEXT:
-						params[pi] = t;
-						break;
-					case SESSION_PARAM:
-						params[pi] = SimpleSession.this;
-						break;
-					case PATH_PARAM:
-						params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
-						break;
-					case BOOLEAN:
-						params[pi] = part;
-						break;
-					case DECODER:
-						for (Decoder decoder : paramMapText[pi].decoder)
-							if (((Decoder.Text) decoder).willDecode(t))
-								try {
-									params[pi] = ((Decoder.Text) decoder).decode(t);
-									break;
-								} catch (DecodeException e) {
-									if (__debugOn)
-										container.log(e, "in decoding...");
-									if (!processError(e))
-										container.log(e, "Unhandled error");
-								}
-						break;
-					case READER:
-						params[pi] = new StringReader(t);
-						break;
-					default:
-						container.log("Unmapped text parameter %d at call %s", pi, onText);
-						params[pi] = null;
+						case TEXT:
+							params[pi] = t;
+							break;
+						case SESSION_PARAM:
+							params[pi] = SimpleSession.this;
+							break;
+						case PATH_PARAM:
+							params[pi] = pathParamsMap.get(paramMapText[pi].sourceName);
+							break;
+						case BOOLEAN:
+							params[pi] = part;
+							break;
+						case DECODER:
+							for (Decoder decoder : paramMapText[pi].decoder)
+								if (((Decoder.Text) decoder).willDecode(t))
+									try {
+										params[pi] = ((Decoder.Text) decoder).decode(t);
+										break;
+									} catch (DecodeException e) {
+										if (__debugOn)
+											container.log(e, "in decoding...");
+										if (!processError(e))
+											container.log(e, "Unhandled error");
+									}
+							break;
+						case READER:
+							params[pi] = new StringReader(t);
+							break;
+						default:
+							container.log("Unmapped text parameter %d at call %s", pi, onText);
+							params[pi] = null;
 					}
 				try {
 					if (__debugOn)
@@ -1165,7 +1172,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			} else
 				container.log("No handler for text message %s", t);
 		}
-
+		
 		void processOpen() {
 			if (onOpen != null) {
 				Class<?>[] paramts = onOpen.getParameterTypes();
@@ -1173,20 +1180,20 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (paramMapOpen != null)
 					for (int pi = 0; pi < params.length; pi++)
 						switch (paramMapOpen[pi].sourceType) {
-						case SESSION_PARAM:
-							params[pi] = SimpleSession.this;
-							break;
-						case ENDPOINTCONFIG_PARAM:
-							params[pi] = endpointConfig;
-							break;
-						case PATH_PARAM:
-							params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
-							break;
-						default:
-							container.log("Unmapped open parameter %d at call %s", pi, onOpen);
-							params[pi] = null;
+							case SESSION_PARAM:
+								params[pi] = SimpleSession.this;
+								break;
+							case ENDPOINTCONFIG_PARAM:
+								params[pi] = endpointConfig;
+								break;
+							case PATH_PARAM:
+								params[pi] = pathParamsMap.get(paramMapOpen[pi].sourceName);
+								break;
+							default:
+								container.log("Unmapped open parameter %d at call %s", pi, onOpen);
+								params[pi] = null;
 						}
-
+					
 				try {
 					if (__debugOn)
 						container.log("Called %s", "on open");
@@ -1196,7 +1203,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			}
 		}
-
+		
 		void processClose(CloseReason reason) {
 			if (onClose != null) {
 				Class<?>[] paramts = onClose.getParameterTypes();
@@ -1204,21 +1211,21 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (paramMapClose != null)
 					for (int pi = 0; pi < params.length; pi++)
 						switch (paramMapClose[pi].sourceType) {
-						case SESSION_PARAM:
-							params[pi] = SimpleSession.this;
-							break;
-						case ENDPOINTCONFIG_PARAM:
-							params[pi] = endpointConfig;
-							break;
-						case PATH_PARAM:
-							params[pi] = pathParamsMap.get(paramMapClose[pi].sourceName);
-							break;
-						case CLOSEREASON_PARAM:
-							params[pi] = reason;
-							break;
-						default:
-							container.log("Unmapped close parameter %d at call %s", pi, onClose);
-							params[pi] = null;
+							case SESSION_PARAM:
+								params[pi] = SimpleSession.this;
+								break;
+							case ENDPOINTCONFIG_PARAM:
+								params[pi] = endpointConfig;
+								break;
+							case PATH_PARAM:
+								params[pi] = pathParamsMap.get(paramMapClose[pi].sourceName);
+								break;
+							case CLOSEREASON_PARAM:
+								params[pi] = reason;
+								break;
+							default:
+								container.log("Unmapped close parameter %d at call %s", pi, onClose);
+								params[pi] = null;
 						}
 				try {
 					if (__debugOn)
@@ -1229,7 +1236,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			}
 		}
-
+		
 		boolean processError(Throwable error) {
 			if (onError != null) {
 				Class<?>[] paramts = onError.getParameterTypes();
@@ -1237,18 +1244,18 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				if (paramMapError != null)
 					for (int pi = 0; pi < params.length; pi++)
 						switch (paramMapError[pi].sourceType) {
-						case SESSION_PARAM:
-							params[pi] = SimpleSession.this;
-							break;
-						case THROWABLE_PARAM:
-							params[pi] = error;
-							break;
-						case PATH_PARAM:
-							params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
-							break;
-						default:
-							container.log("Unmapped error parameter %d at call %s", pi, onError);
-							params[pi] = null;
+							case SESSION_PARAM:
+								params[pi] = SimpleSession.this;
+								break;
+							case THROWABLE_PARAM:
+								params[pi] = error;
+								break;
+							case PATH_PARAM:
+								params[pi] = pathParamsMap.get(paramMapError[pi].sourceName);
+								break;
+							default:
+								container.log("Unmapped error parameter %d at call %s", pi, onError);
+								params[pi] = null;
 						}
 				try {
 					if (__debugOn)
@@ -1261,19 +1268,19 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			return false;
 		}
-
+		
 		Object getResult() {
 			return result;
 		}
 	}
-
+	
 	class SimpleBasic implements Basic {
 		Random rn = new Random();
 		boolean masked;
 		boolean cont;
 		HashMap<Class<?>, Encoder> encoders;
 		ByteBuffer[] batchBuffer;
-
+		
 		@Override
 		public void flushBatch() throws IOException {
 			if (batchBuffer != null) {
@@ -1283,36 +1290,36 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				batchBuffer = new ByteBuffer[0];
 			}
 		}
-
+		
 		@Override
 		public boolean getBatchingAllowed() {
 			return batchBuffer != null;
 		}
-
+		
 		@Override
 		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			sendBuffer(createFrame(true, arg0), true);
 		}
-
+		
 		@Override
 		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			if (arg0 == null || arg0.remaining() > 125)
 				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			sendBuffer(createFrame(false, arg0), true);
 		}
-
+		
 		@Override
 		public void setBatchingAllowed(boolean arg0) throws IOException {
 			batchBuffer = new ByteBuffer[0];
 		}
-
+		
 		@Override
 		public OutputStream getSendStream() throws IOException {
 			return new ByteArrayOutputStream() {
 				boolean closed;
-
+				
 				@Override
 				public void close() throws IOException {
 					if (closed)
@@ -1324,12 +1331,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			};
 		}
-
+		
 		@Override
 		public Writer getSendWriter() throws IOException {
 			return new StringWriter() {
 				boolean closed;
-
+				
 				@Override
 				public void close() throws IOException {
 					if (closed)
@@ -1339,19 +1346,19 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					super.close();
 					closed = true;
 				}
-
+				
 			};
 		}
-
+		
 		@Override
 		public void sendBinary(ByteBuffer arg0) throws IOException {
 			sendBuffer(createFrame(arg0, true, true));
 		}
-
+		
 		void sendBuffer(ByteBuffer bb) throws IOException {
 			sendBuffer(bb, false);
 		}
-
+		
 		void sendBuffer(ByteBuffer bb, boolean nobatch) throws IOException {
 			if (batchBuffer != null && !nobatch) {
 				batchBuffer = Arrays.copyOf(batchBuffer, batchBuffer.length + 1);
@@ -1369,13 +1376,13 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			}
 		}
-
+		
 		@Override
 		public void sendBinary(ByteBuffer arg0, boolean arg1) throws IOException {
 			sendBuffer(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
-
+		
 		/**
 		 * Sends a custom developer object, blocking until it has been
 		 * transmitted. Containers will by default be able to encode java
@@ -1415,9 +1422,9 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				((Encoder.BinaryStream) ec).encode(arg0, getSendStream());
 			} else
 				throw new EncodeException(ec, "The encoder doesn't provide proper encding method");
-
+			
 		}
-
+		
 		private void initEncoders() {
 			encoders = new HashMap<Class<?>, Encoder>();
 			for (Class<? extends Encoder> ec : endpointConfig.getEncoders()) {
@@ -1442,23 +1449,24 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 						}
 					} // else
 						// throw new IllegalArgumentException
-						// ("Only text encoders are implemented - "+rt+" for method "+em.getName());
+						// ("Only text encoders are implemented - "+rt+" for
+						// method "+em.getName());
 				}
 			}
-
+			
 		}
-
+		
 		@Override
 		public void sendText(String arg0) throws IOException {
 			sendBuffer(createFrame(arg0, true, true));
 		}
-
+		
 		@Override
 		public void sendText(String arg0, boolean arg1) throws IOException {
 			sendBuffer(createFrame(arg0, arg1, !cont));
 			cont = !arg1;
 		}
-
+		
 		void sendEcho(byte op, byte[] data) throws IOException {
 			if (data.length > 125)
 				throw new IllegalArgumentException("Control frame data length can't exceed 125");
@@ -1466,24 +1474,24 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			bb.put(data).flip();
 			sendBuffer(bb, true);
 		}
-
+		
 		ByteBuffer createFrame(ByteBuffer bbp, boolean fin, boolean first) {
-			//System.err.printf("Sending %d bytes as final %b as first %b%n",
-			//	bbp.remaining(), fin, first);
+			// System.err.printf("Sending %d bytes as final %b as first %b%n",
+			// bbp.remaining(), fin, first);
 			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
 			bb.put(bbp).flip();
-			//System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
-			//	bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
-			//bb.get(3));
+			// System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
+			// bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
+			// bb.get(3));
 			return bb;
 		}
-
+		
 		ByteBuffer createFrame(boolean ping, ByteBuffer bbp) {
 			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa), bbp.remaining(), true, true);
 			bb.put(bbp).flip();
 			return bb;
 		}
-
+		
 		ByteBuffer prepreFrameHeader(byte cmd, long len, boolean fin, boolean first) {
 			if (cmd != 1 && cmd != 2) {
 				fin = first = true;
@@ -1516,16 +1524,16 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					bb.putLong(len);
 			return bb;
 		}
-
+		
 		ByteBuffer createFrame(String text, boolean fin, boolean first) {
 			cont = !fin && !first;
 			byte[] mb = null;
 			try {
-				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes("UTF-8");
+				mb = text == null || text.length() == 0 ? new byte[0] : text.getBytes(IOHelper.UTF_8);
 			} catch (UnsupportedEncodingException e) {
 				mb = text.getBytes();
 			}
-
+			
 			ByteBuffer bb = prepreFrameHeader((byte) 1, (long) mb.length, fin, first);
 			if (masked) {
 				bb.putInt(mask);
@@ -1535,67 +1543,69 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 			bb.put(mb);
 			bb.flip();
-			if (__debugOn)
+			if (__debugOn) {
 				container.log("Create frame %s of %d %s hdr: 0%x%x", text, bb.remaining(), bb, bb.get(0), bb.get(1));
+			}
+			
 			return bb;
 		}
-
+		
 		void destroy() {
 			if (encoders != null)
 				for (Encoder ec : encoders.values())
 					ec.destroy();
 		}
-
+		
 	}
-
+	
 	void open() {
 		for (SimpleMessageHandler mh : handlers) {
 			mh.processOpen();
 		}
 	}
-
+	
 	class SimpleAsync implements Async {
 		long sendTimeout;
-
+		
 		SimpleAsync() {
 			getBasicRemote();
 		}
-
+		
 		@Override
 		public void flushBatch() throws IOException {
 			basicRemote.flushBatch();
 		}
-
+		
 		@Override
 		public boolean getBatchingAllowed() {
 			return basicRemote.getBatchingAllowed();
 		}
-
+		
 		@Override
 		public void sendPing(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			basicRemote.sendPing(arg0);
-
+			
 		}
-
+		
 		@Override
 		public void sendPong(ByteBuffer arg0) throws IOException, IllegalArgumentException {
 			basicRemote.sendPong(arg0);
 		}
-
+		
 		@Override
 		public void setBatchingAllowed(boolean arg0) throws IOException {
 			basicRemote.setBatchingAllowed(arg0);
 		}
-
+		
 		@Override
 		public long getSendTimeout() {
 			return sendTimeout;
 		}
-
+		
 		@Override
 		public Future<Void> sendBinary(final ByteBuffer arg0) {
 			return container.asyncService.submit(new Callable<Void>() {
-
+				
 				@Override
 				public Void call() throws Exception {
 					synchronized (basicRemote) { // TODO it can be not required
@@ -1607,11 +1617,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			});
 		}
-
+		
 		@Override
 		public void sendBinary(final ByteBuffer arg0, final SendHandler arg1) {
 			container.asyncService.execute(new Runnable() {
-
+				
 				@Override
 				public void run() {
 					try {
@@ -1620,15 +1630,15 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					} catch (IOException e) {
 						arg1.onResult(new SendResult(e));
 					}
-
+					
 				}
 			});
 		}
-
+		
 		@Override
 		public Future<Void> sendObject(final Object arg0) {
 			return container.asyncService.submit(new Callable<Void>() {
-
+				
 				@Override
 				public Void call() throws Exception {
 					basicRemote.sendObject(arg0);
@@ -1636,11 +1646,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			});
 		}
-
+		
 		@Override
 		public void sendObject(final Object arg0, final SendHandler arg1) {
 			container.asyncService.execute(new Runnable() {
-
+				
 				@Override
 				public void run() {
 					try {
@@ -1649,15 +1659,15 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					} catch (Exception e) {
 						arg1.onResult(new SendResult(e));
 					}
-
+					
 				}
 			});
 		}
-
+		
 		@Override
 		public Future<Void> sendText(final String arg0) {
 			return container.asyncService.submit(new Callable<Void>() {
-
+				
 				@Override
 				public Void call() throws Exception {
 					basicRemote.sendText(arg0);
@@ -1665,11 +1675,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				}
 			});
 		}
-
+		
 		@Override
 		public void sendText(final String arg0, final SendHandler arg1) {
 			container.asyncService.execute(new Runnable() {
-
+				
 				@Override
 				public void run() {
 					try {
@@ -1678,20 +1688,20 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					} catch (IOException e) {
 						arg1.onResult(new SendResult(e));
 					}
-
+					
 				}
 			});
 		}
-
+		
 		@Override
 		public void setSendTimeout(long arg0) {
 			if (arg0 < 0)
 				return;
 			sendTimeout = arg0;
 		}
-
+		
 	}
-
+	
 	@Override
 	public void notifyTimeout() {
 		if (isOpen())
@@ -1702,14 +1712,14 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					container.log(e, "close() at timeout");
 			}
 	}
-
+	
 	@Override
 	public long getTimeout() {
 		return idleTimeout;
 	}
-
+	
 	public String getRemoteAddr() {
 		return conn.getRemoteAddr();
 	}
-
+	
 }

@@ -24,29 +24,30 @@
 */
 package rogatkin.wskt;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.HandshakeResponse;
 
-public class SimpleHSResponse implements HandshakeResponse {
+import Acme.Utils;
 
-	HttpServletResponse response;
+public class SimpleHSResponse implements HandshakeResponse {
 	
-	SimpleHSResponse(HttpServletResponse r) {
-		response = r;
+	private HttpServletResponse response;
+	
+	SimpleHSResponse(HttpServletResponse response) {
+		this.response = response;
 	}
 	
+	/**
+	 * 
+	 * @return
+	 * @see javax.websocket.HandshakeResponse#getHeaders()
+	 */
 	@Override
 	public Map<String, List<String>> getHeaders() {
-		HashMap<String, List<String>> headersMap = new HashMap<String, List<String>>();
-		for(String name: response.getHeaderNames()) {
-			headersMap.put(name, new ArrayList<String>(response.getHeaders(name)));
-		}
-		return headersMap;
+		return Utils.getResponseHeaders(response);
 	}
-
+	
 }

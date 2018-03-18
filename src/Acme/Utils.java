@@ -49,6 +49,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -58,6 +60,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /// Assorted static utility routines.
 // <P>
@@ -482,8 +487,8 @@ public class Utils {
 					++p;
 					for (i = string.length(); i >= s; --i)
 						if (match(pattern.substring(p), string.substring(i))) // not
-																				 // quite
-																				 // right
+																				// quite
+																				// right
 							return true;
 					break;
 				}
@@ -726,8 +731,7 @@ public class Utils {
 				out.write(new String(buf, 0, len).getBytes(charSet));
 	}
 	
-	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-			'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
 	
 	/**
 	 * base 64 encoding, string converted to bytes using specified encoding
@@ -769,7 +773,8 @@ public class Utils {
 	 *            encoding, can be null, then iso-8859-1 used
 	 * @return String result of encoding as iso-8859-1 string<br>
 	 * 
-	 * @exception <code>NullPointerException</code> if input parameter is null
+	 * @exception <code>NullPointerException</code>
+	 *                if input parameter is null
 	 */
 	public final static String base64Encode(byte[] _bytes) {
 		StringBuffer encodedBuffer = new StringBuffer((int) (_bytes.length * 1.5));
@@ -816,34 +821,39 @@ public class Utils {
 	 * negative number indicating some other meaning.
 	 */
 	protected final static byte[] DECODABET = { -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
-																					 // 0
-																					 // -
-																					 // 8
-			-5, -5, // Whitespace: Tab and Linefeed
-			-9, -9, // Decimal 11 - 12
-			-5, // Whitespace: Carriage Return
-			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 14 -
-			// 26
-			-9, -9, -9, -9, -9, // Decimal 27 - 31
-			-5, // Whitespace: Space
-			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
-			62, // Plus sign at decimal 43
-			-9, -9, -9, // Decimal 44 - 46
-			63, // Slash at decimal 47
-			52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero through nine
-			-9, -9, -9, // Decimal 58 - 60
-			-1, // Equals sign at decimal 61
-			-9, -9, -9, // Decimal 62 - 64
-			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
-			// through 'N'
-			14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters 'O'
-			// through 'Z'
-			-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
-			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters 'a'
-			// through 'm'
-			39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters 'n'
-			// through 'z'
-			-9, -9, -9, -9 // Decimal 123 - 126
+																					// 0
+																					// -
+																					// 8
+					-5, -5, // Whitespace: Tab and Linefeed
+					-9, -9, // Decimal 11 - 12
+					-5, // Whitespace: Carriage Return
+					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
+																		// 14 -
+					// 26
+					-9, -9, -9, -9, -9, // Decimal 27 - 31
+					-5, // Whitespace: Space
+					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
+					62, // Plus sign at decimal 43
+					-9, -9, -9, // Decimal 44 - 46
+					63, // Slash at decimal 47
+					52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero
+															// through nine
+					-9, -9, -9, // Decimal 58 - 60
+					-1, // Equals sign at decimal 61
+					-9, -9, -9, // Decimal 62 - 64
+					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
+					// through 'N'
+					14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters
+																	// 'O'
+					// through 'Z'
+					-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
+					26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters
+																		// 'a'
+					// through 'm'
+					39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters
+																		// 'n'
+					// through 'z'
+					-9, -9, -9, -9 // Decimal 123 - 126
 	};
 	
 	// Indicates white space in encoding
@@ -1139,8 +1149,8 @@ public class Utils {
 		}
 		
 		try {
-			return decode(result, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
+			return decode(result, IOHelper.UTF_8);
+		} catch (UnsupportedEncodingException ex) {
 			return result;
 		}
 	}
@@ -1444,6 +1454,61 @@ public class Utils {
 				emptyBuffer = new byte[0];
 			return emptyBuffer;
 		}
+	}
+	
+	/**
+	 * Converts the request headers to map.
+	 * 
+	 * @param request
+	 * @return
+	 */
+	public static HashMap<String, List<String>> getRequestHeaders(HttpServletRequest request) {
+		HashMap<String, List<String>> requestHeaders = new HashMap<String, List<String>>();
+		for (Enumeration<String> itr = request.getHeaderNames(); itr.hasMoreElements();) {
+			String name = itr.nextElement();
+			requestHeaders.put(name, Collections.list(request.getHeaders(name)));
+		}
+		
+		return requestHeaders;
+	}
+	
+	/**
+	 * Converts the request parameters as map.
+	 * 
+	 * @param request
+	 * @return
+	 */
+	public static HashMap<String, List<String>> getRequestParameters(HttpServletRequest request) {
+		HashMap<String, List<String>> requestParameters = new HashMap<String, List<String>>();
+		for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+			requestParameters.put(entry.getKey(), Arrays.asList(entry.getValue()));
+		}
+		
+		return requestParameters;
+	}
+	
+	/**
+	 * Converts the request headers to map.
+	 * 
+	 * @param request
+	 * @return
+	 */
+	public static HashMap<String, List<String>> getResponseHeaders(final HttpServletResponse response) {
+		HashMap<String, List<String>> responseHeaders = new HashMap<String, List<String>>();
+		if (response.getHeaderNames() instanceof Collections) {
+			/* TODO - Implement it later. */
+			// for (String name : response.getHeaderNames()) {
+			// responseHeaders.put(name, new
+			// ArrayList<String>(response.getHeaders(name)));
+			// }
+		} else {
+			for (Enumeration<String> itr = response.getHeaderNames(); itr.hasMoreElements();) {
+				String name = itr.nextElement();
+				responseHeaders.put(name, Collections.list(response.getHeaders(name)));
+			}
+		}
+		
+		return responseHeaders;
 	}
 	
 	public static void main(String[] args) {

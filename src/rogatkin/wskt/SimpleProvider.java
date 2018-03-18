@@ -56,6 +56,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import Acme.IOHelper;
 import Acme.Utils;
 import Acme.Serve.Serve;
 import Acme.Serve.Serve.ServeConnection;
@@ -323,7 +324,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 								ArrayList<File> result = new ArrayList<File>(urls.length);
 								for (URL url : urls)
 									try {
-										result.add(new File(URLDecoder.decode(url.getFile(), "UTF-8")));
+										result.add(new File(URLDecoder.decode(url.getFile(), IOHelper.UTF_8)));
 									} catch (UnsupportedEncodingException e) {
 										serve.log("Can't add path component " + url + " :" + e);
 									}

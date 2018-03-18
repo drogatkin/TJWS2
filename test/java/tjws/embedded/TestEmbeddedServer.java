@@ -128,7 +128,8 @@ public final class TestEmbeddedServer {
 			if (isSSLEnabled()) {
 				// SSL configurations.
 				properties.setProperty(Serve.ARG_PORT, String.valueOf(getPort()));
-//				properties.setProperty(SSLAcceptor.ARG_PORT, String.valueOf(getPort()));
+				// properties.setProperty(SSLAcceptor.ARG_PORT,
+				// String.valueOf(getPort()));
 				properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "Acme.Serve.SSLAcceptor");
 				// properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
 				// "rogatkin.wskt.SSLSelectorAcceptor");
@@ -140,7 +141,7 @@ public final class TestEmbeddedServer {
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
 				properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "no");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREPASS, "password");
-//				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "BKS");
+				// properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "BKS");
 			} else {
 				properties.remove(Serve.ARG_ACCEPTOR_CLASS);
 				// this acceptor is required for web-socket support

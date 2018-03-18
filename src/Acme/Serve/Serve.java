@@ -239,9 +239,6 @@ public class Serve implements ServletContext, Serializable {
 	protected static final int DEF_MAX_CONN_USE = 100;
 	protected static final Integer INT_ZERO = new Integer(0);
 	
-	// default encoding
-	public static final String UTF8 = "UTF-8";
-	
 	protected String hostName;
 	private transient PrintStream logStream;
 	
@@ -830,7 +827,7 @@ public class Serve implements ServletContext, Serializable {
 			// ssclThread.setDaemon(true);
 			ssclThread.start();
 		} // else
-			 // expiredIn = -expiredIn;
+			// expiredIn = -expiredIn;
 		keepAliveCleaner = new KeepAliveCleaner();
 		keepAliveCleaner.start();
 		File fsessions = getPersistentFile();
@@ -1494,10 +1491,10 @@ public class Serve implements ServletContext, Serializable {
 		
 		public void forward(ServletRequest _request, ServletResponse _response) throws ServletException, java.io.IOException {
 			_request.removeAttribute("javax.servlet.forward.request_uri"); // reset
-																			 // in
-																			 // case
-																			 // of
-																			 // nested
+																			// in
+																			// case
+																			// of
+																			// nested
 			_response.reset();
 			servlet.service(new HttpServletRequestWrapper((HttpServletRequest) _request) {
 				public java.lang.String getPathInfo() {
@@ -1817,9 +1814,7 @@ public class Serve implements ServletContext, Serializable {
 	/**
 	 * provides request/response
 	 */
-	// public static class ServeConnection implements Runnable,
-	// HttpServletRequest, HttpServletResponse {
-	public static class ServeConnection implements Runnable, HttpServletRequest {
+	public static class ServeConnection implements Runnable, HttpServletRequest, HttpServletResponse {
 		public final static String WWWFORMURLENCODE = "application/x-www-form-urlencoded";
 		public final static String TRANSFERENCODING = "transfer-encoding".toLowerCase();
 		public final static String KEEPALIVE = "Keep-Alive".toLowerCase();
@@ -1870,7 +1865,8 @@ public class Serve implements ServletContext, Serializable {
 		protected long lastRun, lastWait;
 		private Vector outCookies;
 		private Vector inCookies;
-		private String sessionCookieValue, sessionUrlValue, sessionValue, reqSessionValue;
+		private String sessionCookieValue, sessionUrlValue, sessionValue,
+						reqSessionValue;
 		protected String reqQuery;
 		private PrintWriter pw;
 		private ServletOutputStream rout;
@@ -1884,7 +1880,6 @@ public class Serve implements ServletContext, Serializable {
 		private boolean headersWritten;
 		private MessageFormat accessFmt;
 		private Object[] logPlaceholders;
-		private HttpServletResponse servletResponse;
 		
 		// TODO consider creation an instance per thread in a pool, thread
 		// memory can be used
@@ -1928,7 +1923,6 @@ public class Serve implements ServletContext, Serializable {
 				return;
 			}
 			serve.threadPool.executeThread(this);
-			servletResponse = new ServeServletResponse(this);
 		}
 		
 		private void initSSLAttrs() {
@@ -1966,14 +1960,6 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		/**
-		 * 
-		 * @return
-		 */
-		public HttpServletResponse getServletResponse() {
-			return servletResponse;
-		}
-		
-		/**
 		 * it closes stream awaring of keep -alive
 		 * 
 		 * @throws IOException
@@ -1989,6 +1975,7 @@ public class Serve implements ServletContext, Serializable {
 			} catch (IOException io1) {
 				ioe = io1;
 			}
+			
 			try {
 				out.close();
 			} catch (IOException io1) {
@@ -2005,6 +1992,7 @@ public class Serve implements ServletContext, Serializable {
 				else
 					ioe = io1;
 			}
+			
 			if (ioe != null)
 				throw ioe;
 		}
@@ -2103,7 +2091,7 @@ public class Serve implements ServletContext, Serializable {
 					if (websocketUpgrade) {
 						out.flush();
 						try {
-							serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, getServletResponse());
+							serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 							return;
 						} catch (Exception e) {
 							serve.log("TJWS: websocket upgrade protocol error: " + e, e);
@@ -2152,15 +2140,15 @@ public class Serve implements ServletContext, Serializable {
 					keepAlive = false;
 					// connection seems be closed
 				} else {
-					problem("Status-Code 400: Bad Request(empty)", HttpServletResponse.SC_BAD_REQUEST);
+					problem("Status-Code 400: Bad Request(empty)", SC_BAD_REQUEST);
 				}
 				return;
 			}
 			if (len >= lineBytes.length) {
-				problem("Status-Code 414: Request-URI Too Long", HttpServletResponse.SC_REQUEST_URI_TOO_LONG);
+				problem("Status-Code 414: Request-URI Too Long", SC_REQUEST_URI_TOO_LONG);
 				return;
 			}
-			line = new String(lineBytes, 0, len, UTF8);
+			line = new String(lineBytes, 0, len, IOHelper.UTF_8);
 			// serve.log("R>"+line);
 			StringTokenizer ust = new StringTokenizer(line);
 			if (ust.hasMoreTokens()) {
@@ -2208,14 +2196,14 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			if (reqProtocol == null) {
-				problem("Status-Code 400: Malformed request line:" + line, HttpServletResponse.SC_BAD_REQUEST);
+				problem("Status-Code 400: Malformed request line:" + line, SC_BAD_REQUEST);
 				return;
 			}
 			// Check Host: header in HTTP/1.1 requests.
 			if (oneOne) {
 				String s = getHeader(HOST);
 				if (s == null) {
-					problem("Status-Code 400: 'Host' header is missing in HTTP/1.1 request", HttpServletResponse.SC_BAD_REQUEST);
+					problem("Status-Code 400: 'Host' header is missing in HTTP/1.1 request", SC_BAD_REQUEST);
 					return;
 				}
 				s = getHeader(CONNECTION);
@@ -2247,7 +2235,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 				reqUriPathUn = reqUriPathUn.substring(0, mark);
 			}
-			reqUriPath = Utils.decode(reqUriPathUn, UTF8);
+			reqUriPath = Utils.decode(reqUriPathUn, IOHelper.UTF_8);
 			// TDOD check if reqUriPathUn starts with http://host:port
 			if (CHUNKED.equalsIgnoreCase(getHeader(TRANSFERENCODING))) {
 				setHeader(CONTENTLENGTH, null);
@@ -2255,7 +2243,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			String contentEncoding = extractEncodingFromContentType(getHeader(CONTENTTYPE));
 			// TODO: encoding in request can be invalid, then do default
-			setCharacterEncoding(contentEncoding != null ? contentEncoding : UTF8);
+			setCharacterEncoding(contentEncoding != null ? contentEncoding : IOHelper.UTF_8);
 			String contentLength = getHeader(CONTENTLENGTH);
 			if (contentLength != null) {
 				try {
@@ -2271,7 +2259,7 @@ public class Serve implements ServletContext, Serializable {
 			if (encoding != null) {
 				if ((encoding.equalsIgnoreCase("gzip") || encoding.equalsIgnoreCase("compressed")) && null != serve.gzipInStreamConstr && ((ServeInputStream) in).compressed(true)) {
 				} else {
-					problem("Status-Code 415: Unsupported media type:" + encoding, HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+					problem("Status-Code 415: Unsupported media type:" + encoding, SC_UNSUPPORTED_MEDIA_TYPE);
 					return;
 				}
 			}
@@ -2291,16 +2279,17 @@ public class Serve implements ServletContext, Serializable {
 				Object[] os = registry.get(reqUriPath);
 				if (websocketUpgrade) {
 					websocketUpgrade = false;
-					if (serve.websocketProvider != null)
+					if (serve.websocketProvider != null) {
 						try {
-							serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, getServletResponse());
-							websocketUpgrade = resCode == HttpServletResponse.SC_SWITCHING_PROTOCOLS;
+							serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, this);
+							websocketUpgrade = resCode == SC_SWITCHING_PROTOCOLS;
 							// System.err.println("hs code:"+resCode);
 						} catch (Exception wse) {
-							problem("Can't handshake " + wse, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, wse);
+							problem("Can't handshake " + wse, SC_INTERNAL_SERVER_ERROR, wse);
 						}
-					else
-						problem("Websocket support is not configured", HttpServletResponse.SC_NOT_IMPLEMENTED);
+					} else {
+						problem("Websocket support is not configured", SC_NOT_IMPLEMENTED);
+					}
 				} else {
 					if (os[0] != null) { // note, os always not null
 						// / TODO put time mark here to monitor actual servicing
@@ -2311,7 +2300,7 @@ public class Serve implements ServletContext, Serializable {
 						initSSLAttrs();
 						runServlet((HttpServlet) os[0]);
 					} else {
-						problem("No any servlet found for serving " + reqUriPath, HttpServletResponse.SC_BAD_REQUEST);
+						problem("No any servlet found for serving " + reqUriPath, SC_BAD_REQUEST);
 					}
 				}
 			} finally {
@@ -2384,7 +2373,7 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		private void runServlet(HttpServlet servlet) throws IOException {
 			// Set default response fields.
-			setStatus(HttpServletResponse.SC_OK);
+			setStatus(SC_OK);
 			try {
 				parseCookies();
 				if (reqSessionValue == null) {// not from cookie
@@ -2398,11 +2387,7 @@ public class Serve implements ServletContext, Serializable {
 							servlet.service((ServletRequest) this, (ServletResponse) this);
 						}
 					} else {
-						if (this instanceof ServeConnection) {
-							servlet.service((ServletRequest) this, (ServletResponse) this.getServletResponse());
-						} else {
-							servlet.service((ServletRequest) this, (ServletResponse) this);
-						}
+						servlet.service((ServletRequest) this, (ServletResponse) this);
 					}
 				}
 				// old close
@@ -2413,7 +2398,7 @@ public class Serve implements ServletContext, Serializable {
 				} else if (ex.getUnavailableSeconds() > 0) {
 					serve.log("TJWS: Temporary unavailability feature is not supported " + servlet);
 				}
-				problem(ex.getMessage(), HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+				problem(ex.getMessage(), SC_SERVICE_UNAVAILABLE);
 			} catch (ServletException e) {
 				serve.log("TJWS: Servlet exception", e);
 				Throwable rootCause = e.getRootCause();
@@ -2426,12 +2411,12 @@ public class Serve implements ServletContext, Serializable {
 						rootCause = rootCause.getCause();
 					}
 				}
-				problem(e.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				problem(e.toString(), SC_INTERNAL_SERVER_ERROR);
 			} catch (IOException ioe) {
 				throw ioe;
 			} catch (Exception e) {
 				serve.log("TJWS: Unexpected problem running servlet", e);
-				problem("Unexpected problem running servlet: " + e.toString(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				problem("Unexpected problem running servlet: " + e.toString(), SC_INTERNAL_SERVER_ERROR);
 			} finally {
 				// closeStreams();
 				// socket will be closed by a caller if no keep-alive
@@ -2466,7 +2451,7 @@ public class Serve implements ServletContext, Serializable {
 					return true;
 			}
 			
-			setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			setStatus(SC_UNAUTHORIZED);
 			setHeader("WWW-Authenticate", "basic realm=\"" + realm.name() + '"');
 			// writeHeaders(); // because sendError() is used
 			realSendError();
@@ -2506,8 +2491,8 @@ public class Serve implements ServletContext, Serializable {
 			// System.err.println("Comparing request with current "+
 			// requestThread+" "+ Thread.currentThread());
 			if (requestThread == Thread.currentThread()) // detecting if called
-														 // within request
-														 // processing thread
+															// within request
+															// processing thread
 				return;
 			try {
 				finalizerequest();
@@ -2630,7 +2615,7 @@ public class Serve implements ServletContext, Serializable {
 									state = INVERSIONNUM;
 								else {
 									state = OLD_INVAL; // consider name starts
-														 // with
+														// with
 									// $
 									cookie_name = token.toString();
 								}
@@ -2687,7 +2672,7 @@ public class Serve implements ServletContext, Serializable {
 								else {
 									addCookie(cookie_name, cookie_value, null, null);
 									state = NEW_INVAL; // consider name starts
-														 // with
+														// with
 									// $
 									cookie_name = token.toString();
 								}
@@ -2726,7 +2711,7 @@ public class Serve implements ServletContext, Serializable {
 								else {
 									addCookie(cookie_name, cookie_value, cookie_path, null);
 									state = NEW_INVAL; // consider name starts
-														 // with
+														// with
 									// $
 									cookie_name = token.toString();
 								}
@@ -2762,7 +2747,7 @@ public class Serve implements ServletContext, Serializable {
 								else {
 									addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
 									state = NEW_INVAL; // consider name starts
-														 // with
+														// with
 									// $
 									cookie_name = token.toString();
 								}
@@ -2939,7 +2924,8 @@ public class Serve implements ServletContext, Serializable {
 		public String getRemoteHost() {
 			if (serve.proxyConfig && getHeader(FORWARDED_FOR) != null)
 				return getHeader(FORWARDED_FOR); // TODO resolve name by IP
-												 // address from X-Forwarded-For
+													// address from
+													// X-Forwarded-For
 			String result = socket.getInetAddress().getHostName();
 			return result != null ? result : getRemoteAddr();
 		}
@@ -3206,8 +3192,9 @@ public class Serve implements ServletContext, Serializable {
 		public Enumeration<String> getRequestHeaders(String header) {
 			Vector result = new Vector();
 			int i = -1;
-			while ((i = reqHeaderNames.indexOf(header.toLowerCase(), i + 1)) >= 0)
+			while ((i = reqHeaderNames.indexOf(header.toLowerCase(), i + 1)) >= 0) {
 				result.addElement(reqHeaderValues.elementAt(i));
+			}
 			return result.elements();
 		}
 		
@@ -3450,9 +3437,11 @@ public class Serve implements ServletContext, Serializable {
 			String ct = (String) resHeaderNames.get(CONTENTTYPE.toLowerCase());
 			if (ct != null) {
 				String enc = extractEncodingFromContentType(ct);
-				if (enc != null)
+				if (enc != null) {
 					return enc;
+				}
 			}
+			
 			return charEncoding;
 		}
 		
@@ -3530,8 +3519,9 @@ public class Serve implements ServletContext, Serializable {
 		public void reset() throws IllegalStateException {
 			// new Exception("RESET").printStackTrace();
 			if (!isCommitted()) {
-				if (outCookies != null)
+				if (outCookies != null) {
 					outCookies.clear();
+				}
 				resHeaderNames.clear();
 				pw = null;
 				rout = null;
@@ -3608,20 +3598,24 @@ public class Serve implements ServletContext, Serializable {
 							while (lst.hasMoreTokens()) {
 								String lan = lst.nextToken();
 								int di = lan.indexOf('-');
-								if (di < 0)
-									ts.add(new LocaleWithWeight(
-											new Locale(lan.trim()) /* 1.4 */, w));
-								else
+								if (di < 0) {
+									// 1. 4
+									ts.add(new LocaleWithWeight(new Locale(lan.trim()), w));
+								} else {
 									ts.add(new LocaleWithWeight(new Locale(lan.substring(0, di), lan.substring(di + 1).trim().toUpperCase()), w));
+								}
 							}
 						}
 					}
-				} catch (NoSuchElementException ncee) {
+				} catch (NoSuchElementException ex) {
 					// can't parse
 				}
 			}
-			if (ts.size() == 0)
+			
+			if (ts.size() == 0) {
 				ts.add(new LocaleWithWeight(Locale.getDefault(), 1));
+			}
+			
 			return new AcceptLocaleEnumeration(ts);
 		}
 		
@@ -3651,23 +3645,23 @@ public class Serve implements ServletContext, Serializable {
 		
 		public void addHeader(String header, String value) {
 			header = header.trim().toLowerCase();
-			Object o = resHeaderNames.get(header);
-			if (o == null)
+			Object object = resHeaderNames.get(header);
+			if (object == null) {
 				setHeader(header, value);
-			else {
-				if (o instanceof String[]) {
-					String[] oldVal = (String[]) o;
+			} else {
+				if (object instanceof String[]) {
+					String[] oldVal = (String[]) object;
 					String[] newVal = new String[oldVal.length + 1];
 					System.arraycopy(oldVal, 0, newVal, 0, oldVal.length);
 					newVal[oldVal.length] = value;
 					resHeaderNames.put(header, newVal);
-				} else if (o instanceof String) {
+				} else if (object instanceof String) {
 					String[] newVal = new String[2];
-					newVal[0] = (String) o;
+					newVal[0] = (String) object;
 					newVal[1] = value;
 					resHeaderNames.put(header, newVal);
 				} else
-					throw new RuntimeException("Invalid content of header hash - " + o.getClass().getName());
+					throw new RuntimeException("Invalid content of header hash - " + object.getClass().getName());
 			}
 		}
 		
@@ -3848,115 +3842,115 @@ public class Serve implements ServletContext, Serializable {
 		// @param resCode the status code
 		public void setStatus(int resCode) {
 			switch (resCode) {
-				case HttpServletResponse.SC_CONTINUE:
+				case SC_CONTINUE:
 					setStatus(resCode, "Continue");
 					break;
-				case HttpServletResponse.SC_SWITCHING_PROTOCOLS:
+				case SC_SWITCHING_PROTOCOLS:
 					setStatus(resCode, "Switching protocols");
 					break;
-				case HttpServletResponse.SC_OK:
+				case SC_OK:
 					setStatus(resCode, "Ok");
 					break;
-				case HttpServletResponse.SC_CREATED:
+				case SC_CREATED:
 					setStatus(resCode, "Created");
 					break;
-				case HttpServletResponse.SC_ACCEPTED:
+				case SC_ACCEPTED:
 					setStatus(resCode, "Accepted");
 					break;
-				case HttpServletResponse.SC_NON_AUTHORITATIVE_INFORMATION:
+				case SC_NON_AUTHORITATIVE_INFORMATION:
 					setStatus(resCode, "Non-authoritative");
 					break;
-				case HttpServletResponse.SC_NO_CONTENT:
+				case SC_NO_CONTENT:
 					setStatus(resCode, "No content");
 					break;
-				case HttpServletResponse.SC_RESET_CONTENT:
+				case SC_RESET_CONTENT:
 					setStatus(resCode, "Reset content");
 					break;
-				case HttpServletResponse.SC_PARTIAL_CONTENT:
+				case SC_PARTIAL_CONTENT:
 					setStatus(resCode, "Partial content");
 					break;
-				case HttpServletResponse.SC_MULTIPLE_CHOICES:
+				case SC_MULTIPLE_CHOICES:
 					setStatus(resCode, "Multiple choices");
 					break;
-				case HttpServletResponse.SC_MOVED_PERMANENTLY:
+				case SC_MOVED_PERMANENTLY:
 					setStatus(resCode, "Moved permanentently");
 					break;
-				case HttpServletResponse.SC_MOVED_TEMPORARILY:
+				case SC_MOVED_TEMPORARILY:
 					setStatus(resCode, "Moved temporarily");
 					break;
-				case HttpServletResponse.SC_SEE_OTHER:
+				case SC_SEE_OTHER:
 					setStatus(resCode, "See other");
 					break;
-				case HttpServletResponse.SC_NOT_MODIFIED:
+				case SC_NOT_MODIFIED:
 					setStatus(resCode, "Not modified");
 					break;
-				case HttpServletResponse.SC_USE_PROXY:
+				case SC_USE_PROXY:
 					setStatus(resCode, "Use proxy");
 					break;
-				case HttpServletResponse.SC_BAD_REQUEST:
+				case SC_BAD_REQUEST:
 					setStatus(resCode, "Bad request");
 					break;
-				case HttpServletResponse.SC_UNAUTHORIZED:
+				case SC_UNAUTHORIZED:
 					setStatus(resCode, "Unauthorized");
 					break;
-				case HttpServletResponse.SC_PAYMENT_REQUIRED:
+				case SC_PAYMENT_REQUIRED:
 					setStatus(resCode, "Payment required");
 					break;
-				case HttpServletResponse.SC_FORBIDDEN:
+				case SC_FORBIDDEN:
 					setStatus(resCode, "Forbidden");
 					break;
-				case HttpServletResponse.SC_NOT_FOUND:
+				case SC_NOT_FOUND:
 					setStatus(resCode, "Not found");
 					break;
-				case HttpServletResponse.SC_METHOD_NOT_ALLOWED:
+				case SC_METHOD_NOT_ALLOWED:
 					setStatus(resCode, "Method not allowed");
 					break;
-				case HttpServletResponse.SC_NOT_ACCEPTABLE:
+				case SC_NOT_ACCEPTABLE:
 					setStatus(resCode, "Not acceptable");
 					break;
-				case HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED:
+				case SC_PROXY_AUTHENTICATION_REQUIRED:
 					setStatus(resCode, "Proxy auth required");
 					break;
-				case HttpServletResponse.SC_REQUEST_TIMEOUT:
+				case SC_REQUEST_TIMEOUT:
 					setStatus(resCode, "Request timeout");
 					break;
-				case HttpServletResponse.SC_CONFLICT:
+				case SC_CONFLICT:
 					setStatus(resCode, "Conflict");
 					break;
-				case HttpServletResponse.SC_GONE:
+				case SC_GONE:
 					setStatus(resCode, "Gone");
 					break;
-				case HttpServletResponse.SC_LENGTH_REQUIRED:
+				case SC_LENGTH_REQUIRED:
 					setStatus(resCode, "Length required");
 					break;
-				case HttpServletResponse.SC_PRECONDITION_FAILED:
+				case SC_PRECONDITION_FAILED:
 					setStatus(resCode, "Precondition failed");
 					break;
-				case HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE:
+				case SC_REQUEST_ENTITY_TOO_LARGE:
 					setStatus(resCode, "Request entity too large");
 					break;
-				case HttpServletResponse.SC_REQUEST_URI_TOO_LONG:
+				case SC_REQUEST_URI_TOO_LONG:
 					setStatus(resCode, "Request URI too long");
 					break;
-				case HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE:
+				case SC_UNSUPPORTED_MEDIA_TYPE:
 					setStatus(resCode, "Unsupported media type");
 					break;
-				case HttpServletResponse.SC_INTERNAL_SERVER_ERROR:
+				case SC_INTERNAL_SERVER_ERROR:
 					setStatus(resCode, "Internal server error");
 					break;
-				case HttpServletResponse.SC_NOT_IMPLEMENTED:
+				case SC_NOT_IMPLEMENTED:
 					setStatus(resCode, "Not implemented");
 					break;
-				case HttpServletResponse.SC_BAD_GATEWAY:
+				case SC_BAD_GATEWAY:
 					setStatus(resCode, "Bad gateway");
 					break;
-				case HttpServletResponse.SC_SERVICE_UNAVAILABLE:
+				case SC_SERVICE_UNAVAILABLE:
 					setStatus(resCode, "Service unavailable");
 					break;
-				case HttpServletResponse.SC_GATEWAY_TIMEOUT:
+				case SC_GATEWAY_TIMEOUT:
 					setStatus(resCode, "Gateway timeout");
 					break;
-				case HttpServletResponse.SC_HTTP_VERSION_NOT_SUPPORTED:
+				case SC_HTTP_VERSION_NOT_SUPPORTED:
 					setStatus(resCode, "HTTP version not supported");
 					break;
 				case 207:
@@ -4030,10 +4024,10 @@ public class Serve implements ServletContext, Serializable {
 				while (he.hasMoreElements()) {
 					String name = (String) he.nextElement();
 					if (CONNECTION.equals(name) || KEEPALIVE.equals(name)) // skip
-																			 // header
-																			 // until
-																			 // make
-																			 // decision
+																			// header
+																			// until
+																			// make
+																			// decision
 						continue;
 					Object o = resHeaderNames.get(name);
 					if (o instanceof String) {
@@ -4195,7 +4189,7 @@ public class Serve implements ServletContext, Serializable {
 					if (chunked_out == false) {
 						if (contentLen < 0)
 							if (serve.isKeepAlive() && oneOne) {
-								if ((resCode != HttpServletResponse.SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != HttpServletResponse.SC_NOT_MODIFIED) {
+								if ((resCode != SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != SC_NOT_MODIFIED) {
 									out.println(TRANSFERENCODING + ": " + CHUNKED);
 									chunked_out = true;
 								}
@@ -4221,7 +4215,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 				out.println();
 				out.flush();
-				if (resCode == HttpServletResponse.SC_NO_CONTENT || resCode == HttpServletResponse.SC_NOT_MODIFIED || "HEAD".equals(reqMethod))
+				if (resCode == SC_NO_CONTENT || resCode == SC_NOT_MODIFIED || "HEAD".equals(reqMethod))
 					out.close();
 				else
 					((ServeOutputStream) out).setChunked(chunked_out);
@@ -4295,10 +4289,10 @@ public class Serve implements ServletContext, Serializable {
 			}
 			// serve.log("location:"+location);
 			setHeader("Location", location);
-			setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+			setStatus(SC_MOVED_TEMPORARILY);
 			setContentType("text/html");
 			StringBuffer sb = new StringBuffer(200);
-			sb.append("<HTML><HEAD>" + "<TITLE>" + HttpServletResponse.SC_MOVED_TEMPORARILY + " Moved</TITLE>" + "</HEAD><BODY " + BGCOLOR + "><H2>" + HttpServletResponse.SC_MOVED_TEMPORARILY + " Moved</H2>" + "This document has moved <a href=\"" + location + "\">here.<HR>");
+			sb.append("<HTML><HEAD>" + "<TITLE>" + SC_MOVED_TEMPORARILY + " Moved</TITLE>" + "</HEAD><BODY " + BGCOLOR + "><H2>" + SC_MOVED_TEMPORARILY + " Moved</H2>" + "This document has moved <a href=\"" + location + "\">here.<HR>");
 			sendEnd(sb);
 		}
 		
@@ -4344,7 +4338,7 @@ public class Serve implements ServletContext, Serializable {
 		// decide whether to encode a normal link, this method is seperate
 		// from the encodeUrl method.
 		// <P>
-		// All URLs sent to the HttpServletResponse.sendRedirect method should
+		// All URLs sent to the sendRedirect method should
 		// be
 		// run through this method. Otherwise, URL rewriting cannot be used with
 		// browsers which do not support cookies.
@@ -4438,26 +4432,6 @@ public class Serve implements ServletContext, Serializable {
 		/**
 		 * (non-Javadoc)
 		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getHeaderNames()
-		 */
-		public Collection<String> getResponseHeaderNames() {
-			// TODO Auto-generated method stub
-			return null;
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getHeaders(java.lang.String)
-		 */
-		public Collection<String> getResponseHeaders(String header) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
 		 * @see javax.servlet.http.HttpServletResponse#getStatus()
 		 */
 		public int getStatus() {
@@ -4485,392 +4459,6 @@ public class Serve implements ServletContext, Serializable {
 		public Enumeration<String> getHeaders(String arg0) {
 			// TODO Auto-generated method stub
 			return null;
-		}
-	}
-	
-	/**
-	 * 
-	 * @author Rohtash Singh Lakra
-	 * @date 03/15/2018 02:31:33 PM
-	 */
-	public static class ServeServletResponse implements HttpServletResponse {
-		
-		private final ServeConnection serveConnection;
-		
-		/**
-		 * 
-		 * @param serveConnection
-		 */
-		public ServeServletResponse(final ServeConnection serveConnection) {
-			this.serveConnection = serveConnection;
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#flushBuffer()
-		 */
-		@Override
-		public void flushBuffer() throws IOException {
-			serveConnection.flushBuffer();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getBufferSize()
-		 */
-		@Override
-		public int getBufferSize() {
-			return serveConnection.getBufferSize();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getCharacterEncoding()
-		 */
-		@Override
-		public String getCharacterEncoding() {
-			return serveConnection.getCharacterEncoding();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getContentType()
-		 */
-		@Override
-		public String getContentType() {
-			return serveConnection.getContentType();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getLocale()
-		 */
-		@Override
-		public Locale getLocale() {
-			return serveConnection.getLocale();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getOutputStream()
-		 */
-		@Override
-		public ServletOutputStream getOutputStream() throws IOException {
-			return serveConnection.getOutputStream();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#getWriter()
-		 */
-		@Override
-		public PrintWriter getWriter() throws IOException {
-			return serveConnection.getWriter();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#isCommitted()
-		 */
-		@Override
-		public boolean isCommitted() {
-			return serveConnection.isCommitted();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#reset()
-		 */
-		@Override
-		public void reset() {
-			serveConnection.reset();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#resetBuffer()
-		 */
-		@Override
-		public void resetBuffer() {
-			serveConnection.reset();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#setBufferSize(int)
-		 */
-		@Override
-		public void setBufferSize(int size) {
-			serveConnection.setBufferSize(size);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#setCharacterEncoding(java.lang.String)
-		 */
-		@Override
-		public void setCharacterEncoding(String _enc) {
-			serveConnection.setCharacterEncoding(_enc);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#setContentLength(int)
-		 */
-		@Override
-		public void setContentLength(int length) {
-			serveConnection.setContentLength(length);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#setContentType(java.lang.String)
-		 */
-		@Override
-		public void setContentType(String type) {
-			serveConnection.setContentType(type);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.ServletResponse#setLocale(java.util.Locale)
-		 */
-		@Override
-		public void setLocale(Locale locale) {
-			serveConnection.setLocale(locale);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
-		 */
-		@Override
-		public void addCookie(Cookie cookie) {
-			serveConnection.addCookie(cookie);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#addDateHeader(java.lang.String,
-		 *      long)
-		 */
-		@Override
-		public void addDateHeader(String header, long date) {
-			serveConnection.addDateHeader(header, date);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#addHeader(java.lang.String,
-		 *      java.lang.String)
-		 */
-		@Override
-		public void addHeader(String header, String value) {
-			serveConnection.addHeader(header, value);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#addIntHeader(java.lang.String,
-		 *      int)
-		 */
-		@Override
-		public void addIntHeader(String header, int value) {
-			serveConnection.addIntHeader(header, value);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#containsHeader(java.lang.String)
-		 */
-		@Override
-		public boolean containsHeader(String name) {
-			return serveConnection.containsHeader(name);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#encodeRedirectURL(java.lang.String)
-		 */
-		@Override
-		public String encodeRedirectURL(String url) {
-			return serveConnection.encodeRedirectURL(url);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#encodeRedirectUrl(java.lang.String)
-		 */
-		@Override
-		public String encodeRedirectUrl(String url) {
-			return serveConnection.encodeRedirectUrl(url);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#encodeURL(java.lang.String)
-		 */
-		@Override
-		public String encodeURL(String url) {
-			return serveConnection.encodeURL(url);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#encodeUrl(java.lang.String)
-		 */
-		@Override
-		public String encodeUrl(String url) {
-			return serveConnection.encodeUrl(url);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getHeader(java.lang.String)
-		 */
-		@Override
-		public String getHeader(String name) {
-			return serveConnection.getHeader(name);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getHeaderNames()
-		 */
-		@Override
-		public Collection<String> getHeaderNames() {
-			return null;
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getHeaders(java.lang.String)
-		 */
-		@Override
-		public Collection<String> getHeaders(String arg0) {
-			return null;
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#getStatus()
-		 */
-		@Override
-		public int getStatus() {
-			return serveConnection.getStatus();
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#sendError(int)
-		 */
-		@Override
-		public void sendError(int resCode) throws IOException {
-			serveConnection.sendError(resCode);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#sendError(int,
-		 *      java.lang.String)
-		 */
-		@Override
-		public void sendError(int resCode, String resMessage) throws IOException {
-			serveConnection.sendError(resCode, resMessage);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#sendRedirect(java.lang.String)
-		 */
-		@Override
-		public void sendRedirect(String location) throws IOException {
-			serveConnection.sendRedirect(location);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#setDateHeader(java.lang.String,
-		 *      long)
-		 */
-		@Override
-		public void setDateHeader(String header, long value) {
-			serveConnection.setDateHeader(header, value);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#setHeader(java.lang.String,
-		 *      java.lang.String)
-		 */
-		@Override
-		public void setHeader(String header, String value) {
-			serveConnection.setHeader(header, value);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#setIntHeader(java.lang.String,
-		 *      int)
-		 */
-		@Override
-		public void setIntHeader(String header, int value) {
-			serveConnection.setIntHeader(header, value);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#setStatus(int)
-		 */
-		@Override
-		public void setStatus(int resCode) {
-			serveConnection.setStatus(resCode);
-		}
-		
-		/**
-		 * (non-Javadoc)
-		 * 
-		 * @see javax.servlet.http.HttpServletResponse#setStatus(int,
-		 *      java.lang.String)
-		 */
-		@Override
-		public void setStatus(int resCode, String resMessage) {
-			serveConnection.setStatus(resCode, resMessage);
 		}
 	}
 	
@@ -4979,9 +4567,9 @@ public class Serve implements ServletContext, Serializable {
 				this.contentLength = contentLength;
 				readCount = 0;
 			} // else if (STREAM_DEBUG || true) {
-				 // new Exception("Igonore Set content length:"+contentLength+"
-				 // for "+this.contentLength).printStackTrace();
-				 // }
+				// new Exception("Igonore Set content length:"+contentLength+"
+				// for "+this.contentLength).printStackTrace();
+				// }
 		}
 		
 		/* ------------------------------------------------------------ */
@@ -5410,7 +4998,7 @@ public class Serve implements ServletContext, Serializable {
 					else {
 						out = null;
 						conn = null; // the stream has to be recreated after
-									 // closing
+										// closing
 					}
 				}
 			} finally {

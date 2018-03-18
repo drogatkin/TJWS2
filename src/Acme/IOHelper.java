@@ -397,9 +397,6 @@ public final class IOHelper {
 	public static byte[] readFavIconBytes() {
 		try {
 			final String iconPath = IOHelper.pathString(IOHelper.pathString(WebApp.class), "../resource/tjws.gif");
-			// return
-			// readBytes(IOHelper.class.getResourceAsStream("Resource/favicon.ico"),
-			// true);
 			return readBytes(new FileInputStream(iconPath), true);
 		} catch (IOException ex) {
 			logger.error(ex);
