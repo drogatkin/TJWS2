@@ -102,7 +102,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
@@ -263,34 +262,21 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		String className;
 		
 		String name;
-		
 		Servlet instance;
-		
 		MappingEntry[] mapping;
-		
 		Map<String, String> initParams;
-		
 		String label;
-		
 		int loadOnStart;
-		
 		boolean asyncSupported;
-		
 		String runAs;
-		
 		File multipartLocation;
-		
 		long multipartMaxFile;
-		
 		long multipartMaxRequest;
-		
 		int multipartThreshold;
-		
 		boolean multipartEnabled;
-		
 		String descr;
-		
-		long timeToReactivate; // if servlet suspended
+		// if servlet suspended
+		long timeToReactivate;
 		
 		@Override
 		public String getServletName() {
@@ -1132,14 +1118,23 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		return pathMask.substring(0, wcp);
 	}
 	
+	/**
+	 * Converts the proxy object into <code>Serve.ServeConnection</code> class
+	 * object.
+	 * 
+	 * @param proxy
+	 * @return
+	 */
 	protected static Serve.ServeConnection toServeConnection(Object proxy) {
-		if (proxy instanceof Serve.ServeConnection)
+		if (proxy instanceof Serve.ServeConnection) {
 			return (Serve.ServeConnection) proxy;
-		else if (proxy instanceof Openable) {
-			Object servCon = ((Openable) proxy).getOrigin();
-			if (servCon instanceof Serve.ServeConnection)
-				return (Serve.ServeConnection) servCon;
+		} else if (proxy instanceof Openable) {
+			final Object openableServeConnection = ((Openable) proxy).getOrigin();
+			if (openableServeConnection instanceof Serve.ServeConnection) {
+				return (Serve.ServeConnection) openableServeConnection;
+			}
 		}
+		
 		return null;
 	}
 	
@@ -2197,26 +2192,23 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	protected class SimpleDispatcher implements RequestDispatcher {
 		Servlet servlet;
-		
 		String servletPath;
-		
 		String path;
-		
 		String named;
 		
-		SimpleDispatcher(Servlet s, String p) {
-			this(s, null, p);
+		SimpleDispatcher(Servlet servlet, String path) {
+			this(servlet, null, path);
 		}
 		
-		SimpleDispatcher(String n, Servlet s) {
-			this(s, null, null);
+		SimpleDispatcher(String n, Servlet servlet) {
+			this(servlet, null, null);
 			named = n;
 		}
 		
-		SimpleDispatcher(Servlet s, String sp, String p) {
-			servlet = s;
-			path = p;
-			servletPath = sp;
+		SimpleDispatcher(Servlet servlet, String servletPath, String path) {
+			this.servlet = servlet;
+			this.path = path;
+			this.servletPath = servletPath;
 			// if (servletPath.length() > 1 && servletPath.endsWith("/"))
 			// servletPath = servletPath.substring(0, servletPath.length()-1);
 			// ending '/' adjustment done on demand
@@ -2229,20 +2221,42 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		
 		// //////////////////////////////////////////////////////////////////
 		// interface RequestDispatcher
+		// //////////////////////////////////////////////////////////////////
+		
+		/**
+		 * 
+		 * @param request
+		 * @param response
+		 * @throws ServletException
+		 * @throws IOException
+		 * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest,
+		 *      javax.servlet.ServletResponse)
+		 */
 		@Override
 		public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException {
 			dispatch(request, response, DispatcherType.FORWARD);
 		}
 		
+		/**
+		 * 
+		 * @param request
+		 * @param response
+		 * @param dispType
+		 * @throws ServletException
+		 * @throws IOException
+		 */
 		public void dispatch(ServletRequest request, ServletResponse response, DispatcherType dispType) throws ServletException, IOException {
-			if (_DEBUG)
+			if (_DEBUG) {
 				System.err.printf("%s path: %s, servlet: %s%n", dispType.equals(DispatcherType.ASYNC) ? "ASYNC_DISPATCH" : "FORWARD", path, servlet);
+			}
+			
 			response.reset(); // drop all previously putting data and headers
 			SimpleFilterChain sfc = buildFilterChain(named, path, request.getAttribute("javax.servlet.error.status_code") == null ? dispType : DispatcherType.ERROR);
 			sfc.setServlet(servlet);
 			sfc.reset();
-			if (_DEBUG)
+			if (_DEBUG) {
 				printRequestChain(request);
+			}
 			// try{Thread.sleep(1000);}catch(Exception e) {}
 			boolean toJsp = request.getAttribute("javax.servlet.tjws.servlet-jsp") != null;
 			sfc.doFilter(new DispatchedRequest((HttpServletRequest) request, toJsp ? DispatcherType.INCLUDE : dispType), response);
@@ -2250,94 +2264,49 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			// request, true), response);
 		}
 		
-		void printRequestChain(ServletRequest r) {
-			if (r instanceof DispatchedRequest) {
-				ServletRequest sr = r;
-				while (sr instanceof DispatchedRequest) {
-					System.err.println("Wrapper req:" + sr);
-					sr = ((DispatchedRequest) sr).getRequest();
+		void printRequestChain(ServletRequest servletRequest) {
+			if (servletRequest instanceof DispatchedRequest) {
+				ServletRequest tempServletRequest = servletRequest;
+				while (tempServletRequest instanceof DispatchedRequest) {
+					System.err.println("Wrapper req:" + tempServletRequest);
+					tempServletRequest = ((DispatchedRequest) tempServletRequest).getRequest();
 				}
-				System.err.println("Original request:" + sr);
-			} else
-				System.err.println("Just request:" + r);
+				System.err.println("Original request:" + tempServletRequest);
+			} else {
+				System.err.println("Just request:" + servletRequest);
+			}
 		}
 		
 		@Override
 		public void include(ServletRequest request, final ServletResponse response) throws ServletException, java.io.IOException {
-			Serve.ServeConnection scon = toServeConnection(response);
-			if (scon != null)
-				scon.setInInclude(true);
-			if (_DEBUG)
+			Serve.ServeConnection serveConnection = toServeConnection(response);
+			if (serveConnection != null) {
+				serveConnection.setInInclude(true);
+			}
+			if (_DEBUG) {
 				System.err.printf("INCLUDE path: %s, servlet: %s, servlet path %s, name:%s%n", path, servlet, servletPath, named);
+			}
+			
 			try {
-				SimpleFilterChain sfc = buildFilterChain(named, path, DispatcherType.INCLUDE);
-				sfc.setServlet(servlet);
-				sfc.reset();
-				if (_DEBUG)
+				SimpleFilterChain filterChain = buildFilterChain(named, path, DispatcherType.INCLUDE);
+				filterChain.setServlet(servlet);
+				filterChain.reset();
+				
+				if (_DEBUG) {
 					printRequestChain(request);
-				sfc.doFilter(new DispatchedRequest((HttpServletRequest) request, DispatcherType.INCLUDE), new HttpServletResponseWrapper((HttpServletResponse) response) {
-					// TODO review match to 2.5, some calls are allowed
-					// now
-					public void addDateHeader(java.lang.String name, long date) {
-					}
-					
-					public void setDateHeader(java.lang.String name, long date) {
-					}
-					
-					public void setHeader(java.lang.String name, java.lang.String value) {
-					}
-					
-					public void addHeader(java.lang.String name, java.lang.String value) {
-					}
-					
-					public void setIntHeader(java.lang.String name, int value) {
-					}
-					
-					public void addIntHeader(java.lang.String name, int value) {
-					}
-					
-					public void setStatus(int sc) {
-					}
-					
-					public void setStatus(int sc, java.lang.String sm) {
-					}
-					
-					public void sendRedirect(java.lang.String location) throws java.io.IOException {
-					}
-					
-					public void sendError(int sc) throws java.io.IOException {
-					}
-					
-					public void sendError(int sc, java.lang.String msg) throws java.io.IOException {
-					}
-					
-					public void reset() {
-					}
-					
-					public void setLocale(java.util.Locale loc) {
-					}
-					
-					public void resetBuffer() {
-					}
-					
-					public void setContentType(java.lang.String type) {
-					}
-					
-					public void setContentLength(int len) {
-					}
-					
-					public void setCharacterEncoding(java.lang.String charset) {
-					}
-				});
+				}
+				
+				// send request to next filter, if any.
+				filterChain.doFilter(new DispatchedRequest((HttpServletRequest) request, DispatcherType.INCLUDE), (HttpServletResponse) response);
 			} finally {
-				if (scon != null)
-					scon.setInInclude(false);
+				if (serveConnection != null) {
+					serveConnection.setInInclude(false);
+				}
 			}
 		}
 		
 		class DispatchedRequest extends HttpServletRequestWrapper {
 			DispatcherType dispType;
-			
 			boolean forward;
 			
 			DispatchedRequest(HttpServletRequest request, DispatcherType dispType) {
@@ -2349,36 +2318,47 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			
 			@Override
 			public String getPathInfo() {
-				if (forward)
-					return getPathInfo1();
-				return super.getPathInfo();
+				return (forward ? getPathInfo1() : super.getPathInfo());
 			}
 			
 			public String getPathInfo1() {
-				if (path == null)
+				if (path == null) {
 					return super.getPathInfo();
+				}
 				
-				if ("/".equals(servletPath))
+				if ("/".equals(servletPath)) {
 					return null;
-				if (servletPath != null && servletPath.length() == 0 && "/".equals(path))
+				}
+				
+				if (servletPath != null && servletPath.length() == 0 && "/".equals(path)) {
 					return path;
-				int qp = path.indexOf('?');
+				}
+				
+				int qPath = path.indexOf('?');
 				// if (qp < 0)
 				// qp = path.indexOf('#');
-				int sp = servletPath == null ? -1 : path.indexOf(servletPath);
-				if (sp >= 0) {
-					sp += servletPath.length() - (servletPath.endsWith("/") ? 1 : 0);
-					if (_DEBUG)
-						System.err.printf("FORWARD getPathinfo() path %s, servlet %s, sp %d, res %s%n", path, servletPath, sp, path.substring(sp));
-					if (qp > sp)
-						return path.substring(sp, qp);
-					else
-						return path.substring(sp);
+				int servletPathIndex = servletPath == null ? -1 : path.indexOf(servletPath);
+				if (servletPathIndex >= 0) {
+					servletPathIndex += servletPath.length() - (servletPath.endsWith("/") ? 1 : 0);
+					if (_DEBUG) {
+						System.err.printf("FORWARD getPathinfo() path %s, servlet %s, sp %d, res %s%n", path, servletPath, servletPathIndex, path.substring(servletPathIndex));
+					}
+					
+					if (qPath > servletPathIndex) {
+						return path.substring(servletPathIndex, qPath);
+					} else {
+						return path.substring(servletPathIndex);
+					}
 				}
-				if (_DEBUG)
+				
+				if (_DEBUG) {
 					System.err.printf("FORWARD get pathinfo ret: %s%n", path);
-				if (qp > 0)
-					return path.substring(0, qp);
+				}
+				
+				if (qPath > 0) {
+					return path.substring(0, qPath);
+				}
+				
 				return path;
 			}
 			
@@ -2420,9 +2400,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			
 			@Override
 			public String getRequestURI() {
-				if (forward)
-					return getRequestURI1();
-				return super.getRequestURI();
+				return (forward ? getRequestURI1() : super.getRequestURI());
 			}
 			
 			@Override
@@ -2431,25 +2409,27 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			}
 			
 			public String getQueryString1() {
-				if (path == null)
-					return null;
-				return extractQueryAnchor(path, true);
+				return (path == null ? null : extractQueryAnchor(path, true));
 			}
 			
 			@Override
 			public String getQueryString() {
-				if (forward)
+				if (forward) {
 					return getQueryString1();
-				String q = super.getQueryString();
-				if (q == null || q.isEmpty())
-					q = getQueryString1();
-				else
-					q += "&" + getQueryString1();
-				return q;
+				}
+				
+				String queryString = super.getQueryString();
+				if (queryString == null || queryString.isEmpty()) {
+					queryString = getQueryString1();
+				} else {
+					queryString += "&" + getQueryString1();
+				}
+				
+				return queryString;
 			}
 			
 			@Override
-			public Enumeration getAttributeNames() {
+			public Enumeration<String> getAttributeNames() {
 				List<String> attributes = new ArrayList<String>(10);
 				if (named == null) {
 					if (forward) {
@@ -2474,9 +2454,12 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 						attributes.add("javax.servlet.include.query_string");
 					}
 				}
-				Enumeration e = super.getAttributeNames();
-				while (e.hasMoreElements())
+				
+				Enumeration<String> e = super.getAttributeNames();
+				while (e.hasMoreElements()) {
 					attributes.add((String) e.nextElement());
+				}
+				
 				return Collections.enumeration(attributes);
 			}
 			
@@ -2532,8 +2515,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			
 			@Override
 			public void removeAttribute(String name) {
-				if (_DEBUG && name.startsWith("javax.servlet."))
+				if (_DEBUG && name.startsWith("javax.servlet.")) {
 					System.err.printf("An attempt to remove systen  ATTR: %s in mode %s = %s%n", name, forward ? "FORWARD" : "INCLUDE", getAttribute(name));
+				}
 				super.removeAttribute(name);
 			}
 			
@@ -2545,36 +2529,49 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			
 			@Override
 			public RequestDispatcher getRequestDispatcher(String path) {
-				if (_DEBUG)
+				if (_DEBUG) {
 					System.err.printf("Request %s processing from %s%n", path, forward ? "FORWARD" : "INCLUDE");
+				}
+				
 				if (path.charAt(0) != '/') {
 					String sp = getServletPath();
 					String pi = getPathInfo();
 					if (pi == null) {
 						int lsp = sp.lastIndexOf('/');
-						if (lsp >= 0)
+						if (lsp >= 0) {
 							path = sp.substring(0, lsp) + '/' + path;
-						else
+						} else {
 							path = '/' + path;
+						}
 					} else {
 						int lsp = pi.lastIndexOf('/');
-						if (lsp >= 0)
+						if (lsp >= 0) {
 							path = sp + pi.substring(0, lsp) + '/' + path;
-						else
+						} else {
 							path = sp + '/' + path;
+						}
 					}
+					
 					// System.err.printf("DEBUG: sp: %sp, pi: %s, p: %s%n", sp,
 					// pi, path);
 				}
 				return WebAppServlet.this.getRequestDispatcher(path);
 			}
 			
+			/**
+			 * 
+			 * @param name
+			 * @return
+			 * @see javax.servlet.ServletRequestWrapper#getParameter(java.lang.String)
+			 */
 			@Override
 			public String getParameter(String name) {
 				Map<String, String[]> params = createParameters();
 				String[] result = params.get(name);
-				if (result != null)
+				if (result != null) {
 					return result[0];
+				}
+				
 				return super.getParameter(name);
 			}
 			
@@ -2610,7 +2607,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			 * ServletContext to authenticate the user making this request.
 			 * 
 			 */
-			public boolean authenticate(HttpServletResponse response) throws java.io.IOException, ServletException {
+			public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
 				return super.authenticate(response);
 			}
 			
@@ -2717,8 +2714,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			
 			protected Map<String, String[]> createParameters() {
 				String query = getQueryString();
-				if (query != null)
+				if (query != null) {
 					return Acme.Utils.parseQueryString(query, null);
+				}
 				return new Hashtable<String, String[]>();
 			}
 			

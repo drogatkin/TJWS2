@@ -125,8 +125,8 @@ public class Utils {
 	 * @param encoding
 	 * @return
 	 */
-	public static Hashtable parseQueryString(String query, String encoding) {
-		Hashtable result = new Hashtable();
+	public static Hashtable<String, String[]> parseQueryString(String query, String encoding) {
+		Hashtable<String, String[]> parsedQueryString = new Hashtable<String, String[]>();
 		if (encoding == null) {
 			encoding = IOHelper.UTF_8;
 		}
@@ -145,7 +145,7 @@ public class Utils {
 			} catch (UnsupportedEncodingException ex) {
 			}
 			
-			String[] values = (String[]) result.get(key);
+			String[] values = parsedQueryString.get(key);
 			String[] newValues;
 			if (values == null) {
 				newValues = new String[1];
@@ -155,10 +155,11 @@ public class Utils {
 				System.arraycopy(values, 0, newValues, 0, values.length);
 				newValues[values.length] = value;
 			}
-			result.put(key, newValues);
+			
+			parsedQueryString.put(key, newValues);
 		}
 		
-		return result;
+		return parsedQueryString;
 	}
 	
 	/**
@@ -628,60 +629,78 @@ public class Utils {
 	 * }
 	 */
 	public static String canonicalizePath(String path) {
-		if (path == null || path.length() == 0)
+		if (IOHelper.isNullOrEmpty(path)) {
 			return path;
-		List pathElems = new ArrayList(6);
-		char[] pa = path.toCharArray();
-		int n = pa.length;
-		int s = -1;
+		}
+		
+		List<String> pathElements = new ArrayList<String>(6);
+		char[] pathChars = path.toCharArray();
+		int n = pathChars.length;
+		int startIndex = -1;
 		int lev = 0;
 		for (int i = 0; i < n; i++) {
-			if (s < 0) {
-				if (pa[i] != '/' && pa[i] != '\\')
-					s = i;
+			if (startIndex < 0) {
+				if (pathChars[i] != '/' && pathChars[i] != '\\') {
+					startIndex = i;
+				}
 			} else {
-				boolean f = false;
-				if (pa[i] == '?')
-					f = true;
-				if (pa[i] == '/' || pa[i] == '\\' || f) {
-					String el = new String(pa, s, i - s);
-					if (el.equals("..")) {
-						if (pathElems.size() > 0)
-							pathElems.remove(pathElems.size() - 1);
-						else
+				boolean found = false;
+				if (pathChars[i] == '?') {
+					found = true;
+				}
+				
+				if (pathChars[i] == '/' || pathChars[i] == '\\' || found) {
+					String element = new String(pathChars, startIndex, i - startIndex);
+					if (element.equals("..")) {
+						if (pathElements.size() > 0) {
+							pathElements.remove(pathElements.size() - 1);
+						} else {
 							lev--;
+						}
 						// else exception ?
-					} else if (el.equals(".") == false)
-						if (lev >= 0)
-							pathElems.add(el);
-						else
+					} else if (element.equals(".") == false)
+						if (lev >= 0) {
+							pathElements.add(element);
+						} else {
 							lev++;
-					if (f) {
-						s = i;
+						}
+					
+					if (found) {
+						startIndex = i;
 						break;
 					}
-					s = -1;
+					startIndex = -1;
 				}
 			}
 		}
-		if (s > 0) {
-			String el = new String(pa, s, n - s);
+		
+		if (startIndex > 0) {
+			String el = new String(pathChars, startIndex, n - startIndex);
 			if (el.equals("..")) {
-				if (pathElems.size() > 0)
-					pathElems.remove(pathElems.size() - 1);
+				if (pathElements.size() > 0) {
+					pathElements.remove(pathElements.size() - 1);
+				}
 				// else exception ?
-			} else if (el.equals(".") == false)
-				if (lev >= 0)
-					pathElems.add(el);
-		} else
-			pathElems.add("");
-		if (pathElems.size() == 0)
+			} else if (el.equals(".") == false) {
+				if (lev >= 0) {
+					pathElements.add(el);
+				}
+			}
+		} else {
+			pathElements.add("");
+		}
+		
+		if (pathElements.size() == 0) {
 			return lev >= 0 ? "" : null;
+		}
+		
 		StringBuffer result = new StringBuffer(n);
-		result.append(pathElems.get(0));
-		n = pathElems.size();
-		for (int i = 1; i < n; i++)
-			result.append('/').append(pathElems.get(i));
+		result.append(pathElements.get(0));
+		n = pathElements.size();
+		for (int i = 1; i < n; i++) {
+			result.append('/').append(pathElements.get(i));
+		}
+		
 		// System.err.println("Before "+path+" after "+result);
 		return result.toString();
 	}
@@ -1168,8 +1187,8 @@ public class Utils {
 		public static final String MAXNOTHREAD = ID + ".maxpooledthreads";
 		
 		protected static int counter;
-		protected ArrayList freeThreads;
-		protected HashMap busyThreads;
+		protected ArrayList<PooledThread> freeThreads;
+		protected HashMap<PooledThread, PooledThread> busyThreads;
 		protected int maxThreads;
 		protected ThreadFactory threadFactory;
 		
@@ -1188,8 +1207,8 @@ public class Utils {
 				maxThreads = DEF_MAX_POOLED_THREAD;
 			}
 			
-			freeThreads = new ArrayList(maxThreads);
-			busyThreads = new HashMap(maxThreads);
+			freeThreads = new ArrayList<PooledThread>(maxThreads);
+			busyThreads = new HashMap<PooledThread, PooledThread>(maxThreads);
 			this.threadFactory = threadfactory;
 		}
 		
@@ -1203,8 +1222,9 @@ public class Utils {
 		 *            discarded gracefully
 		 */
 		public void setMaxThreads(int newSize) {
-			if (newSize > 2 || newSize == 0)
+			if (newSize > 2 || newSize == 0) {
 				maxThreads = newSize;
+			}
 		}
 		
 		/**
@@ -1225,61 +1245,67 @@ public class Utils {
 		 *            task for execution
 		 */
 		public void executeThread(Runnable runnable) {
-			PooledThread pt = null;
+			PooledThread pooledThread = null;
 			do {
 				synchronized (freeThreads) {
 					if (freeThreads.size() > 0) {
-						pt = (PooledThread) freeThreads.remove(0);
+						pooledThread = freeThreads.remove(0);
 					}
 				}
 				
-				if (pt != null && pt.isAlive() == false) {
-					pt = null;
+				if (pooledThread != null && pooledThread.isAlive() == false) {
+					pooledThread = null;
 				}
 				
-				if (pt == null) {
+				if (pooledThread == null) {
 					synchronized (busyThreads) {
 						if (busyThreads.size() < maxThreads || maxThreads == 0)
-							pt = new PooledThread();
+							pooledThread = new PooledThread();
 					}
 				}
 				
-				if (pt == null) {
+				if (pooledThread == null) {
 					synchronized (freeThreads) {
 						try {
 							freeThreads.wait();
-						} catch (InterruptedException ie) {
+						} catch (InterruptedException ex) {
 						}
 					}
 				}
-			} while (pt == null);
-			pt.setName("-PooledThread: " + runnable);
-			pt.setRunner(runnable);
+			} while (pooledThread == null);
+			pooledThread.setName("-PooledThread: " + runnable);
+			pooledThread.setRunner(runnable);
 			synchronized (busyThreads) {
-				busyThreads.put(pt, pt);
+				busyThreads.put(pooledThread, pooledThread);
 			}
 		}
 		
 		protected void finalize() throws Throwable {
 			synchronized (freeThreads) {
-				Iterator itr = freeThreads.iterator();
+				Iterator<PooledThread> itr = freeThreads.iterator();
 				while (itr.hasNext()) {
-					((PooledThread) itr.next()).interrupt();
+					itr.next().interrupt();
 				}
 			}
 			
 			synchronized (busyThreads) {
-				Iterator itr = freeThreads.iterator();
+				Iterator<PooledThread> itr = freeThreads.iterator();
 				while (itr.hasNext()) {
-					((PooledThread) itr.next()).interrupt();
+					itr.next().interrupt();
 				}
 			}
 			super.finalize();
 		}
 		
+		/**
+		 * Returns the string representation of this object.
+		 * 
+		 * @return
+		 * @see java.lang.Object#toString()
+		 */
 		public String toString() {
 			if (freeThreads != null && busyThreads != null) {
-				return ID + ": free threads " + freeThreads.size() + " busy threads " + busyThreads.size();
+				return ID + ": free threads:" + freeThreads.size() + " busy threads:" + busyThreads.size();
 			} else {
 				return ID + ": not initialized yet. " + super.toString();
 			}
@@ -1322,10 +1348,11 @@ public class Utils {
 					if (runner != null) {
 						try {
 							runner.run();
-						} catch (Throwable t) {
-							if (t instanceof ThreadDeath)
-								throw (ThreadDeath) t;
-							t.printStackTrace();
+						} catch (Throwable ex) {
+							if (ex instanceof ThreadDeath) {
+								throw (ThreadDeath) ex;
+							}
+							ex.printStackTrace();
 						} finally {
 							runner = null;
 						}
@@ -1430,6 +1457,7 @@ public class Utils {
 				fillPos += len - rfilled;
 				// System.err.println("added to buf:"+(len - rfilled));
 			}
+			
 			return result;
 		}
 		
@@ -1450,8 +1478,10 @@ public class Utils {
 		}
 		
 		private synchronized byte[] getEmptyBuffer() {
-			if (emptyBuffer == null)
+			if (emptyBuffer == null) {
 				emptyBuffer = new byte[0];
+			}
+			
 			return emptyBuffer;
 		}
 	}

@@ -41,6 +41,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
 
+import Acme.IOHelper;
 import Acme.Utils;
 import Acme.Serve.Main;
 
@@ -48,11 +49,8 @@ public class WebApp {
 	Main main;
 	
 	public static final String RUN_DESCRIPTOR = "rundescriptor";
-	
 	public static final String DEF_WEBAPP_AUTODEPLOY_DIR = "tjws.webappdir";
-	
 	public static final String DEF_WEBAPP_CLASSLOADER = "tjws.webclassloader";
-	
 	static boolean restart;
 	
 	/**
@@ -77,14 +75,17 @@ public class WebApp {
 			// deployDir.deleteOnExit(); // TODO make it more consistent and
 			// provide directory deletion in on exit hook
 			System.setProperty(DEF_WEBAPP_AUTODEPLOY_DIR, deployDir.getPath());
-		} else
+		} else {
 			deployDir = new File(System.getProperty(DEF_WEBAPP_AUTODEPLOY_DIR));
+		}
+		
 		ServiceController ctrl = null;
 		try {
 			ctrl = (ServiceController) Class.forName("rogatkin.web.SysTrayControl").newInstance();
 		} catch (Exception ex) {
 			// ex.printStackTrace();
 		}
+		
 		URL warUrl = null;
 		if (args.length == 0) {
 			String[] descr = readDescriptor();
@@ -105,6 +106,7 @@ public class WebApp {
 				return;
 			}
 		}
+		
 		if (warUrl != null)
 			try {
 				copyWar(warUrl, deployDir);
@@ -118,6 +120,7 @@ public class WebApp {
 						webapps[i] = webapps[i].substring(0, webapps[i].length() - WarRoller.DEPLOY_ARCH_EXT.length());
 					ctrl.attachServe(getStopMethod(), getRestartMethod(), webapps);
 				}
+				
 				do {
 					restart = false;
 					if (Main.runMain(ctrl.massageSettings(args)) == 3 && ctrl != null) {
@@ -149,12 +152,7 @@ public class WebApp {
 			System.err.printf("IO error (%s) at reading app descriptor%n", ioe);
 			return null;
 		} finally {
-			if (br != null)
-				try {
-					br.close();
-				} catch (IOException ioe) {
-					
-				}
+			IOHelper.safeClose(br);
 		}
 	}
 	
@@ -164,6 +162,7 @@ public class WebApp {
 		} catch (SecurityException e) {
 		} catch (NoSuchMethodException e) {
 		}
+		
 		return null;
 	}
 	
@@ -180,17 +179,25 @@ public class WebApp {
 		restart = true;
 	}
 	
+	/**
+	 * 
+	 * @param key
+	 * @return
+	 */
 	public static File getDeployDirectory(String key) {
 		String dirName = System.getProperty("java.io.tmpdir");
 		if (dirName == null) {
 			dirName = System.getProperty("user.home");
-			if (dirName == null)
+			if (dirName == null) {
 				dirName = ".";
+			}
 		}
+		
 		File result = new File(dirName, key);
 		try {
 			result = result.getCanonicalFile();
-			result.mkdirs(); // no check because can be existent
+			// no check because can be existent
+			result.mkdirs();
 			return result;
 		} catch (IOException e) {
 			System.err.printf("Can't create a deployment directory: %s %s%n", e, result);
@@ -198,24 +205,26 @@ public class WebApp {
 		return null;
 	}
 	
+	/**
+	 * 
+	 * @param sourceWar
+	 * @param deploymentDir
+	 * @throws IOException
+	 */
 	public static void copyWar(URL sourceWar, File deploymentDir) throws IOException {
 		File targetWar = new File(deploymentDir, new File(sourceWar.getFile()).getName());
 		URLConnection uc = sourceWar.openConnection();
-		if (targetWar.exists() && targetWar.lastModified() >= uc.getLastModified())
+		if (targetWar.exists() && targetWar.lastModified() >= uc.getLastModified()) {
 			return;
+		}
+		
 		OutputStream os = null;
 		InputStream is = null;
 		try {
 			Utils.copyStream(is = uc.getInputStream(), os = new FileOutputStream(targetWar), -1);
 		} finally {
-			try {
-				os.close();
-			} catch (Exception e) {
-			}
-			try {
-				is.close();
-			} catch (Exception e) {
-			}
+			IOHelper.safeClose(os);
+			IOHelper.safeClose(is);
 		}
 		targetWar.setLastModified(uc.getLastModified());
 	}

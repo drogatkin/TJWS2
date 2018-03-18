@@ -28,87 +28,81 @@ import javax.servlet.SessionCookieConfig;
 
 public class SessionCookieConfigImpl implements SessionCookieConfig {
 	private String comment;
-
 	private String domain;
-
 	private int maxAge;
-
 	private String name;
-
 	private String path;
-
 	private boolean http;
-
 	private boolean secure;
-
+	
 	@Override
 	public String getComment() {
 		return comment;
 	}
-
+	
 	@Override
 	public String getDomain() {
 		return domain;
 	}
-
+	
 	@Override
 	public int getMaxAge() {
 		return maxAge;
 	}
-
+	
 	@Override
 	public String getName() {
 		return name;
 	}
-
+	
 	@Override
 	public String getPath() {
 		return path;
 	}
-
+	
 	@Override
 	public boolean isHttpOnly() {
 		return http;
 	}
-
+	
 	@Override
 	public boolean isSecure() {
 		return secure;
 	}
-
+	
 	@Override
 	public void setComment(String comment) {
 		this.comment = comment;
 	}
-
+	
 	@Override
 	public void setDomain(String domain) {
 		this.domain = domain;
 	}
-
+	
 	@Override
 	public void setHttpOnly(boolean set) {
 		this.http = set;
 	}
-
+	
 	@Override
 	public void setMaxAge(int maxAge) {
 		this.maxAge = maxAge;
 	}
-
+	
 	@Override
 	public void setName(String name) {
 		this.name = name;
 	}
-
+	
 	@Override
 	public void setPath(String path) {
 		this.path = path;
 	}
-
+	
 	@Override
 	public void setSecure(boolean secure) {
 		this.secure = secure;
 	}
-
+	
 }

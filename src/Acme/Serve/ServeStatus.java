@@ -13,7 +13,7 @@ public enum ServeStatus {
 	TERMINATED_WITH_ERROR(-1),
 	RUNNING(0),
 	IO_ERROR(1),
-	ERROR(2),
+	UNKNOWN_ERROR(2),
 	BIND_ERROR(3),;
 	
 	private int status;

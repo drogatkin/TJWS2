@@ -50,7 +50,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
@@ -253,7 +252,7 @@ public class Serve implements ServletContext, Serializable {
 	protected String keepAliveHdrParams;
 	
 	protected transient PathTreeDictionary defaultRegistry;
-	protected transient HashMap virtuals;
+	protected transient HashMap<String, PathTreeDictionary> virtuals;
 	protected transient PathTreeDictionary realms;
 	protected transient PathTreeDictionary mappingtable;
 	private Hashtable attributes;
@@ -262,7 +261,7 @@ public class Serve implements ServletContext, Serializable {
 	protected transient ThreadGroup serverThreads;
 	protected transient Utils.ThreadPool threadPool;
 	protected transient Constructor gzipInStreamConstr;
-	private static final ThreadLocal currentRegistry = new ThreadLocal();
+	private static final ThreadLocal<PathTreeDictionary> currentRegistry = new ThreadLocal<PathTreeDictionary>();
 	
 	// for sessions
 	// TODO consider configurable strength
@@ -492,28 +491,28 @@ public class Serve implements ServletContext, Serializable {
 	 * @param servlet
 	 * @param initParams
 	 */
-	public synchronized void addServlet(String urlPat, Servlet servlet, Hashtable initParams, String virtualHost) {
+	public synchronized void addServlet(String urlPath, Servlet servlet, Hashtable initParams, String virtualHost) {
 		setHost(virtualHost);
 		try {
-			if (getServlet(urlPat) != null) {
-				log("TJWS: Servlet overriden by " + servlet + ", for path:" + urlPat);
+			if (getServlet(urlPath) != null) {
+				log("TJWS: Servlet overriden by " + servlet + ", for path:" + urlPath);
 			}
 			
-			servlet.init(new ServeConfig((ServletContext) this, initParams, urlPat));
+			servlet.init(new ServeConfig((ServletContext) this, initParams, urlPath));
 			if (virtualHost != null) {
 				if (virtuals == null) {
-					virtuals = new HashMap();
+					virtuals = new HashMap<String, PathTreeDictionary>();
 				}
 				
 				virtualHost = virtualHost.toLowerCase();
-				PathTreeDictionary virtualRegistry = (PathTreeDictionary) virtuals.get(virtualHost);
+				PathTreeDictionary virtualRegistry = virtuals.get(virtualHost);
 				if (virtualRegistry == null) {
 					virtualRegistry = new PathTreeDictionary();
 					virtuals.put(virtualHost, virtualRegistry);
 				}
-				virtualRegistry.put(urlPat, servlet);
+				virtualRegistry.put(urlPath, servlet);
 			} else {
-				defaultRegistry.put(urlPat, servlet);
+				defaultRegistry.put(urlPath, servlet);
 			}
 		} catch (ServletException ex) { //
 			// it handles UnavailableException as well without an attempt to
@@ -528,7 +527,7 @@ public class Serve implements ServletContext, Serializable {
 	 * @return
 	 */
 	public Servlet unloadServlet(Servlet servlet) {
-		PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
+		PathTreeDictionary registry = currentRegistry.get();
 		if (registry == null) {
 			registry = defaultRegistry;
 		}
@@ -625,7 +624,8 @@ public class Serve implements ServletContext, Serializable {
 	public void addDefaultServlets(String cgi) {
 		try {
 			addDefaultServlets(cgi, null);
-		} catch (IOException ioe) { /* ignore, makes sense only for throtles */
+		} catch (IOException ioe) {
+			/* ignore, makes sense only for throtles */
 		}
 	}
 	
@@ -764,12 +764,12 @@ public class Serve implements ServletContext, Serializable {
 	public int serve() {
 		if (running) {
 			// still running
-			return -2;
+			return ServeStatus.STILL_RUNNING.getStatus();
 		}
 		
 		if (acceptor != null) {
 			// not finished correctly
-			return -3;
+			return ServeStatus.NOT_FINISHED_CORRECTLY.getStatus();
 		}
 		
 		try {
@@ -781,12 +781,12 @@ public class Serve implements ServletContext, Serializable {
 			log("TJWS:  Acceptor [" + acceptor + ": " + ex);
 			acceptor = null;
 			if (ex instanceof BindException) {
-				return 3;
+				return ServeStatus.BIND_ERROR.getStatus();
 			} else if (ex instanceof IOException) {
-				return 1;
+				return ServeStatus.IO_ERROR.getStatus();
 			}
 			
-			return 2;
+			return ServeStatus.UNKNOWN_ERROR.getStatus();
 		}
 		running = true;
 		
@@ -830,11 +830,11 @@ public class Serve implements ServletContext, Serializable {
 			// expiredIn = -expiredIn;
 		keepAliveCleaner = new KeepAliveCleaner();
 		keepAliveCleaner.start();
-		File fsessions = getPersistentFile();
-		if (fsessions != null && fsessions.exists()) {
+		File fileSessions = getPersistentFile();
+		if (fileSessions != null && fileSessions.exists()) {
 			BufferedReader bReader = null;
 			try {
-				bReader = new BufferedReader(new FileReader(fsessions));
+				bReader = new BufferedReader(new FileReader(fileSessions));
 				sessions = HttpSessionContextImpl.restore(bReader, Math.abs(expiredIn) * 60, this);
 			} catch (IOException ioe) {
 				log("TJWS: IO error in restoring sessions.", ioe);
@@ -979,21 +979,29 @@ public class Serve implements ServletContext, Serializable {
 		return acceptor;
 	}
 	
+	/**
+	 * 
+	 * @param hostName
+	 */
 	public void setHost(String hostName) {
-		if (virtuals == null)
+		if (virtuals == null) {
 			currentRegistry.set(defaultRegistry);
-		else {
-			if (hostName == null)
+		} else {
+			if (hostName == null) {
 				currentRegistry.set(defaultRegistry);
-			else {
-				int colInd = hostName.indexOf(':'); // separate port part
-				if (colInd > 0)
-					hostName = hostName.substring(0, colInd);
-				PathTreeDictionary registry = (PathTreeDictionary) virtuals.get(hostName.toLowerCase());
-				if (registry != null)
+			} else {
+				// separate port part
+				int colonIndex = hostName.indexOf(':');
+				if (colonIndex > 0) {
+					hostName = hostName.substring(0, colonIndex);
+				}
+				
+				PathTreeDictionary registry = virtuals.get(hostName.toLowerCase());
+				if (registry != null) {
 					currentRegistry.set(registry);
-				else
+				} else {
 					currentRegistry.set(defaultRegistry);
+				}
 			}
 		}
 	}
@@ -1004,13 +1012,16 @@ public class Serve implements ServletContext, Serializable {
 	// @param name the servlet name
 	// @return null if the servlet does not exist
 	public Servlet getServlet(String name) {
-		PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
-		if (registry == null)
+		PathTreeDictionary registry = currentRegistry.get();
+		if (registry == null) {
 			registry = defaultRegistry;
+		}
+		
 		try {
 			return (Servlet) registry.get(name)[0];
-		} catch (NullPointerException npe) {
+		} catch (NullPointerException ex) {
 		}
+		
 		return null;
 	}
 	
@@ -1018,9 +1029,11 @@ public class Serve implements ServletContext, Serializable {
 	// are accessible will be returned. This enumeration always includes the
 	// servlet itself.
 	public Enumeration getServlets() {
-		PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
-		if (registry == null)
+		PathTreeDictionary registry = currentRegistry.get();
+		if (registry == null) {
 			registry = defaultRegistry;
+		}
+		
 		return registry.elements();
 	}
 	
@@ -1028,9 +1041,11 @@ public class Serve implements ServletContext, Serializable {
 	// servlets that are accessible will be returned. This enumeration always
 	// includes the servlet itself.
 	public Enumeration getServletNames() {
-		PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
-		if (registry == null)
+		PathTreeDictionary registry = currentRegistry.get();
+		if (registry == null) {
 			registry = defaultRegistry;
+		}
+		
 		return registry.keys();
 	}
 	
@@ -1043,24 +1058,22 @@ public class Serve implements ServletContext, Serializable {
 		// TODO consider merging two pieces below, generally if session is
 		// stored,
 		// it shouldn't be invalidated
-		File sf = getPersistentFile();
-		if (sf != null && sessions != null) {
-			Writer w = null;
+		File fileSessions = getPersistentFile();
+		if (fileSessions != null && sessions != null) {
+			Writer writer = null;
 			try {
-				w = new FileWriter(sf);
-				sessions.save(w);
+				writer = new FileWriter(fileSessions);
+				sessions.save(writer);
 				log("TJWS: Sessions stored.");
 			} catch (IOException ioe) {
 				log("TJWS: IO error in storing sessions " + ioe);
-			} catch (Throwable t) {
-				if (t instanceof ThreadDeath)
-					throw (ThreadDeath) t;
-				log("TJWS: Unexpected problem in storing sessions " + t);
-			} finally {
-				try {
-					w.close();
-				} catch (Exception e) {
+			} catch (Throwable th) {
+				if (th instanceof ThreadDeath) {
+					throw (ThreadDeath) th;
 				}
+				log("TJWS: Unexpected problem in storing sessions " + th);
+			} finally {
+				IOHelper.safeClose(writer);
 			}
 			
 			Enumeration e = sessions.keys();
@@ -1100,6 +1113,7 @@ public class Serve implements ServletContext, Serializable {
 				((Servlet) en.nextElement()).destroy();
 			}
 		};
+		
 		int dhc = 0;
 		while (en.hasMoreElements()) {
 			Thread destroyThread = new Thread(servletDestroyer, "Destroy");
@@ -1109,6 +1123,7 @@ public class Serve implements ServletContext, Serializable {
 				destroyThread.join(DESTROY_TIME_SEC * 1000);
 			} catch (InterruptedException e) {
 			}
+			
 			if (destroyThread.isAlive()) {
 				log("TJWS: Destroying thread didn't terminate in " + DESTROY_TIME_SEC);
 				destroyThread.setName("Destroying took too long " + (dhc++));
@@ -1130,8 +1145,10 @@ public class Serve implements ServletContext, Serializable {
 	
 	HttpSession createSession() {
 		Integer ms = (Integer) this.arguments.get(ARG_MAX_ACTIVE_SESSIONS);
-		if (ms != null && ms.intValue() < sessions.size())
+		if (ms != null && ms.intValue() < sessions.size()) {
 			return null;
+		}
+		
 		HttpSession result = new AcmeSession(generateSessionId(), Math.abs(expiredIn) * 60, this, sessions);
 		synchronized (sessions) {
 			sessions.put(result.getId(), result);
@@ -1154,11 +1171,7 @@ public class Serve implements ServletContext, Serializable {
 	
 	public void log(String message, Throwable throwable) {
 		if (throwable != null) {
-			StringWriter sw;
-			PrintWriter pw = new PrintWriter(sw = new StringWriter());
-			throwable.printStackTrace(pw);
-			// printCauses(throwable, pw);
-			message = message + LINE_SEP + sw;
+			message = message + LINE_SEP + IOHelper.toString(throwable);
 		}
 		log(message);
 	}
@@ -1181,23 +1194,28 @@ public class Serve implements ServletContext, Serializable {
 			// try find first sub-path
 			Object[] os = mappingtable.get(path);
 			// System.err.println("Searching for path: "+path+" found: "+os[0]);
-			if (os[0] == null)
+			if (os[0] == null) {
 				return null;
+			}
+			
 			int slpos = ((Integer) os[1]).intValue();
 			int pl = path.length();
 			if (slpos > 0) {
-				if (path.length() > slpos)
+				if (path.length() > slpos) {
 					path = path.substring(slpos + 1);
-				else
+				} else {
 					path = "";
+				}
+				
 			} else if (pl > 0) {
 				for (int i = 0; i < pl; i++) {
 					char s = path.charAt(i);
-					if (s == '/' || s == '\\')
+					if (s == '/' || s == '\\') {
 						continue;
-					else {
-						if (i > 0)
+					} else {
+						if (i > 0) {
 							path = path.substring(i);
+						}
 						break;
 					}
 				}
@@ -1206,6 +1224,7 @@ public class Serve implements ServletContext, Serializable {
 			// "+slpos);
 			return new File((File) os[0], path).getPath();
 		}
+		
 		return path;
 	}
 	
@@ -5076,11 +5095,15 @@ public class Serve implements ServletContext, Serializable {
 				// System.out.println("PUT curr node : "+nodename);
 				int wci = nodename.indexOf('*');
 				if (wci == 0) {
-					if (nodename.length() > 1 || st.hasMoreTokens())
+					if (nodename.length() > 1 || st.hasMoreTokens()) {
 						throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
+					}
+					
 					nodename = "";
-				} else if (wci > 0)
+				} else if (wci > 0) {
 					throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
+				}
+				
 				Node node = (Node) cur_node.get(nodename);
 				if (node == null) {
 					node = new Node();
@@ -5088,6 +5111,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 				cur_node = node;
 			}
+			
 			Object result = cur_node.object;
 			cur_node.object = value;
 			return new Object[] { result, INT_ZERO };

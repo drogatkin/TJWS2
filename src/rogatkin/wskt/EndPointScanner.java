@@ -1,10 +1,5 @@
 package rogatkin.wskt;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import io.github.lukehutch.fastclasspathscanner.matchprocessor.ClassAnnotationMatchProcessor;
-import io.github.lukehutch.fastclasspathscanner.matchprocessor.InterfaceMatchProcessor;
-import io.github.lukehutch.fastclasspathscanner.matchprocessor.SubclassMatchProcessor;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileWriter;
@@ -21,28 +16,41 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.ClassAnnotationMatchProcessor;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.InterfaceMatchProcessor;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.SubclassMatchProcessor;
+
 public class EndPointScanner {
-
+	
 	protected static final char[] CR = { '\r', '\n' };
-
+	
+	/**
+	 * 
+	 * @param args
+	 */
 	public static void main(String... args) {
 		if (args.length != 2) {
 			usage();
 			System.exit(1);
 		}
-		File web_inf = new File(args[0]);
-		if (web_inf.exists() == false || web_inf.isAbsolute() == false) {
+		
+		File webINFFile = new File(args[0]);
+		if (webINFFile.exists() == false || webINFFile.isAbsolute() == false) {
 			System.out.printf("Argument %s doesn't point ot valid WEB-INF directory%n", args[0]);
 			System.exit(-1);
 		}
-		ArrayList<File> cp = new ArrayList<>();
-		File classes = new File(web_inf, "classes");
-		if (classes.exists() && classes.isDirectory())
-			cp.add(classes);
-		File lib = new File(web_inf, "lib");
+		
+		ArrayList<File> classPaths = new ArrayList<File>();
+		File classes = new File(webINFFile, "classes");
+		if (classes.exists() && classes.isDirectory()) {
+			classPaths.add(classes);
+		}
+		
+		File lib = new File(webINFFile, "lib");
 		if (lib.exists() && lib.isDirectory()) {
-			cp.addAll(Arrays.asList(lib.listFiles(new FileFilter() {
-
+			classPaths.addAll(Arrays.asList(lib.listFiles(new FileFilter() {
+				
 				@Override
 				public boolean accept(File f) {
 					if (f.isFile()) {
@@ -53,34 +61,42 @@ public class EndPointScanner {
 				}
 			})));
 		}
-		try (FileWriter w = new FileWriter(args[1]);) {
-			new EndPointScanner().scan(cp, w);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		
+		FileWriter fileWriter = null;
+		try {
+			fileWriter = new FileWriter(args[1]);
+			new EndPointScanner().scan(classPaths, fileWriter);
+		} catch (IOException ex) {
+			ex.printStackTrace();
 		}
 	}
-
+	
 	static void usage() {
 		System.out.printf("Usage: EndPointScanner <WEB-INF directory> <scan info file>%n");
 	}
-
-	public void scan(final List<File> cp, final Writer w) {
+	
+	/**
+	 * Scans the class paths.
+	 * 
+	 * @param classPaths
+	 * @param writer
+	 */
+	public void scan(final List<File> classPaths, final Writer writer) {
 		new FastClasspathScanner("") {
 			URLClassLoader classLoader;
-
+			
 			@Override
 			public List<File> getUniqueClasspathElements() {
-				return cp;
+				return classPaths;
 			}
-
+			
 			@Override
 			public ClassLoader getClassLoader() {
 				if (classLoader == null) {
-					URL[] urls = new URL[cp.size()];
-					for (int j = 0, n = cp.size(); j < n; j++)
+					URL[] urls = new URL[classPaths.size()];
+					for (int j = 0, n = classPaths.size(); j < n; j++)
 						try {
-							urls[j] = cp.get(j).toURI().toURL();
+							urls[j] = classPaths.get(j).toURI().toURL();
 						} catch (MalformedURLException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -89,62 +105,59 @@ public class EndPointScanner {
 				}
 				return classLoader;
 			}
-
+			
 			@Override
 			public void scan() {
 				try {
 					super.scan();
 				} finally {
-					try { 
-						if (classLoader != null)
+					try {
+						if (classLoader != null) {
 							classLoader.getClass().getMethod("close").invoke(classLoader);
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						}
+					} catch (Exception ex) {
+						ex.printStackTrace();
 					}
 				}
 			}
-
-		}.matchClassesImplementing(ServerApplicationConfig.class,
-				new InterfaceMatchProcessor<ServerApplicationConfig>() {
-
-					@Override
-					public void processMatch(Class<? extends ServerApplicationConfig> arg0) {
-						try {
-							w.write("ServerApplicationConfig ");
-							w.write(arg0.getName());
-							w.write(CR);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-
-				}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
-			public void processMatch(Class<?> matchingClass) {
+			
+		}.matchClassesImplementing(ServerApplicationConfig.class, new InterfaceMatchProcessor<ServerApplicationConfig>() {
+			
+			@Override
+			public void processMatch(Class<? extends ServerApplicationConfig> arg0) {
 				try {
-					w.write("ServerEndpoint ");
-					w.write(matchingClass.getName());
-					w.write(CR);
+					writer.write("ServerApplicationConfig ");
+					writer.write(arg0.getName());
+					writer.write(CR);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				}
+			}
+			
+		}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
+			public void processMatch(Class<?> matchingClass) {
+				try {
+					writer.write("ServerEndpoint ");
+					writer.write(matchingClass.getName());
+					writer.write(CR);
+				} catch (IOException ex) {
+					ex.printStackTrace();
 				}
 			}
 		}).matchSubclassesOf(Endpoint.class, new SubclassMatchProcessor<Endpoint>() {
-
+			
 			@Override
 			public void processMatch(Class<? extends Endpoint> arg0) {
 				try {
-					w.write("Endpoint ");
-					w.write(arg0.getName());
-					w.write(CR);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					writer.write("Endpoint ");
+					writer.write(arg0.getName());
+					writer.write(CR);
+				} catch (IOException ex) {
+					ex.printStackTrace();
 				}
 			}
 		}).scan();
-
+		
 	}
 }

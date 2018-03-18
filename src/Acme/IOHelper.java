@@ -11,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
@@ -51,6 +53,27 @@ public final class IOHelper {
 	
 	private IOHelper() {
 		logger.info("IOHelper()");
+	}
+	
+	/**
+	 * Returns true if the object is null otherwise false.
+	 * 
+	 * @param string
+	 * @return
+	 */
+	public static boolean isNull(Object object) {
+		return (object == null);
+	}
+	
+	/**
+	 * Returns true if either the string is null or length is 0(zero) otherwise
+	 * false.
+	 * 
+	 * @param string
+	 * @return
+	 */
+	public static boolean isNullOrEmpty(CharSequence string) {
+		return (isNull(string) || string.length() == 0);
 	}
 	
 	/**
@@ -447,6 +470,24 @@ public final class IOHelper {
 	 */
 	public static String getTempDir() {
 		return System.getProperty("java.io.tmpdir");
+	}
+	
+	/**
+	 * Returns the string representation of the <code>throwable</code> object.
+	 * 
+	 * @param throwable
+	 * @return
+	 */
+	public static final String toString(final Throwable throwable) {
+		if (throwable != null) {
+			final StringWriter stringWriter = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(stringWriter);
+			throwable.printStackTrace(printWriter);
+			safeClose(printWriter);
+			return stringWriter.toString();
+		}
+		
+		return null;
 	}
 	
 }

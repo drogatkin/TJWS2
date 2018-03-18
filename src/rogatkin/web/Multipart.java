@@ -49,22 +49,20 @@ import rogatkin.web.WebAppServlet.ServletAccessDescr;
 public class Multipart {
 	
 	private LinkedList<PartImpl> parts;
-	
 	private boolean tooLarge;
-	
 	private IOException ioException;
 	
-	Multipart(ServletRequest request, String boundary, ServletAccessDescr sad) {
+	Multipart(ServletRequest request, String boundary, ServletAccessDescr servletAccessDescr) {
 		try {
-			String scl = ((HttpServletRequest) request).getHeader("content-length");
+			String contentLengthHeader = ((HttpServletRequest) request).getHeader("content-length");
 			long contentLength = -1;
-			if (scl != null)
+			if (contentLengthHeader != null)
 				try {
-					contentLength = Long.parseLong(scl);
+					contentLength = Long.parseLong(contentLengthHeader);
 				} catch (NumberFormatException nfe) {
 				}
-			if (contentLength > 0 && sad.multipartMaxRequest > 0 && sad.multipartMaxRequest < contentLength) {
-				throw new IOException(String.format("Request size %d is bigger than limited by %d", contentLength, sad.multipartMaxRequest));
+			if (contentLength > 0 && servletAccessDescr.multipartMaxRequest > 0 && servletAccessDescr.multipartMaxRequest < contentLength) {
+				throw new IOException(String.format("Request size %d is bigger than limited by %d", contentLength, servletAccessDescr.multipartMaxRequest));
 			}
 			
 			// TODO request.getLocale(); and calculate encoding
@@ -80,20 +78,25 @@ public class Multipart {
 			do {
 				// read part
 				PartImpl pi = new PartImpl();
-				long partSize = pi.readPart(encoding, boundary, sis, sad);
+				long partSize = pi.readPart(encoding, boundary, sis, servletAccessDescr);
 				// System.err.printf("Loaded part %s of %d%n", pi, partSize);
-				if (partSize < 0)
+				if (partSize < 0) {
 					bytesRead -= partSize;
-				else
+				} else {
 					bytesRead += partSize;
-				if ((sad.multipartMaxFile > 0 && pi.fileSize > sad.multipartMaxFile) || (sad.multipartMaxRequest > 0 && sad.multipartMaxRequest < bytesRead))
+				}
+				
+				if ((servletAccessDescr.multipartMaxFile > 0 && pi.fileSize > servletAccessDescr.multipartMaxFile) || (servletAccessDescr.multipartMaxRequest > 0 && servletAccessDescr.multipartMaxRequest < bytesRead)) {
 					tooLarge = true;
-				else
+				} else {
 					parts.add(pi);
+				}
+				
 				// System.err.printf("Loaded part too large %b - %d%n",
 				// tooLarge, bytesRead);
-				if (partSize < 0)
+				if (partSize < 0) {
 					break;
+				}
 			} while (tooLarge == false && (contentLength < 0 || contentLength > 0 && bytesRead < contentLength));
 		} catch (IOException ioe) {
 			ioException = ioe;
