@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+<TextView  
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:text="@string/title"
+    />
+<TableLayout android:id="@+id/tableLayout1" android:layout_width="wrap_content" android:layout_height="wrap_content">
+   <TableRow>
+     <CheckBox android:id="@+id/checkStrt" android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/enable_server"></CheckBox>
+     <TextView android:layout_width="wrap_content" android:id="@+id/textView3" android:text="@string/at_port" android:layout_height="wrap_content" android:layout_margin="3dip"></TextView>
+     <EditText android:layout_width="fill_parent" android:layout_height="wrap_content" android:id="@+id/editPort" android:inputType="number"></EditText>"
+   </TableRow>
+</TableLayout>
+<TableLayout android:id="@+id/tableLayout2" android:layout_width="wrap_content" android:layout_height="wrap_content">
+   <TableRow>
+     <CheckBox android:id="@+id/checkSSL" android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/enable_ssl"></CheckBox>
+     <CheckBox android:id="@+id/checkBox2" android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/enable_log" android:layout_gravity="right" android:layout_margin="5dip"></CheckBox>
+   </TableRow>
+</TableLayout>
+
+<TextView android:layout_width="wrap_content" android:id="@+id/textView1" android:text="@string/web_app_url" android:layout_height="wrap_content"></TextView>
+<EditText android:layout_width="fill_parent" android:layout_height="wrap_content" android:id="@+id/editText1" android:text="@string/http_prfx" android:inputType="textUri"></EditText>
+<TableLayout android:id="@+id/tableLayout3" android:layout_width="wrap_content" android:layout_height="wrap_content">
+  <TableRow>
+    <Button android:layout_height="wrap_content" android:text="@string/deploy" android:id="@+id/button1" android:layout_width="wrap_content" android:layout_alignParentTop="true"></Button>
+    <Button android:text="@string/rescan" android:id="@+id/button2" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_gravity="right" android:layout_marginLeft="8dip"></Button>
+  </TableRow>
+</TableLayout>
+   
+<ListView android:layout_width="fill_parent" android:id="@+id/listView1" android:layout_height="wrap_content"></ListView>
+</LinearLayout>

@@ -44,23 +44,26 @@ import java.net.URLConnection;
 import Acme.Utils;
 import Acme.Serve.Main;
 
-public class WebApp  {
+public class WebApp {
 	Main main;
 	
 	public static final String RUN_DESCRIPTOR = "rundescriptor";
-
+	
 	public static final String DEF_WEBAPP_AUTODEPLOY_DIR = "tjws.webappdir";
 	
 	public static final String DEF_WEBAPP_CLASSLOADER = "tjws.webclassloader";
 	
 	static boolean restart;
-
+	
 	/**
 	 * @param args,
-	 *            1st specifies .war file location others can match standard If no parameters specifies it considered as all in one and takes run descriptor
+	 *            1st specifies .war file location others can match standard If
+	 *            no parameters specifies it considered as all in one and takes
+	 *            run descriptor
 	 *            from /app/rundescriptor
 	 *            <p>
-	 *            rundescriptor file has multiple lines, 1st define command line argument<br>
+	 *            rundescriptor file has multiple lines, 1st define command line
+	 *            argument<br>
 	 *            following define names of .wars in /app/
 	 */
 	public static void main(String[] args) {
@@ -71,7 +74,8 @@ public class WebApp  {
 				System.exit(1); // message already printed
 				return;
 			}
-			//deployDir.deleteOnExit(); // TODO make it more consistent and provide directory deletion in on exit hook
+			// deployDir.deleteOnExit(); // TODO make it more consistent and
+			// provide directory deletion in on exit hook
 			System.setProperty(DEF_WEBAPP_AUTODEPLOY_DIR, deployDir.getPath());
 		} else
 			deployDir = new File(System.getProperty(DEF_WEBAPP_AUTODEPLOY_DIR));
@@ -116,32 +120,27 @@ public class WebApp  {
 				}
 				do {
 					restart = false;
-					if (Main.main1(ctrl.massageSettings(args)) == 3 && ctrl != null) {
+					if (Main.runMain(ctrl.massageSettings(args)) == 3 && ctrl != null) {
 						if (ctrl.reportError(3, "Port conflict"))
 							restart = true;
 					}
-				} while(restart);
+				} while (restart);
 			} catch (IOException ioe) {
-				System.err.printf("Can't copy war %s file to the deployment directory %s exception %s%n", warUrl,
-						deployDir, ioe);
+				System.err.printf("Can't copy war %s file to the deployment directory %s exception %s%n", warUrl, deployDir, ioe);
 				System.exit(2);
 			}
 	}
-
+	
 	public static String[] readDescriptor() {
 		BufferedReader br = null;
 		try {
-			br = new BufferedReader(new InputStreamReader(WebApp.class.getClassLoader().getResourceAsStream(
-					RUN_DESCRIPTOR), "utf-8"));
+			br = new BufferedReader(new InputStreamReader(WebApp.class.getClassLoader().getResourceAsStream(RUN_DESCRIPTOR), "utf-8"));
 			// read CLA
 			String parameters = br.readLine();
 			// can be loop if more than one war
 			return new String[] { parameters, br.readLine() };
 		} catch (NullPointerException npe) {
-			System.err
-					.printf(
-							"No .war file argument provided and there is no '%s' descriptor for embedded app in the jar packaging%n",
-							RUN_DESCRIPTOR);
+			System.err.printf("No .war file argument provided and there is no '%s' descriptor for embedded app in the jar packaging%n", RUN_DESCRIPTOR);
 			return null;
 		} catch (UnsupportedEncodingException e) {
 			System.err.printf("Unsupported ecoding %s%n", e);
@@ -154,11 +153,11 @@ public class WebApp  {
 				try {
 					br.close();
 				} catch (IOException ioe) {
-
+					
 				}
 		}
 	}
-
+	
 	private static Method getStopMethod() {
 		try {
 			return Main.class.getDeclaredMethod("stop");
@@ -167,7 +166,7 @@ public class WebApp  {
 		}
 		return null;
 	}
-
+	
 	private static Method getRestartMethod() {
 		try {
 			return WebApp.class.getDeclaredMethod("setRestart");
@@ -198,7 +197,7 @@ public class WebApp  {
 		}
 		return null;
 	}
-
+	
 	public static void copyWar(URL sourceWar, File deploymentDir) throws IOException {
 		File targetWar = new File(deploymentDir, new File(sourceWar.getFile()).getName());
 		URLConnection uc = sourceWar.openConnection();
@@ -220,17 +219,17 @@ public class WebApp  {
 		}
 		targetWar.setLastModified(uc.getLastModified());
 	}
-
 	
 	public static interface ServiceController {
 		void attachServe(Method stop, Method restart, String[] contextPaths);
-
+		
 		String[] massageSettings(String[] args);
 		
 		boolean reportError(int code, String message);
 	}
 	
-	/** provides connection to Context.xml
+	/**
+	 * provides connection to Context.xml
 	 * 
 	 * @author dmitriy
 	 *
@@ -238,12 +237,12 @@ public class WebApp  {
 	public static class MetaContext {
 		private String path;
 		private ClassLoader appClassLoader;
-
+		
 		public MetaContext(String contextPath, ClassLoader cl) {
 			path = contextPath;
 			appClassLoader = cl;
 		}
-
+		
 		public String getPath() {
 			return path;
 		}
@@ -251,5 +250,5 @@ public class WebApp  {
 		public ClassLoader getClassLoader() {
 			return appClassLoader;
 		}
-	}	
+	}
 }

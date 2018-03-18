@@ -1,30 +1,30 @@
-/* tjws - Main.java
- * Copyright (C) 1999-2007 Dmitriy Rogatkin.  All rights reserved.
+/*
+ * tjws - Main.java
+ * Copyright (C) 1999-2007 Dmitriy Rogatkin. All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ * notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
- *  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- *  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- *  SUCH DAMAGE.
- *  
- *  Visit http://tjws.sourceforge.net to get the latest information
- *  about Rogatkin's products.                                                        
- *  $Id: Main.java,v 1.25 2013/07/24 06:20:37 cvs Exp $                
- *  Created on Feb 22, 2007
- *  @author Dmitriy
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ * Visit http://tjws.sourceforge.net to get the latest information
+ * about Rogatkin's products.
+ * $Id: Main.java,v 1.25 2013/07/24 06:20:37 cvs Exp $
+ * Created on Feb 22, 2007
+ * @author Dmitriy
  */
 package Acme.Serve;
 
@@ -50,40 +50,39 @@ import Acme.Utils;
 
 public class Main extends Serve {
 	public static final String CLI_FILENAME = "cmdparams";
-
 	private static final String progName = "Serve";
-
 	protected static Serve serve;
-
 	private static Thread sdHook;
 	
-	/** main entry for standalone run
+	/**
+	 * main entry for standalone run
 	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		//int code = main1(args);
-		Runtime.getRuntime().halt(main1(args));
+		Runtime.getRuntime().halt(runMain(args));
 	}
-
+	
 	/**
 	 * Main entry for embedded run
+	 * 
 	 * @param args
 	 */
-	public static int main1(String[] args) {
+	public static int runMain(String[] args) {
 		String workPath = System.getProperty("user.dir", ".");
 		StringBuffer messages = null;
-
+		
 		int argc = args.length;
 		int argn;
-		if (argc == 0) { // a try to read from file for java -jar server.jar
+		if (argc == 0) { 
+			// a try to read from file for java -jar server.jar
 			args = readArguments(workPath, CLI_FILENAME);
 			if (args == null) {
-				messages = appendMessage(messages, "Can't read from CLI file ("+CLI_FILENAME+") at "+workPath+"\n");
+				messages = appendMessage(messages, "Can't read from CLI file (" + CLI_FILENAME + ") at " + workPath + "\n");
 			} else
 				argc = args.length;
 		}
-
+		
 		Map arguments = new HashMap(20);
 		arguments.put(ARG_WORK_DIRECTORY, workPath);
 		// Parse args.
@@ -106,13 +105,14 @@ public class Main extends Serve {
 				arguments.put(ARG_ALIASES, args[argn]);
 			} else if (args[argn].equals("-b") && argn + 1 < argc) {
 				++argn;
-				if (arguments.containsKey(ARG_BINDADDRESS)) 
-					messages = appendMessage(messages, "Multiple usage of a bind address. "+args[argn]+" ignored\n");
+				if (arguments.containsKey(ARG_BINDADDRESS))
+					messages = appendMessage(messages, "Multiple usage of a bind address. " + args[argn] + " ignored\n");
 				else
 					arguments.put(ARG_BINDADDRESS, args[argn]);
 			} else if (args[argn].equals("-k") && argn + 1 < argc) {
 				++argn;
-				arguments.put(ARG_BACKLOG, args[argn]/*new Integer(args[argn])*/);
+				arguments.put(ARG_BACKLOG,
+						args[argn]/* new Integer(args[argn]) */);
 			} else if (args[argn].equals("-j") && argn + 1 < argc) {
 				++argn;
 				arguments.put(ARG_JSP, args[argn]);
@@ -148,12 +148,10 @@ public class Main extends Serve {
 				++argn;
 				arguments.put(ARG_LOG_DIR, args[argn]);
 			} else if (args[argn].startsWith("-l")) {
-				arguments
-						.put(ARG_ACCESS_LOG_FMT,
-								"{0}:{9,number,#} {1} {2} [{3,date,dd/MMM/yyyy:HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#} {8,number} {10} {11}");
+				arguments.put(ARG_ACCESS_LOG_FMT, "{0}:{9,number,#} {1} {2} [{3,date,dd/MMM/yyyy:HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#} {8,number} {10} {11}");
 				if (args[argn].length() > 2) {
 					arguments.put(ARG_LOG_OPTIONS, args[argn].substring(2).toUpperCase());
-					if (args[argn].indexOf('f') >= 0 && argn < argc-1) {
+					if (args[argn].indexOf('f') >= 0 && argn < argc - 1) {
 						++argn;
 						arguments.put(ARG_ACCESS_LOG_FMT, args[argn]);
 					}
@@ -176,13 +174,9 @@ public class Main extends Serve {
 					try {
 						arguments.put(ARG_ERR, (PrintStream) Class.forName(args[argn]).newInstance());
 					} catch (Error er) {
-						messages = appendMessage(messages,
-								"Problem of processing class parameter of error redirection stream: ").append(er)
-								.append('\n');
+						messages = appendMessage(messages, "Problem of processing class parameter of error redirection stream: ").append(er).append('\n');
 					} catch (Exception ex) {
-						messages = appendMessage(messages,
-								"Exception in processing class parameter of error redirection stream: ").append(ex)
-								.append('\n');
+						messages = appendMessage(messages, "Exception in processing class parameter of error redirection stream: ").append(ex).append('\n');
 					}
 				} else
 					arguments.put(ARG_ERR, System.err);
@@ -192,13 +186,9 @@ public class Main extends Serve {
 					try {
 						arguments.put(ARG_OUT, (PrintStream) Class.forName(args[argn]).newInstance());
 					} catch (Error er) {
-						messages = appendMessage(messages,
-								"Problem of processing class parameter of out redirection stream: ").append(er).append(
-								'\n');
+						messages = appendMessage(messages, "Problem of processing class parameter of out redirection stream: ").append(er).append('\n');
 					} catch (Exception ex) {
-						messages = appendMessage(messages,
-								"Exception in processing class parameter of out redirection stream: ").append(ex)
-								.append('\n');
+						messages = appendMessage(messages, "Exception in processing class parameter of out redirection stream: ").append(ex).append('\n');
 					}
 				}
 			} else if (args[argn].equals("-sh")) {
@@ -207,27 +197,31 @@ public class Main extends Serve {
 				arguments.put(ARG_SECUREONLY_SC, ARG_SECUREONLY_SC);
 			} else if (args[argn].equals("-g") && argn + 1 < argc) {
 				arguments.put(ARG_LOGROLLING_LINES, Integer.valueOf(args[++argn]));
-			} else if (args[argn].startsWith("-")) { // free args, note it generate problem since free arguments can match internal arguments
+			} else if (args[argn].startsWith("-")) { // free args, note it
+													 // generate problem since
+													 // free arguments can match
+													 // internal arguments
 				if (args[argn].length() > 1) {
 					String name = args[argn].substring(1);
 					if (arguments.containsKey(name))
-						messages = appendMessage(messages, "Multiple usage of  '-"+name+"'="+args[++argn]+ " ignored\n");
+						messages = appendMessage(messages, "Multiple usage of  '-" + name + "'=" + args[++argn] + " ignored\n");
 					else
 						arguments.put(name,// .toUpperCase(),
-							argn < argc - 1 ? args[++argn] : "");
-				//System.out.println("Added free arg:"+args[argn-1]+"="+args[argn]);
+								argn < argc - 1 ? args[++argn] : "");
+					// System.out.println("Added free
+					// arg:"+args[argn-1]+"="+args[argn]);
 				} else
 					messages = appendMessage(messages, "Parameter '-' ignored, perhaps extra blank separator was used.\n");
 			} else
 				usage();
-
+			
 			++argn;
 		}
 		if (argn != argc)
 			usage();
 		if (System.getProperty(DEF_PROXY_CONFIG) != null)
 			arguments.put(ARG_PROXY_CONFIG, System.getProperty(DEF_PROXY_CONFIG));
-		// log and error stream manipulation 
+		// log and error stream manipulation
 		// TODO add log rotation feature, it can be done as plug-in
 		PrintStream printstream = System.err;
 		if (arguments.get(ARG_OUT) != null)
@@ -245,8 +239,8 @@ public class Main extends Serve {
 					}
 				}
 				File logFile = new File(logDir, "TJWS-" + System.currentTimeMillis() + ".log");
-				int logRollThreshold = arguments.get(ARG_LOGROLLING_LINES)!=null?((Integer)arguments.get(ARG_LOGROLLING_LINES)).intValue():0;
-				OutputStream logStream = logRollThreshold>1000?(OutputStream)new RollingOutputStream(logFile, logRollThreshold): (OutputStream)new FileOutputStream(logFile);
+				int logRollThreshold = arguments.get(ARG_LOGROLLING_LINES) != null ? ((Integer) arguments.get(ARG_LOGROLLING_LINES)).intValue() : 0;
+				OutputStream logStream = logRollThreshold > 1000 ? (OutputStream) new RollingOutputStream(logFile, logRollThreshold) : (OutputStream) new FileOutputStream(logFile);
 				if (logEncoding != null)
 					printstream = new PrintStream(logStream, true, logEncoding); /* 1.4 */
 				else
@@ -276,7 +270,9 @@ public class Main extends Serve {
 					// new FileInputStream(file));
 					BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 					do {
-						String mappingstr = in.readLine(); // no arguments in non ASCII encoding allowed
+						String mappingstr = in.readLine(); // no arguments in
+															 // non ASCII
+															 // encoding allowed
 						if (mappingstr == null)
 							break;
 						if (mappingstr.startsWith("#"))
@@ -286,8 +282,7 @@ public class Main extends Serve {
 							if (maptokenzr.nextToken("=").equalsIgnoreCase("from")) {
 								if (maptokenzr.hasMoreTokens()) {
 									String srcpath = maptokenzr.nextToken("=;").trim();
-									if (maptokenzr.hasMoreTokens()
-											&& maptokenzr.nextToken(";=").equalsIgnoreCase("dir"))
+									if (maptokenzr.hasMoreTokens() && maptokenzr.nextToken(";=").equalsIgnoreCase("dir"))
 										try {
 											if (maptokenzr.hasMoreTokens()) {
 												File mapFile = new File(maptokenzr.nextToken());
@@ -301,8 +296,7 @@ public class Main extends Serve {
 												if (mapFile.getCanonicalFile().exists())
 													mappingtable.put(srcpath, mapFile);
 												else
-													System.err.println("TJWS: Mapping file " + mapFile + " (" + srcpath
-															+ ") doesn't exist or not readable.");
+													System.err.println("TJWS: Mapping file " + mapFile + " (" + srcpath + ") doesn't exist or not readable.");
 											}
 										} catch (NullPointerException e) {
 										}
@@ -314,8 +308,7 @@ public class Main extends Serve {
 					System.err.println("TJWS: Problem reading aliases file: " + arguments.get(ARG_ALIASES) + "/" + e);
 				}
 			} else
-				System.err.println("TJWS: File " + file + " (" + arguments.get(ARG_ALIASES)
-						+ ") doesn't exist or not readable.");
+				System.err.println("TJWS: File " + file + " (" + arguments.get(ARG_ALIASES) + ") doesn't exist or not readable.");
 		}
 		// format realmname=path,user:password,,,,
 		// TODO consider to add a role, like realmname=path,user:password[:role]
@@ -326,7 +319,7 @@ public class Main extends Serve {
 				if (file.isAbsolute() == false)
 					file = new File(workPath, file.getPath());
 				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-
+				
 				do {
 					String realmstr = in.readLine();
 					if (realmstr == null)
@@ -351,9 +344,9 @@ public class Main extends Serve {
 									else {
 										realm = new BasicAuthRealm(realmname);
 										if (realmPath.endsWith("/*") == false)
-											realmPath+="/*";
+											realmPath += "/*";
 										else if (realmPath.endsWith("/"))
-											realmPath+="*";
+											realmPath += "*";
 										realms.put(realmPath, realm);
 									}
 									realm.put(user, password);
@@ -423,7 +416,7 @@ public class Main extends Serve {
 			}, "ShutDownHook"));
 		}
 		// And run.
-		int code = serve.serve();		
+		int code = serve.serve();
 		if (code != 0 && arguments.get(ARG_NOHUP) == null)
 			try {
 				System.out.println();
@@ -435,30 +428,30 @@ public class Main extends Serve {
 				Runtime.getRuntime().removeShutdownHook(sdHook);
 			serve.destroyAllServlets();
 		} catch (IllegalStateException ise) {
-
+			
 		} catch (Throwable t) {
 			if (t instanceof ThreadDeath)
-				throw (ThreadDeath)t;
+				throw (ThreadDeath) t;
 			serve.log("At destroying ", t);
 		}
 		killAliveThreads();
 		printstream.close();
 		return code;
 	}
-
+	
 	private static StringBuffer appendMessage(StringBuffer messages, String message) {
 		if (messages == null)
 			messages = new StringBuffer(100);
 		return messages.append(message);
 	}
-
+	
 	public static String[] readArguments(String workPath, String file) {
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(new File(workPath, file)));
 			return Utils.splitStr(br.readLine(), "\"");
 		} catch (Exception e) { // many can happen
-			//e.printStackTrace();
+			// e.printStackTrace();
 			return null;
 		} finally {
 			if (br != null)
@@ -468,33 +461,26 @@ public class Main extends Serve {
 				}
 		}
 	}
-
+	
 	public static void stop() throws IOException {
 		serve.notifyStop();
 	}
-
+	
 	private static void usage() {
-		System.out.println(Identification.serverName + " " + Identification.serverVersion + "\n" + "Usage:  "
-				+ progName + " [-p port] [-s servletpropertiesfile] [-a aliasmappingfile]\n"
-				+ "         [-b bind address] [-k backlog] [-l[a][r][f access_log_fmt]]\n"
-				+ "         [-c cgi-bin-dir] [-m max_active_session] [-d log_directory]\n"
-				+ "         [-sp] [-j jsp_servlet_class] [-w war_deployment_module_class]\n"
-				+ "         [-nka] [-kat timeout_in_secs] [-mka max_times_connection_use]\n"
-				+ "         [-e [-]duration_in_minutes] [-nohup] [-z max_threadpool_size]\n"
-				+ "         [-err [class_name?PrintStream]] [-out [class_name?PrintStream]] [-g <rolling threshld>]\n"
-				+ "         [-acceptorImpl class_name_of_Accpetor_impl [extra_acceptor_parameters] ]\n" + "  Legend:\n"
-				+ "    -sp    session persistence\n" + "    -l     access log a - with user agent, and r - referer\n"
-				+ "    -nka   no keep alive for connection");
+		System.out.println(Identification.serverName + " " + Identification.serverVersion + "\n" + "Usage:  " + progName + " [-p port] [-s servletpropertiesfile] [-a aliasmappingfile]\n" + "         [-b bind address] [-k backlog] [-l[a][r][f access_log_fmt]]\n"
+				+ "         [-c cgi-bin-dir] [-m max_active_session] [-d log_directory]\n" + "         [-sp] [-j jsp_servlet_class] [-w war_deployment_module_class]\n" + "         [-nka] [-kat timeout_in_secs] [-mka max_times_connection_use]\n"
+				+ "         [-e [-]duration_in_minutes] [-nohup] [-z max_threadpool_size]\n" + "         [-err [class_name?PrintStream]] [-out [class_name?PrintStream]] [-g <rolling threshld>]\n" + "         [-acceptorImpl class_name_of_Accpetor_impl [extra_acceptor_parameters] ]\n" + "  Legend:\n"
+				+ "    -sp    session persistence\n" + "    -l     access log a - with user agent, and r - referer\n" + "    -nka   no keep alive for connection");
 		System.exit(1);
 	}
-
+	
 	private static void killAliveThreads() {
 		serve.serverThreads.interrupt();
 		ThreadGroup tg = Thread.currentThread().getThreadGroup();
 		while (tg.getParent() != null)
 			tg = tg.getParent();
 		int ac = tg.activeCount() + tg.activeGroupCount() + 10;
-
+		
 		Thread[] ts = new Thread[ac];
 		ac = tg.enumerate(ts, true);
 		if (ac == ts.length)
@@ -503,10 +489,9 @@ public class Main extends Serve {
 		for (int i = 0; i < ac; i++)
 			if (ts[i].isDaemon() == false) {
 				String tn = ts[i].getName();
-				//System.err.println("Interrupting and kill " + tn);
-
-				if (ts[i] == Thread.currentThread() || "Stop Monitor".equals(tn) || "ShutDownHook".equals(tn)
-						|| "DestroyJavaVM".equals(tn) || (tn != null && tn.startsWith("AWT-")) || "main".equals(tn))
+				// System.err.println("Interrupting and kill " + tn);
+				
+				if (ts[i] == Thread.currentThread() || "Stop Monitor".equals(tn) || "ShutDownHook".equals(tn) || "DestroyJavaVM".equals(tn) || (tn != null && tn.startsWith("AWT-")) || "main".equals(tn))
 					continue;
 				ts[i].interrupt();
 				Thread.yield();
@@ -515,22 +500,21 @@ public class Main extends Serve {
 						ts[i].stop();
 					} catch (Throwable t) {
 						if (t instanceof ThreadDeath) {
-							serve
-									.log(
-											"Thread death exception happened and stopping thread, thread stopping loop will be terminated",
-											t);
+							serve.log("Thread death exception happened and stopping thread, thread stopping loop will be terminated", t);
 							throw (ThreadDeath) t;
 						} else
 							serve.log("An exception at stopping " + ts[i] + " " + t);
 					}
 				}
 			}// else
-		//serve.log("Daemon thread "+ts[i].getName()+" is untouched.");
+		// serve.log("Daemon thread "+ts[i].getName()+" is untouched.");
 	}
-
+	
 	private static void readServlets(File servFile) {
 		/**
-		 * servlet.properties file format servlet. <servletname>.code= <servletclass>servlet. <servletname>.initArgs= <name=value>, <name=value>
+		 * servlet.properties file format servlet. <servletname>.code=
+		 * <servletclass>servlet. <servletname>.initArgs= <name=value>,
+		 * <name=value>
 		 */
 		Hashtable servletstbl, parameterstbl;
 		servletstbl = new Hashtable();
@@ -539,7 +523,8 @@ public class Main extends Serve {
 			try {
 				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(servFile)));
 				/**
-				 * format of servlet.cfg file servlet_name;servlet_class;init_parameter1=value1;init_parameter2=value2...
+				 * format of servlet.cfg file
+				 * servlet_name;servlet_class;init_parameter1=value1;init_parameter2=value2...
 				 */
 				do {
 					String servletdsc = in.readLine();
@@ -555,7 +540,7 @@ public class Main extends Serve {
 						}
 						if (dsctokenzr.hasMoreTokens()) {
 							String servletname = dsctokenzr.nextToken();
-
+							
 							while (dsctokenzr.hasMoreTokens()) {
 								String lt = dsctokenzr.nextToken();
 								if (lt.equalsIgnoreCase("code")) {
@@ -567,22 +552,22 @@ public class Main extends Serve {
 										String key = dsctokenzr.nextToken("=");
 										if (key.startsWith(","))
 											key = key.substring(1);
-										//System.err.println("Key:"+key);
+										// System.err.println("Key:"+key);
 										try {
-										   initparams.put(key, dsctokenzr.nextToken(",").substring(1).replaceAll("%2c",  ","));
-										   //System.err.println("Key:"+key+" val:"+initparams.get(key));										
-										} catch(NoSuchElementException nse) {
-											initparams.put(key,"");
+											initparams.put(key, dsctokenzr.nextToken(",").substring(1).replaceAll("%2c", ","));
+											// System.err.println("Key:"+key+"
+											// val:"+initparams.get(key));
+										} catch (NoSuchElementException nse) {
+											initparams.put(key, "");
 											break;
 										}
 									}
-									//System.err.println("init:"+initparams+" for "+servletname);
+									// System.err.println("init:"+initparams+"
+									// for "+servletname);
 									parameterstbl.put(servletname, initparams);
 								} else {
-									servletname +='.'+lt;
-									serve
-									.log("No expected token (code|initArgs), "+lt+" added to servlet "
-											+ servletname +" for line: "+servletdsc);
+									servletname += '.' + lt;
+									serve.log("No expected token (code|initArgs), " + lt + " added to servlet " + servletname + " for line: " + servletdsc);
 								}
 							}
 						}
@@ -595,9 +580,9 @@ public class Main extends Serve {
 			String servletname;
 			while (se.hasMoreElements()) {
 				servletname = (String) se.nextElement();
-				//System.err.println("Adding servlet fro "+servletname+" as "+servletstbl.get(servletname));
-				serve.addServlet(servletname, (String) servletstbl.get(servletname), (Hashtable) parameterstbl
-						.get(servletname));
+				// System.err.println("Adding servlet fro "+servletname+" as
+				// "+servletstbl.get(servletname));
+				serve.addServlet(servletname, (String) servletstbl.get(servletname), (Hashtable) parameterstbl.get(servletname));
 			}
 		} else
 			serve.log("Servlets definition file neither provided, found, nor readable: " + servFile);
@@ -608,7 +593,7 @@ public class Main extends Serve {
 		private File nameBase;
 		private volatile int currentLine;
 		private int numRoll;
-
+		
 		public RollingOutputStream(File file, int rollingSize) throws IOException {
 			super(null);
 			rollingThresh = rollingSize;
@@ -617,15 +602,15 @@ public class Main extends Serve {
 			nameBase = file;
 			out = new FileOutputStream(nameBase);
 		}
-
-		//@Override 1.4
+		
+		// @Override 1.4
 		public void flush() throws IOException {
 			super.flush();
 			if (currentLine++ > rollingThresh) {
 				synchronized (this) {
 					if (currentLine++ > rollingThresh) {
 						out.close();
-						if (nameBase.renameTo(new File(nameBase.getPath()+ "." + new DecimalFormat("0000").format(numRoll++)))) {
+						if (nameBase.renameTo(new File(nameBase.getPath() + "." + new DecimalFormat("0000").format(numRoll++)))) {
 							out = new FileOutputStream(nameBase);
 							currentLine = 0;
 						} else {

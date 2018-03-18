@@ -1,9 +1,5 @@
-/bin
-/**/*.log
-/**/*.class
-/.temp_repo/
+/**/bak
+/**/bin
 /**/build
-/compatibility/build/
-*.obj
-.DS_Store
-/classes/
+/**/.DS_Store
+/**/release-v*

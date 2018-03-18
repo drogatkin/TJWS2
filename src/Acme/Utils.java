@@ -1,20 +1,20 @@
 // Utils - assorted static utility routines
 //
-// Copyright (C)1996,1998 by Jef Poskanzer <jef@acme.com>.  All rights reserved.
+// Copyright (C)1996,1998 by Jef Poskanzer <jef@acme.com>. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
 // 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
+// notice, this list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
 // FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
 // DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
 // OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -27,7 +27,8 @@
 // fine Java utilities: http://www.acme.com/java/
 //
 // Base64 code borrowed from public domain supported by Robert Harder
-// Please visit <a href="http://iharder.net/base64">http://iharder.net/base64</a>
+// Please visit <a
+// href="http://iharder.net/base64">http://iharder.net/base64</a>
 // periodically to check for updates or to contribute improvements.
 //
 // All enhancements Copyright (C)1998-2010 by Dmitriy Rogatkin
@@ -61,7 +62,7 @@ import java.util.StringTokenizer;
 /// Assorted static utility routines.
 // <P>
 // Whenever I come up with a static routine that might be of general use,
-// I put it here.  So far the class includes:
+// I put it here. So far the class includes:
 // <UL>
 // <LI> some string routines that were left out of java.lang.String
 // <LI> a general array-to-string routine
@@ -79,51 +80,66 @@ import java.util.StringTokenizer;
 public class Utils {
 	// / Returns a date string formatted in Unix ls style - if it's within
 	// six months of now, Mmm dd hh:ss, else Mmm dd yyyy.
-	static final SimpleDateFormat shortfmt = new SimpleDateFormat("MMM dd HH:mm");
-
-	static final SimpleDateFormat longfmt = new SimpleDateFormat("MMM dd yyyy");
-
+	static final SimpleDateFormat SHORT_DATE_FORMAT = new SimpleDateFormat("MMM dd HH:mm");
+	static final SimpleDateFormat LONG_DATE_FORMAT = new SimpleDateFormat("MMM dd yyyy");
+	
 	public static final int COPY_BUF_SIZE = 4096 * 2;
-
-	public final static String ISO_8859_1 = "ISO-8859-1";
-
-	public static final Class[] EMPTY_CLASSES = {};
-
+	
+	public static final Class<?>[] EMPTY_CLASSES = {};
 	public static final Object[] EMPTY_OBJECTS = {};
-
+	
+	/**
+	 * EMPTY_ENUMERATION
+	 */
 	public static final Enumeration EMPTY_ENUMERATION = new Enumeration() {
 		public boolean hasMoreElements() {
 			return false;
 		}
-
+		
 		public Object nextElement() {
 			return null;
 		}
 	};
-
+	
+	/**
+	 * 
+	 * @param date
+	 * @return
+	 */
 	public static String lsDateStr(Date date) {
-		if (Math.abs(System.currentTimeMillis() - date.getTime()) < 183L * 24L * 60L * 60L * 1000L)
-			return shortfmt.format(date);
-		else
-			return longfmt.format(date);
+		if (Math.abs(System.currentTimeMillis() - date.getTime()) < 183L * 24L * 60L * 60L * 1000L) {
+			return SHORT_DATE_FORMAT.format(date);
+		} else {
+			return LONG_DATE_FORMAT.format(date);
+		}
 	}
-
+	
+	/**
+	 * 
+	 * @param query
+	 * @param encoding
+	 * @return
+	 */
 	public static Hashtable parseQueryString(String query, String encoding) {
 		Hashtable result = new Hashtable();
-		if (encoding == null)
-			encoding = "UTF-8";
-		StringTokenizer st = new StringTokenizer(query, "&");
-		while (st.hasMoreTokens()) {
-			String pair = st.nextToken();
+		if (encoding == null) {
+			encoding = IOHelper.UTF_8;
+		}
+		
+		StringTokenizer stringTokens = new StringTokenizer(query, "&");
+		while (stringTokens.hasMoreTokens()) {
+			String pair = stringTokens.nextToken();
 			int ep = pair.indexOf('=');
 			String key = ep > 0 ? pair.substring(0, ep) : pair;
 			String value = ep > 0 ? pair.substring(ep + 1) : "";
 			try {
-				key = /* URLDecoder. */decode(key, encoding);
-				if (value != null)
-					value = /* URLDecoder. */decode(value, encoding);
-			} catch (UnsupportedEncodingException uee) {
+				key = decode(key, encoding);
+				if (value != null) {
+					value = decode(value, encoding);
+				}
+			} catch (UnsupportedEncodingException ex) {
 			}
+			
 			String[] values = (String[]) result.get(key);
 			String[] newValues;
 			if (values == null) {
@@ -136,31 +152,46 @@ public class Utils {
 			}
 			result.put(key, newValues);
 		}
+		
 		return result;
 	}
-
-	public static Map parsePostData(long len, InputStream is, String encoding, String[] cachedStream)
-			throws IOException {
-		// TODO: handle parsing data over 2 GB
-		if (len > Integer.MAX_VALUE)
-			throw new RuntimeException("Can't process POST data over " + Integer.MAX_VALUE + ", requested: " + len);
-		byte[] buf = new byte[(int) len];
-		int fp = 0;
-		while (fp < len) {
-			int c = is.read(buf, fp, buf.length - fp);
-			if (c < 0)
-				break;
-			fp += c;
-		}
-		//System.err.println("====>"+new String( buf));
-		if (cachedStream != null && cachedStream.length > 0)
-			return parseQueryString(cachedStream[0] = new String(buf, 0, fp, ISO_8859_1), encoding);
-		else
-			return parseQueryString(new String(buf, 0, fp, ISO_8859_1), encoding);
-	}
-
+	
 	/**
-	 * Decodes URL encoded string including newly introduced JavaScript encoding with %uxxxx chars
+	 * 
+	 * @param length
+	 * @param inputStream
+	 * @param encoding
+	 * @param cachedStream
+	 * @return
+	 * @throws IOException
+	 */
+	public static Map parsePostData(long length, InputStream inputStream, String encoding, String[] cachedStream) throws IOException {
+		// TODO: handle parsing data over 2 GB
+		if (length > Integer.MAX_VALUE) {
+			throw new RuntimeException("Can't process POST data over " + Integer.MAX_VALUE + ", requested: " + length);
+		}
+		
+		byte[] buffer = new byte[(int) length];
+		int filePointer = 0;
+		while (filePointer < length) {
+			int readBytes = inputStream.read(buffer, filePointer, buffer.length - filePointer);
+			if (readBytes < 0) {
+				break;
+			}
+			filePointer += readBytes;
+		}
+		
+		// System.err.println("====>"+new String( buf));
+		if (cachedStream != null && cachedStream.length > 0) {
+			return parseQueryString(cachedStream[0] = new String(buffer, 0, filePointer, IOHelper.ISO_8859_1), encoding);
+		} else {
+			return parseQueryString(new String(buffer, 0, filePointer, IOHelper.ISO_8859_1), encoding);
+		}
+	}
+	
+	/**
+	 * Decodes URL encoded string including newly introduced JavaScript encoding
+	 * with %uxxxx chars
 	 * 
 	 * @param s
 	 *            encoded string
@@ -173,12 +204,15 @@ public class Utils {
 		if (enc == null || enc.length() == 0) {
 			throw new UnsupportedEncodingException("decode: no source char encoding provided.");
 		}
-		if (s == null)
+		
+		if (s == null) {
 			return null;
+		}
+		
 		boolean decoded = false;
 		int l = s.length();
-		StringBuffer sb = new StringBuffer(l > 1024 ? l / 3 : l);
-
+		StringBuffer sBuffer = new StringBuffer(l > 1024 ? l / 3 : l);
+		
 		int state = sText;
 		int i = 0;
 		int code = 0;
@@ -190,90 +224,96 @@ public class Utils {
 		while (i < l) {
 			c = s.charAt(i);
 			switch (c) {
-			case '+':
-				decoded = true;
-				if (state == sText)
-					sb.append(' ');
-				else if (state == s2Dig) {
-					sb.append(new String(buf, 0, pos + 1, enc));
-					state = sText;
-					sb.append(' ');
-				} else
-					new IllegalArgumentException("decode: unexpected + at pos: " + i + ", of : " + s);
-				break;
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				ofs = '0';
-				processDig = true;
-				break;
-			case 'a':
-			case 'b':
-			case 'c':
-			case 'd':
-			case 'e':
-			case 'f':
-				ofs = 'a' - 10;
-				processDig = true;
-				break;
-			case 'A':
-			case 'B':
-			case 'C':
-			case 'D':
-			case 'E':
-			case 'F':
-				ofs = 'A' - 10;
-				processDig = true;
-				break;
-			case '%':
-				decoded = true;
-				if (state == sText) {
-					state = sEscape;
-					if (buf == null)
-						buf = new byte[(l - i) / 3];
-					pos = 0;
-				} else if (state == s2Dig) {
-					state = sEscape;
-					pos++;
-				} else
-					new IllegalArgumentException("decode: unexpected escape % at pos: " + i + ", of : " + s);
-				break;
-			case 'u':
-				if (state == sEscape) {
-					if (pos > 0) {
-						sb.append(new String(buf, 0, pos, enc));
-						pos = 0;
+				case '+':
+					decoded = true;
+					if (state == sText) {
+						sBuffer.append(' ');
+					} else if (state == s2Dig) {
+						sBuffer.append(new String(buf, 0, pos + 1, enc));
+						state = sText;
+						sBuffer.append(' ');
+					} else {
+						new IllegalArgumentException("decode: unexpected + at pos: " + i + ", of : " + s);
 					}
-					state = sU1;
-				} else if (state == sText) {
-					sb.append(c);
-				} else if (state == s2Dig) {
-					sb.append(new String(buf, 0, pos + 1, enc));
-					state = sText;
-					sb.append(c);
-				} else
-					new IllegalArgumentException("decode: unexpected char in hex at pos: " + i + ", of : " + s);
-				break;
-			default:
-				if (state == sText)
-					sb.append(c);
-				else if (state == s2Dig) {
-					sb.append(new String(buf, 0, pos + 1, enc));
-					state = sText;
-					sb.append(c);
-				} else
-					new IllegalArgumentException("decode: unexpected char in hex at pos: " + i + ", of : " + s);
-
-				break;
+					break;
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					ofs = '0';
+					processDig = true;
+					break;
+				case 'a':
+				case 'b':
+				case 'c':
+				case 'd':
+				case 'e':
+				case 'f':
+					ofs = 'a' - 10;
+					processDig = true;
+					break;
+				case 'A':
+				case 'B':
+				case 'C':
+				case 'D':
+				case 'E':
+				case 'F':
+					ofs = 'A' - 10;
+					processDig = true;
+					break;
+				case '%':
+					decoded = true;
+					if (state == sText) {
+						state = sEscape;
+						if (buf == null) {
+							buf = new byte[(l - i) / 3];
+						}
+						pos = 0;
+					} else if (state == s2Dig) {
+						state = sEscape;
+						pos++;
+					} else {
+						new IllegalArgumentException("decode: unexpected escape % at pos: " + i + ", of : " + s);
+					}
+					break;
+				case 'u':
+					if (state == sEscape) {
+						if (pos > 0) {
+							sBuffer.append(new String(buf, 0, pos, enc));
+							pos = 0;
+						}
+						state = sU1;
+					} else if (state == sText) {
+						sBuffer.append(c);
+					} else if (state == s2Dig) {
+						sBuffer.append(new String(buf, 0, pos + 1, enc));
+						state = sText;
+						sBuffer.append(c);
+					} else {
+						new IllegalArgumentException("decode: unexpected char in hex at pos: " + i + ", of : " + s);
+					}
+					break;
+				default:
+					if (state == sText) {
+						sBuffer.append(c);
+					} else if (state == s2Dig) {
+						sBuffer.append(new String(buf, 0, pos + 1, enc));
+						state = sText;
+						sBuffer.append(c);
+					} else {
+						new IllegalArgumentException("decode: unexpected char in hex at pos: " + i + ", of : " + s);
+					}
+					
+					break;
 			}
 			i++;
+			
 			if (processDig) {
 				if (state == sEscape) {
 					code = c - ofs;
@@ -282,9 +322,9 @@ public class Utils {
 					buf[pos] = (byte) (code * 16 + (c - ofs));
 					state = s2Dig;
 				} else if (state == s2Dig) { // escape finished
-					sb.append(new String(buf, 0, pos + 1, enc));
+					sBuffer.append(new String(buf, 0, pos + 1, enc));
 					state = sText;
-					sb.append(c);
+					sBuffer.append(c);
 				} else if (state == sU1) {
 					code = c - ofs;
 					state = sU2;
@@ -295,105 +335,118 @@ public class Utils {
 					code = code * 16 + c - ofs;
 					state = sU4;
 				} else if (state == sU4) {
-					sb.append((char) (code * 16 + c - ofs));
+					sBuffer.append((char) (code * 16 + c - ofs));
 					state = sText;
-				} else
-					sb.append(c);
+				} else {
+					sBuffer.append(c);
+				}
 				processDig = false;
 			}
 		}
-		if (state == s2Dig)
-			sb.append(new String(buf, 0, pos + 1, enc));
-		return (decoded ? sb.toString() : s);
+		
+		if (state == s2Dig) {
+			sBuffer.append(new String(buf, 0, pos + 1, enc));
+		}
+		
+		return (decoded ? sBuffer.toString() : s);
 	}
-
+	
 	private static final int sText = 0;
-
 	private static final int s1Dig = 1;
-
 	private static final int s2Dig = 2;
-
 	private static final int sEscape = 3;
-
 	private static final int sU1 = 4;
-
 	private static final int sU2 = 5;
-
 	private static final int sU3 = 6;
-
 	private static final int sU4 = 7;
-
+	
+	/**
+	 * 
+	 * @param s
+	 * @param encodeWS
+	 * @return
+	 */
 	public static String htmlEncode(String s, boolean encodeWS) {
-		if (s == null)
+		if (s == null) {
 			return null;
+		}
+		
 		char[] ca = s.toCharArray();
 		StringBuffer res = new StringBuffer(ca.length);
 		int ls = 0;
 		boolean blankMet = true;
 		for (int i = 0; i < ca.length; i++) {
 			switch (ca[i]) {
-			case '<':
-				res.append(ca, ls, i - ls);
-				res.append("&lt;");
-				ls = i + 1;
-				break;
-			case '>':
-				res.append(ca, ls, i - ls);
-				res.append("&gt;");
-				ls = i + 1;
-				break;
-			case '"':
-				res.append(ca, ls, i - ls);
-				res.append("&quot;");
-				ls = i + 1;
-				break;
-			case '&':
-				res.append(ca, ls, i - ls);
-				res.append("&amp;");
-				ls = i + 1;
-				break;
-			case ' ':
-				if (blankMet && encodeWS) {
+				case '<':
 					res.append(ca, ls, i - ls);
-					res.append("&nbsp;");
+					res.append("&lt;");
 					ls = i + 1;
-				} else
-					blankMet = true;
-				break;
-			case '\n':
-				if (encodeWS) {
+					break;
+				case '>':
 					res.append(ca, ls, i - ls);
-					res.append("<BR>");
+					res.append("&gt;");
 					ls = i + 1;
-				}
-				break;
-			case '\r':
-				if (encodeWS) {
+					break;
+				case '"':
 					res.append(ca, ls, i - ls);
+					res.append("&quot;");
 					ls = i + 1;
-				}
-				break;
-			default:
-				if (ca[i] > 127) { // no unicode
+					break;
+				case '&':
 					res.append(ca, ls, i - ls);
-					res.append("&#").append((int)ca[i]).append(';');
+					res.append("&amp;");
 					ls = i + 1;
-				}
-				blankMet = false;
+					break;
+				case ' ':
+					if (blankMet && encodeWS) {
+						res.append(ca, ls, i - ls);
+						res.append("&nbsp;");
+						ls = i + 1;
+					} else
+						blankMet = true;
+					break;
+				case '\n':
+					if (encodeWS) {
+						res.append(ca, ls, i - ls);
+						res.append("<BR>");
+						ls = i + 1;
+					}
+					break;
+				case '\r':
+					if (encodeWS) {
+						res.append(ca, ls, i - ls);
+						ls = i + 1;
+					}
+					break;
+				default:
+					if (ca[i] > 127) { // no unicode
+						res.append(ca, ls, i - ls);
+						res.append("&#").append((int) ca[i]).append(';');
+						ls = i + 1;
+					}
+					blankMet = false;
 			}
 		}
-		if (ls < ca.length)
+		
+		if (ls < ca.length) {
 			res.append(ca, ls, ca.length - ls);
+		}
+		
 		return res.toString();
 	}
-
+	
+	/**
+	 * 
+	 * @param contentEncoding
+	 * @return
+	 */
 	public static float isGzipAccepted(String contentEncoding) {
 		float result = 0f;
 		if (contentEncoding != null) {
 			int gzsl = "gzip;".length();
 			int zp = contentEncoding.indexOf("gzip");
 			if (zp >= 0) {
-				if (contentEncoding.length() > (zp+gzsl) &&contentEncoding.charAt(zp + gzsl) == ';') {
+				if (contentEncoding.length() > (zp + gzsl) && contentEncoding.charAt(zp + gzsl) == ';') {
 					zp = contentEncoding.indexOf("q=", zp + gzsl);
 					if (zp > 0) {
 						int qe = contentEncoding.indexOf(",", zp);
@@ -410,7 +463,7 @@ public class Utils {
 		}
 		return result;
 	}
-
+	
 	// / Checks whether a string matches a given wildcard pattern.
 	// Only does ? and *, and multiple patterns separated by |.
 	public static boolean match(String pattern, String string) {
@@ -428,7 +481,9 @@ public class Utils {
 					int i;
 					++p;
 					for (i = string.length(); i >= s; --i)
-						if (match(pattern.substring(p), string.substring(i))) // not quite right
+						if (match(pattern.substring(p), string.substring(i))) // not
+																				 // quite
+																				 // right
 							return true;
 					break;
 				}
@@ -440,13 +495,13 @@ public class Utils {
 				return false;
 		}
 	}
-
+	
 	// / Finds the maximum length of a string that matches a given wildcard
 	// pattern. Only does ? and *, and multiple patterns separated by |.
 	public static int matchSpan(String pattern, String string) {
 		int result = 0;
 		StringTokenizer st = new StringTokenizer(pattern, "|");
-
+		
 		while (st.hasMoreTokens()) {
 			int len = matchSpan1(st.nextToken(), string);
 			if (len > result)
@@ -454,7 +509,7 @@ public class Utils {
 		}
 		return result;
 	}
-
+	
 	static int matchSpan1(String pattern, String string) {
 		int p = 0;
 		for (; p < string.length() && p < pattern.length(); p++) {
@@ -466,7 +521,7 @@ public class Utils {
 		}
 		return p < (pattern.length() - 1) ? -1 : p;
 	}
-
+	
 	// / Turns a String into an array of Strings, by using StringTokenizer
 	// to split it up at whitespace.
 	public static String[] splitStr(String str) {
@@ -477,7 +532,7 @@ public class Utils {
 			strs[i] = st.nextToken();
 		return strs;
 	}
-
+	
 	// / Turns a String into an array of Strings, by splitting it at
 	// the specified character. This does not use StringTokenizer,
 	// and therefore can handle empty fields.
@@ -500,7 +555,7 @@ public class Utils {
 		strs[n - 1] = str.substring(index + 1);
 		return strs;
 	}
-
+	
 	public static String[] splitStr(String str, String quotes) {
 		char[] ca = str.toCharArray();
 		// List result = new ArrayList(10);
@@ -546,25 +601,26 @@ public class Utils {
 		// System.err.println("Param["+i+"]="+result[i]);
 		return result;
 	}
-
+	
 	public static String[] copyOf(String[] original, int newLength) {
 		return copyOfRange(original, 0, newLength);
 	}
 	
 	public static String[] copyOfRange(String[] original, int from, int newLength) {
 		String[] copy = new String[newLength];
-		newLength = Math.min(original.length-from, newLength);		
-		System.arraycopy(original, from, copy, 0, newLength);
-		return copy;
-	}
-
-	/*
-	public static Object[] copyOf(Object[] original, int from, int newLength) {
 		newLength = Math.min(original.length - from, newLength);
-		Object[] copy = new Object[newLength];
 		System.arraycopy(original, from, copy, 0, newLength);
 		return copy;
 	}
+	
+	/*
+	 * public static Object[] copyOf(Object[] original, int from, int newLength)
+	 * {
+	 * newLength = Math.min(original.length - from, newLength);
+	 * Object[] copy = new Object[newLength];
+	 * System.arraycopy(original, from, copy, 0, newLength);
+	 * return copy;
+	 * }
 	 */
 	public static String canonicalizePath(String path) {
 		if (path == null || path.length() == 0)
@@ -615,7 +671,7 @@ public class Utils {
 		} else
 			pathElems.add("");
 		if (pathElems.size() == 0)
-			return lev>=0?"":null;
+			return lev >= 0 ? "" : null;
 		StringBuffer result = new StringBuffer(n);
 		result.append(pathElems.get(0));
 		n = pathElems.size();
@@ -624,12 +680,12 @@ public class Utils {
 		// System.err.println("Before "+path+" after "+result);
 		return result.toString();
 	}
-
+	
 	// / Copy the input to the output until EOF.
 	public static long copyStream(InputStream in, OutputStream out, long maxLen) throws IOException {
 		byte[] buf = new byte[COPY_BUF_SIZE];
 		int len;
-                long tot = 0;
+		long tot = 0;
 		if (maxLen <= 0)
 			while ((len = in.read(buf)) > 0) {
 				out.write(buf, 0, len);
@@ -648,7 +704,7 @@ public class Utils {
 				}
 		return tot;
 	}
-
+	
 	// / Copy the input to the output until EOF.
 	public static void copyStream(Reader in, Writer out) throws IOException {
 		char[] buf = new char[COPY_BUF_SIZE];
@@ -656,7 +712,7 @@ public class Utils {
 		while ((len = in.read(buf)) != -1)
 			out.write(buf, 0, len);
 	}
-
+	
 	// / Copy the input to the output until EOF.
 	public static void copyStream(Reader in, OutputStream out, String charSet) throws IOException {
 		char[] buf = new char[4096];
@@ -669,12 +725,10 @@ public class Utils {
 			while ((len = in.read(buf)) != -1)
 				out.write(new String(buf, 0, len).getBytes(charSet));
 	}
-
-	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-			'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
-			'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3',
-			'4', '5', '6', '7', '8', '9', '+', '/' };
-
+	
+	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+			'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+	
 	/**
 	 * base 64 encoding, string converted to bytes using specified encoding
 	 * 
@@ -688,20 +742,26 @@ public class Utils {
 	 *                exceptions
 	 */
 	public final static String base64Encode(String _s, String _enc) {
-		if (_s == null)
+		if (_s == null) {
 			return null;
-		if (_enc == null)
-			_enc = ISO_8859_1;
+		}
+		
+		if (_enc == null) {
+			_enc = IOHelper.ISO_8859_1;
+		}
+		
 		try {
 			return base64Encode(_s.getBytes(_enc));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
 		return null;
 	}
-
+	
 	/**
-	 * base 64 encoding, array of bytes converted to bytes using specified encoding
+	 * base 64 encoding, array of bytes converted to bytes using specified
+	 * encoding
 	 * 
 	 * @param String
 	 *            <val>_s</val> original string to encode
@@ -737,24 +797,28 @@ public class Utils {
 			byte c4 = (byte) (b3 & 0x3f);
 			encodedBuffer.append(BASE64ARRAY[c1]).append(BASE64ARRAY[c2]);
 			switch (pad) {
-			case 0:
-				encodedBuffer.append(BASE64ARRAY[c3]).append(BASE64ARRAY[c4]);
-				break;
-			case 1:
-				encodedBuffer.append(BASE64ARRAY[c3]).append('=');
-				break;
-			case 2:
-				encodedBuffer.append("==");
-				break;
+				case 0:
+					encodedBuffer.append(BASE64ARRAY[c3]).append(BASE64ARRAY[c4]);
+					break;
+				case 1:
+					encodedBuffer.append(BASE64ARRAY[c3]).append('=');
+					break;
+				case 2:
+					encodedBuffer.append("==");
+					break;
 			}
 		}
 		return encodedBuffer.toString();
 	}
-
+	
 	/**
-	 * Translates a Base64 value to either its 6-bit reconstruction value or a negative number indicating some other meaning.
+	 * Translates a Base64 value to either its 6-bit reconstruction value or a
+	 * negative number indicating some other meaning.
 	 */
-	protected final static byte[] DECODABET = { -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 0 - 8
+	protected final static byte[] DECODABET = { -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
+																					 // 0
+																					 // -
+																					 // 8
 			-5, -5, // Whitespace: Tab and Linefeed
 			-9, -9, // Decimal 11 - 12
 			-5, // Whitespace: Carriage Return
@@ -781,18 +845,16 @@ public class Utils {
 			// through 'z'
 			-9, -9, -9, -9 // Decimal 123 - 126
 	};
-
-	protected final static byte WHITE_SPACE_ENC = -5; // Indicates white space
-
-	// in encoding
-
-	protected final static byte EQUALS_SIGN_ENC = -1; // Indicates equals sign
-
-	// in encoding
-
+	
+	// Indicates white space in encoding
+	protected final static byte WHITE_SPACE_ENC = -5;
+	
+	// Indicates equals sign in encoding
+	protected final static byte EQUALS_SIGN_ENC = -1;
+	
 	/** The equals sign (=) as a byte. */
 	protected final static byte EQUALS_SIGN = (byte) '=';
-
+	
 	/**
 	 * base 64 decoding
 	 * 
@@ -800,25 +862,37 @@ public class Utils {
 	 *            string
 	 * @param encoding
 	 *            used to get string bytes
-	 * @return result of encoding, or null if encoding invalid or string null, or string is invalid base 64 encoding
+	 * @return result of encoding, or null if encoding invalid or string null,
+	 *         or string is invalid base 64 encoding
 	 */
 	public final static String base64Decode(String _s, String _enc) {
-		if (_s == null)
+		if (_s == null) {
 			return null;
-		if (_enc == null)
-			_enc = ISO_8859_1;
+		}
+		
+		if (_enc == null) {
+			_enc = IOHelper.ISO_8859_1;
+		}
+		
 		try {
 			return new String(decode64(_s), _enc);
 		} catch (UnsupportedEncodingException uee) {
 		}
+		
 		return null;
 	}
-
+	
 	/**
-	 * Decodes four bytes from array <var>source</var> and writes the resulting bytes (up to three of them) to <var>destination</var>. The source and
-	 * destination arrays can be manipulated anywhere along their length by specifying <var>srcOffset</var> and <var>destOffset</var>. This method does not
-	 * check to make sure your arrays are large enough to accomodate <var>srcOffset</var> + 4 for the <var>source</var> array or <var>destOffset</var> + 3
-	 * for the <var>destination</var> array. This method returns the actual number of bytes that were converted from the Base64 encoding.
+	 * Decodes four bytes from array <var>source</var> and writes the resulting
+	 * bytes (up to three of them) to <var>destination</var>. The source and
+	 * destination arrays can be manipulated anywhere along their length by
+	 * specifying <var>srcOffset</var> and <var>destOffset</var>. This method
+	 * does not
+	 * check to make sure your arrays are large enough to accomodate
+	 * <var>srcOffset</var> + 4 for the <var>source</var> array or
+	 * <var>destOffset</var> + 3
+	 * for the <var>destination</var> array. This method returns the actual
+	 * number of bytes that were converted from the Base64 encoding.
 	 * 
 	 * 
 	 * @param source
@@ -839,13 +913,12 @@ public class Utils {
 			// int outBuff = ( ( DECODABET[ source[ srcOffset ] ] << 24 ) >>> 6
 			// )
 			// | ( ( DECODABET[ source[ srcOffset + 1] ] << 24 ) >>> 12 );
-			int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18)
-					| ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12);
-
+			int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18) | ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12);
+			
 			destination[destOffset] = (byte) (outBuff >>> 16);
 			return 1;
 		}
-
+		
 		// Example: DkL=
 		else if (source[srcOffset + 3] == EQUALS_SIGN) {
 			// Two ways to do the same thing. Don't know which way I like best.
@@ -853,15 +926,13 @@ public class Utils {
 			// )
 			// | ( ( DECODABET[ source[ srcOffset + 1 ] ] << 24 ) >>> 12 )
 			// | ( ( DECODABET[ source[ srcOffset + 2 ] ] << 24 ) >>> 18 );
-			int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18)
-					| ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12)
-					| ((DECODABET[source[srcOffset + 2]] & 0xFF) << 6);
-
+			int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18) | ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12) | ((DECODABET[source[srcOffset + 2]] & 0xFF) << 6);
+			
 			destination[destOffset] = (byte) (outBuff >>> 16);
 			destination[destOffset + 1] = (byte) (outBuff >>> 8);
 			return 2;
 		}
-
+		
 		// Example: DkLE
 		else {
 			try {
@@ -872,15 +943,12 @@ public class Utils {
 				// | ( ( DECODABET[ source[ srcOffset + 1 ] ] << 24 ) >>> 12 )
 				// | ( ( DECODABET[ source[ srcOffset + 2 ] ] << 24 ) >>> 18 )
 				// | ( ( DECODABET[ source[ srcOffset + 3 ] ] << 24 ) >>> 24 );
-				int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18)
-						| ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12)
-						| ((DECODABET[source[srcOffset + 2]] & 0xFF) << 6)
-						| ((DECODABET[source[srcOffset + 3]] & 0xFF));
-
+				int outBuff = ((DECODABET[source[srcOffset]] & 0xFF) << 18) | ((DECODABET[source[srcOffset + 1]] & 0xFF) << 12) | ((DECODABET[source[srcOffset + 2]] & 0xFF) << 6) | ((DECODABET[source[srcOffset + 3]] & 0xFF));
+				
 				destination[destOffset] = (byte) (outBuff >> 16);
 				destination[destOffset + 1] = (byte) (outBuff >> 8);
 				destination[destOffset + 2] = (byte) (outBuff);
-
+				
 				return 3;
 			} catch (Exception e) {
 				System.out.println("" + source[srcOffset] + ": " + (DECODABET[source[srcOffset]]));
@@ -891,9 +959,11 @@ public class Utils {
 			} // e nd catch
 		}
 	} // end decodeToBytes
-
+	
 	/**
-	 * Very low-level access to decoding ASCII characters in the form of a byte array. Does not support automatically gunzipping or any other "fancy" features.
+	 * Very low-level access to decoding ASCII characters in the form of a byte
+	 * array. Does not support automatically gunzipping or any other "fancy"
+	 * features.
 	 * 
 	 * @param source
 	 *            The Base64 encoded data
@@ -908,7 +978,7 @@ public class Utils {
 		int len34 = len * 3 / 4;
 		byte[] outBuff = new byte[len34]; // Upper limit on size of output
 		int outBuffPosn = 0;
-
+		
 		byte[] b4 = new byte[4];
 		int b4Posn = 0;
 		int i = 0;
@@ -917,7 +987,7 @@ public class Utils {
 		for (i = off; i < off + len; i++) {
 			sbiCrop = (byte) (source[i] & 0x7f); // Only the low seven bits
 			sbiDecode = DECODABET[sbiCrop];
-
+			
 			if (sbiDecode >= WHITE_SPACE_ENC) // Whitesp ace,Eq ualssi gnor be
 			// tter
 			{
@@ -926,51 +996,52 @@ public class Utils {
 					if (b4Posn > 3) {
 						outBuffPosn += decode4to3(b4, 0, outBuff, outBuffPosn);
 						b4Posn = 0;
-
+						
 						// If that was the equals sign, break out of 'for' loop
 						if (sbiCrop == EQUALS_SIGN)
 							break;
 					} // end if: quartet built
-
+					
 				} // end if: equals sign or better
-
+				
 			} // end if: white space, equals sign or better
 			else {
 				System.err.println("Bad Base64 input character at " + i + ": " + source[i] + "(decimal)");
 				return null;
 			} // end else:
 		} // each input character
-
+		
 		byte[] out = new byte[outBuffPosn];
 		System.arraycopy(outBuff, 0, out, 0, outBuffPosn);
 		return out;
 	} // end decode
-
+	
 	/**
-	 * Decodes data from Base64 notation, automatically detecting gzip-compressed data and decompressing it.
+	 * Decodes data from Base64 notation, automatically detecting
+	 * gzip-compressed data and decompressing it.
 	 * 
 	 * @param s
 	 *            the string to decode
 	 * @return the decoded data
 	 * @since 1.4
 	 */
-	public static byte[] decode64(String s) {
+	public static byte[] decode64(String string) {
 		byte[] bytes;
 		try {
-			bytes = s.getBytes(ISO_8859_1);
-		} // end try
-		catch (java.io.UnsupportedEncodingException uee) {
-			bytes = s.getBytes();
-		} // end catch
+			bytes = string.getBytes(IOHelper.ISO_8859_1);
+		} catch (java.io.UnsupportedEncodingException uee) {
+			bytes = string.getBytes();
+		}
+		
 		// </change>
-
+		
 		// Decode
 		bytes = decode(bytes, 0, bytes.length);
-
+		
 		// Check to see if it's gzip-compressed
 		// GZIP Magic Two-Byte Number: 0x8b1f (35615)
 		if (bytes != null && bytes.length >= 4) {
-
+			
 			int head = ((int) bytes[0] & 0xff) | ((bytes[1] << 8) & 0xff00);
 			if (java.util.zip.GZIPInputStream.GZIP_MAGIC == head) {
 				java.io.ByteArrayInputStream bais = null;
@@ -978,46 +1049,35 @@ public class Utils {
 				java.io.ByteArrayOutputStream baos = null;
 				byte[] buffer = new byte[2048];
 				int length = 0;
-
+				
 				try {
 					baos = new java.io.ByteArrayOutputStream();
 					bais = new java.io.ByteArrayInputStream(bytes);
 					gzis = new java.util.zip.GZIPInputStream(bais);
-
+					
 					while ((length = gzis.read(buffer)) >= 0) {
 						baos.write(buffer, 0, length);
-					} // end while: reading input
-
+					}
+					
 					// No error? Get new bytes.
 					bytes = baos.toByteArray();
-
-				} // end try
-				catch (java.io.IOException e) {
+					
+				} catch (java.io.IOException e) {
 					// Just return originally-decoded bytes
-				} // end catch
-				finally {
-					try {
-						baos.close();
-					} catch (Exception e) {
-					}
-					try {
-						gzis.close();
-					} catch (Exception e) {
-					}
-					try {
-						bais.close();
-					} catch (Exception e) {
-					}
-				} // end finally
-
+				} finally {
+					IOHelper.safeClose(baos);
+					IOHelper.safeClose(gzis);
+					IOHelper.safeClose(bais);
+				}
 			} // end if: gzipped
 		} // end if: bytes.length >= 2
-
+		
 		return bytes;
-	} // end decode
-
+	}
+	
 	/**
-	 * calculate local file based class path for class loader if possible (servlet classes must be located there)
+	 * calculate local file based class path for class loader if possible
+	 * (servlet classes must be located there)
 	 * 
 	 * @param cl
 	 *            class loader
@@ -1057,93 +1117,99 @@ public class Utils {
 		}
 		return System.getProperty("java.class.path");
 	}
-
+	
 	public static int parseInt(Object num, int def) {
 		if (num instanceof Number)
-			return ((Number)num).intValue();
+			return ((Number) num).intValue();
 		try {
 			return Integer.parseInt(num.toString());
 		} catch (Exception e) {
 			return def;
 		}
 	}
-
+	
 	public static final String toFile(URL url) {
-		if (url.getProtocol().indexOf("file") < 0)
+		if (url.getProtocol().indexOf("file") < 0) {
 			return null;
+		}
+		
 		String result = url.getPath();
-		if (result.charAt(0) == '/' && File.separatorChar == '\\')
+		if (result.charAt(0) == '/' && File.separatorChar == '\\') {
 			result = result.substring(1);
+		}
+		
 		try {
 			return decode(result, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			return result;
 		}
 	}
-
-	// public static final int firstOccurrence(String s, String occur) {
-	//	
-	// }
-
+	
 	public static interface ThreadFactory {
 		Thread create(Runnable runnable);
 	}
-
+	
+	/**
+	 * ThreadPool
+	 */
 	public static final class ThreadPool {
 		static final int DEF_MAX_POOLED_THREAD = 20;
-
 		static final String ID = "Acme.Utils.ThreadPool";
-
 		public static final String MAXNOTHREAD = ID + ".maxpooledthreads";
-
+		
 		protected static int counter;
-
 		protected ArrayList freeThreads;
-
 		protected HashMap busyThreads;
-
 		protected int maxThreads;
-
 		protected ThreadFactory threadFactory;
-
+		
 		/**
-		 * Creates a thread pool not queued with max number of threads defined in properties or DEF_MAX_POOLED_THREAD = 20
+		 * Creates a thread pool not queued with max number of threads defined
+		 * in properties or DEF_MAX_POOLED_THREAD = 20
 		 * 
 		 * @param Properties
-		 *            where property THREADSINPOOL gives max threads Note if THREADSINPOOL not integers, or negative then DEF_MAX_POOLED_THREAD used
+		 *            where property THREADSINPOOL gives max threads Note if
+		 *            THREADSINPOOL not integers, or negative then
+		 *            DEF_MAX_POOLED_THREAD used
 		 */
 		public ThreadPool(Properties properties, ThreadFactory threadfactory) {
-				maxThreads = parseInt(properties.getProperty(MAXNOTHREAD), DEF_MAX_POOLED_THREAD);
-				if (maxThreads < 0)
-					maxThreads = DEF_MAX_POOLED_THREAD;
+			maxThreads = parseInt(properties.getProperty(MAXNOTHREAD), DEF_MAX_POOLED_THREAD);
+			if (maxThreads < 0) {
+				maxThreads = DEF_MAX_POOLED_THREAD;
+			}
+			
 			freeThreads = new ArrayList(maxThreads);
 			busyThreads = new HashMap(maxThreads);
 			this.threadFactory = threadfactory;
 		}
-
+		
 		/**
 		 * Assigns a new value for max threads
 		 * 
 		 * @param int
-		 *            new value of max threads, can't be less than 2, but can be 0 If current number threads exceed the value, then extra thread will be
+		 *            new value of max threads, can't be less than 2, but can be
+		 *            0 If current number threads exceed the value, then extra
+		 *            thread will be
 		 *            discarded gracefully
 		 */
 		public void setMaxThreads(int newSize) {
 			if (newSize > 2 || newSize == 0)
 				maxThreads = newSize;
 		}
-
+		
 		/**
 		 * Returns setting for max number of threads
 		 * 
-		 * @return int setting for max number of threads, doesn't reflect actual number of threads though
+		 * @return int setting for max number of threads, doesn't reflect actual
+		 *         number of threads though
 		 */
 		public int getMaxThreads() {
 			return maxThreads;
 		}
-
+		
 		/**
-		 * Takes a new task for execution by a threads in pool will wait until free threads if number of threads reached max
+		 * Takes a new task for execution by a threads in pool will wait until
+		 * free threads if number of threads reached max
 		 * 
 		 * @param Runnable
 		 *            task for execution
@@ -1152,23 +1218,30 @@ public class Utils {
 			PooledThread pt = null;
 			do {
 				synchronized (freeThreads) {
-					if (freeThreads.size() > 0)
+					if (freeThreads.size() > 0) {
 						pt = (PooledThread) freeThreads.remove(0);
+					}
 				}
-				if (pt != null && pt.isAlive() == false)
+				
+				if (pt != null && pt.isAlive() == false) {
 					pt = null;
-				if (pt == null)
+				}
+				
+				if (pt == null) {
 					synchronized (busyThreads) {
 						if (busyThreads.size() < maxThreads || maxThreads == 0)
 							pt = new PooledThread();
 					}
-				if (pt == null)
+				}
+				
+				if (pt == null) {
 					synchronized (freeThreads) {
 						try {
 							freeThreads.wait();
 						} catch (InterruptedException ie) {
 						}
 					}
+				}
 			} while (pt == null);
 			pt.setName("-PooledThread: " + runnable);
 			pt.setRunner(runnable);
@@ -1176,63 +1249,66 @@ public class Utils {
 				busyThreads.put(pt, pt);
 			}
 		}
-
+		
 		protected void finalize() throws Throwable {
 			synchronized (freeThreads) {
-				Iterator i = freeThreads.iterator();
-				while (i.hasNext())
-					((PooledThread) i.next()).interrupt();
+				Iterator itr = freeThreads.iterator();
+				while (itr.hasNext()) {
+					((PooledThread) itr.next()).interrupt();
+				}
 			}
+			
 			synchronized (busyThreads) {
-				Iterator i = freeThreads.iterator();
-				while (i.hasNext())
-					((PooledThread) i.next()).interrupt();
+				Iterator itr = freeThreads.iterator();
+				while (itr.hasNext()) {
+					((PooledThread) itr.next()).interrupt();
+				}
 			}
 			super.finalize();
 		}
-
+		
 		public String toString() {
-			if (freeThreads != null && busyThreads != null)
+			if (freeThreads != null && busyThreads != null) {
 				return ID + ": free threads " + freeThreads.size() + " busy threads " + busyThreads.size();
-			else
+			} else {
 				return ID + ": not initialized yet. " + super.toString();
+			}
 		}
-
+		
 		class PooledThread implements Runnable {
-
 			Runnable runner;
-
 			boolean quit;
-
 			Thread delegateThread;
-
 			String id = ID + "(" + (counter++) + ")";
-
+			
 			PooledThread() {
-				if (threadFactory != null)
+				if (threadFactory != null) {
 					delegateThread = threadFactory.create(this);
-				else
+				} else {
 					delegateThread = new Thread(this);
+				}
 				setName("-PooledThread: CREATED");
 				delegateThread.start();
 			}
-
+			
 			public void setName(String name) {
 				delegateThread.setName(id + name);
 			}
-
+			
 			public boolean isAlive() {
 				return delegateThread.isAlive();
 			}
-
+			
 			synchronized public void run() {
 				do {
-					if (runner == null)
+					if (runner == null) {
 						try {
 							this.wait();
 						} catch (InterruptedException ie) {
-
+							
 						}
+					}
+					
 					if (runner != null) {
 						try {
 							runner.run();
@@ -1243,15 +1319,18 @@ public class Utils {
 						} finally {
 							runner = null;
 						}
-
+						
 						int activeThreads = 0;
 						synchronized (busyThreads) {
 							busyThreads.remove(this);
 							activeThreads = busyThreads.size();
 						}
+						
 						synchronized (freeThreads) {
-							if (freeThreads.size() + activeThreads > maxThreads)
-								break; // discard this thread
+							if (freeThreads.size() + activeThreads > maxThreads) {
+								// discard this thread
+								break;
+							}
 							freeThreads.add(this);
 							delegateThread.setName(ID + "-PooledThread: FREE");
 							freeThreads.notify();
@@ -1259,21 +1338,22 @@ public class Utils {
 					}
 				} while (!quit);
 			}
-
+			
 			synchronized public void interrupt() {
 				quit = true;
 				delegateThread.interrupt();
 			}
-
+			
 			synchronized void setRunner(Runnable runnable) {
-				if (runner != null)
+				if (runner != null) {
 					throw new RuntimeException("Invalid worker thread state, current runner not null.");
+				}
 				runner = runnable;
 				this.notifyAll();
 			}
 		}
 	}
-
+	
 	public static class DummyPrintStream extends PrintStream {
 		public DummyPrintStream() {
 			super(new OutputStream() {
@@ -1282,41 +1362,43 @@ public class Utils {
 			});
 		}
 	}
-
+	
 	public static class SimpleBuffer {
 		byte[] buffer;
-
 		int fillPos;
-
 		byte[] emptyBuffer;
-
+		
 		public SimpleBuffer() {
 			fillPos = 0;
 			setSize(COPY_BUF_SIZE);
 		}
-
+		
 		public synchronized void setSize(int size) {
-			if (size < 0)
+			if (size < 0) {
 				throw new IllegalArgumentException("Size can't be negative");
-			if (fillPos <= 0)
+			}
+			
+			if (fillPos <= 0) {
 				buffer = new byte[size];
-			else
+			} else {
 				throw new IllegalStateException("Can't resize buffer containing data");
+			}
 		}
-
+		
 		public synchronized int getSize() {
 			return buffer.length;
 		}
-
+		
 		public synchronized byte[] put(byte[] data, int off, int len) {
-			//System.err.println("put in buff:" + len+", fp:"+fillPos);
+			// System.err.println("put in buff:" + len+", fp:"+fillPos);
 			if (buffer.length > fillPos + len) {
 				System.arraycopy(data, off, buffer, fillPos, len);
 				fillPos += len;
 				return getEmptyBuffer();
 			}
 			byte[] result = new byte[Math.max(fillPos + len - buffer.length, buffer.length)];
-			//System.err.println("fp:" + fillPos + ",bl:" + buffer.length + ",rl:" + result.length + ",l:" + len);
+			// System.err.println("fp:" + fillPos + ",bl:" + buffer.length +
+			// ",rl:" + result.length + ",l:" + len);
 			// fill result
 			int rfilled = 0;
 			if (fillPos < result.length) {
@@ -1324,24 +1406,25 @@ public class Utils {
 				rfilled = result.length - fillPos;
 				System.arraycopy(data, off, result, fillPos, rfilled);
 				fillPos = 0;
-				//System.err.println("1rf:"+rfilled);
+				// System.err.println("1rf:"+rfilled);
 			} else {
 				System.arraycopy(buffer, 0, result, 0, result.length);
 				System.arraycopy(buffer, result.length, buffer, 0, fillPos - result.length);
 				fillPos -= result.length;
 				rfilled = 0;
-				//System.err.println("qrf: 0");
+				// System.err.println("qrf: 0");
 			}
+			
 			if (rfilled < len) {
 				System.arraycopy(data, off + rfilled, buffer, fillPos, len - rfilled);
 				fillPos += len - rfilled;
-				//System.err.println("added to buf:"+(len - rfilled));
+				// System.err.println("added to buf:"+(len - rfilled));
 			}
 			return result;
 		}
-
+		
 		public synchronized byte[] get() {
-			//System.err.println("get fp: "+fillPos);
+			// System.err.println("get fp: "+fillPos);
 			if (fillPos <= 0) {
 				return getEmptyBuffer();
 			}
@@ -1350,19 +1433,19 @@ public class Utils {
 			fillPos = 0;
 			return result;
 		}
-
+		
 		public synchronized void reset() {
-			//System.err.println("reset buf");
+			// System.err.println("reset buf");
 			fillPos = 0;
 		}
-
+		
 		private synchronized byte[] getEmptyBuffer() {
 			if (emptyBuffer == null)
 				emptyBuffer = new byte[0];
 			return emptyBuffer;
 		}
 	}
-
+	
 	public static void main(String[] args) {
 		try {
 			System.out.println(args[0]);

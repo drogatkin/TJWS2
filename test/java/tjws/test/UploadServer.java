@@ -19,60 +19,60 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value = "/upload/{file}", decoders = UploadServer.CmdDecoder.class, encoders=UploadServer.CmdEncoder.class)
+@ServerEndpoint(value = "/upload/{file}", decoders = UploadServer.CmdDecoder.class, encoders = UploadServer.CmdEncoder.class)
 public class UploadServer {
-
+	
 	RandomAccessFile uploadFile;
 	String fileName;
 	
 	@OnMessage
 	public void savePart(byte[] part, Session ses) {
-		if (uploadFile == null) {
-			if (fileName != null)
+		if(uploadFile == null) {
+			if(fileName != null)
 				try {
 					uploadFile = new RandomAccessFile(fileName, "rw");
-				} catch (FileNotFoundException e) {
+				} catch(FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 					return;
 				}
 		}
-		if (uploadFile != null)
-		try {
-			uploadFile.write(part);
-			System.err.printf("Stored part of %db%n", part.length);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		if(uploadFile != null)
+			try {
+				uploadFile.write(part);
+				System.err.printf("Stored part of %db%n", part.length);
+			} catch(IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	}
-
+	
 	@OnMessage
 	public void processCmd(CMD cmd, Session ses, @PathParam("file") String uploadDir) {
-		switch (cmd.cmd) {
-		case 1: // start
-			fileName = cmd.data;
-			if (uploadDir != null && uploadDir.isEmpty() == false) {
-				// assure dir
-				new File(uploadDir).mkdirs();
-				fileName = uploadDir + File.separatorChar + fileName;
-			}
-			System.err.printf("Start upload of %s%n", cmd.data);
-			break;
-		case 2: // finish
-			close(ses);
-			cmd.cmd = 3;
-			ses.getAsyncRemote().sendObject(cmd);
-			break;
+		switch(cmd.cmd) {
+			case 1: // start
+				fileName = cmd.data;
+				if(uploadDir != null && uploadDir.isEmpty() == false) {
+					// assure dir
+					new File(uploadDir).mkdirs();
+					fileName = uploadDir + File.separatorChar + fileName;
+				}
+				System.err.printf("Start upload of %s%n", cmd.data);
+				break;
+			case 2: // finish
+				close(ses);
+				cmd.cmd = 3;
+				ses.getAsyncRemote().sendObject(cmd);
+				break;
 		}
 	}
-
+	
 	@OnClose
 	public void close(Session ses) {
-		if (uploadFile != null) {
+		if(uploadFile != null) {
 			try {
 				uploadFile.close();
-			} catch (IOException e) {
+			} catch(IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -80,21 +80,21 @@ public class UploadServer {
 			fileName = null;
 		}
 	}
-
+	
 	static class CMD {
 		public int cmd;
 		public String data;
 	}
-
+	
 	public static class CmdDecoder implements Decoder.Text<CMD> {
 		@Override
 		public void init(final EndpointConfig config) {
 		}
-
+		
 		@Override
 		public void destroy() {
 		}
-
+		
 		@Override
 		public CMD decode(final String textMessage) throws DecodeException {
 			CMD cmd = new CMD();
@@ -103,22 +103,22 @@ public class UploadServer {
 			cmd.cmd = obj.getInt("cmd");
 			return cmd;
 		}
-
+		
 		@Override
 		public boolean willDecode(final String s) {
 			return true;
 		}
 	}
-
+	
 	public static class CmdEncoder implements Encoder.Text<CMD> {
 		@Override
 		public void init(final EndpointConfig config) {
 		}
-
+		
 		@Override
 		public void destroy() {
 		}
-
+		
 		@Override
 		public String encode(final CMD cmd) throws EncodeException {
 			return Json.createObjectBuilder().add("cmd", cmd.cmd).add("data", cmd.data).build().toString();
