@@ -135,7 +135,7 @@ public final class TestEmbeddedServer {
 				// "rogatkin.wskt.SSLSelectorAcceptor");
 				String parentFolderPath = IOHelper.pathString(TestEmbeddedServer.class);
 				logger.debug("parentFolderPath:" + parentFolderPath);
-				final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, "conf/bvand.jks");
+				final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, "conf/tjws.jks");
 				logger.debug("keyStoreFilePath:" + keyStoreFilePath);
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE, keyStoreFilePath);
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
