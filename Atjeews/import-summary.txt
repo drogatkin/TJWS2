@@ -1,0 +1,56 @@
+ECLIPSE ANDROID PROJECT IMPORT SUMMARY
+======================================
+
+Ignored Files:
+--------------
+The following files were *not* copied into the new Gradle project; you
+should evaluate whether these are still needed in your project and if
+so manually move them:
+
+* .gitignore
+* README.md
+* bee-dexwar.xml
+* bee-sign.xml
+* default.properties
+* doc/
+* doc/Creation web application for Atrjeews.docx
+* doc/atjeews_main.png
+* doc/atjeews_manage.png
+* doc/atjeews_settings.png
+* doc/feauture_graphics.png
+* doc/future
+* doc/hires_app_icon.png
+* doc/promo.png
+* proguard.cfg
+
+Moved Files:
+------------
+Android Gradle projects use a different directory structure than ADT
+Eclipse projects. Here's how the projects were restructured:
+
+* AndroidManifest.xml => app/src/main/AndroidManifest.xml
+* libs/jasper-7.0.27.1.jar => app/libs/jasper-7.0.27.1.jar
+* libs/javax.websocket-api-1.0-rc5.jar => app/libs/javax.websocket-api-1.0-rc5.jar
+* libs/javax.websocket-client-api-1.0-rc5.jar => app/libs/javax.websocket-client-api-1.0-rc5.jar
+* libs/servlet-2-3.jar => app/libs/servlet-2-3.jar
+* libs/war.jar => app/libs/war.jar
+* libs/webserver.jar => app/libs/webserver.jar
+* lint.xml => app/lint.xml
+* res/ => app/src/main/res/
+* src/ => app/src/main/java/
+* src/rogatkin/mobile/web/RCServ.aidl => app/src/main/aidl/rogatkin/mobile/web/RCServ.aidl
+
+Next Steps:
+-----------
+You can now build the project. The Gradle project needs network
+connectivity to download dependencies.
+
+Bugs:
+-----
+If for some reason your project does not build, and you determine that
+it is due to a bug or limitation of the Eclipse to Gradle importer,
+please file a bug at http://b.android.com with category
+Component-Tools.
+
+(This import summary is for your information only, and can be deleted
+after import once you are satisfied with the results.)
