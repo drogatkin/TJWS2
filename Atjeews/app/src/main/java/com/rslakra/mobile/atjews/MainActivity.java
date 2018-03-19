@@ -185,10 +185,9 @@ public class MainActivity extends Activity {
                 .setOnClickListener(new OnClickListener() {
                     
                     public void onClick(View view) {
-                        RCServ servCtrl = ((TJWSApp) getApplication())
-                                .getServiceControl();
+                        TJWSService serviceControl = ((TJWSApp) getApplication()).getServiceControl();
                         try {
-                            servCtrl.logging(((CheckBox) view).isChecked());
+                            serviceControl.logging(((CheckBox) view).isChecked());
                         } catch(Exception e) {
                             reportProblem(e);
                         }
@@ -224,21 +223,20 @@ public class MainActivity extends Activity {
     }
     
     private void updateUI() {
-        if(DEBUG)
-            Log.d(APP_NAME, "UI updated called");
-        RCServ servCtrl = ((TJWSApp) getApplication()).getServiceControl();
-        if(servCtrl != null) {
-            updateStatus(servCtrl);
+        LogHelper.d(APP_NAME, "UI updated called");
+        TJWSService serviceControl = ((TJWSApp) getApplication()).getServiceControl();
+        if(serviceControl != null) {
+            updateStatus(serviceControl);
             try {
-                updateAppsList(servCtrl.getApps(), true);
-            } catch(RemoteException e) {
-                if(DEBUG)
-                    Log.e(APP_NAME, "Updating apps list failed", e);
+                updateAppsList(serviceControl.getApps(), true);
+            } catch(RemoteException ex) {
+                Log.e(APP_NAME, "Updating apps list failed", e);
             }
-            // Log.d(APP_NAME, "UPADTING       =====>"+hostName, new
+            // LogHelper.d(APP_NAME, "UPADTING       =====>"+hostName, new
             // Exception());
-        } else if(DEBUG)
-            Log.d(APP_NAME, "service not started");
+        } else {
+            LogHelper.d(APP_NAME, "service not started");
+        }
         updateTitle();
     }
     
@@ -249,13 +247,13 @@ public class MainActivity extends Activity {
         try {
             CheckBox startBtn = (CheckBox) findViewById(R.id.checkStrt);
             boolean stopped = serviceControl.getStatus() != TJWSService.ST_RUN;
-            if(DEBUG)
-                Log.d(APP_NAME, "run " + stopped + ", checking run " + startBtn.isChecked());
+            LogHelper.d(APP_NAME, "run " + stopped + ", checking run " + startBtn.isChecked());
             //startBtn.setChecked(!stopped);
-            if(stopped == false && hostName == null)
-                start(servCtrl);
-        } catch(Exception e) {
-            reportProblem(e);
+            if(stopped == false && hostName == null) {
+                start(serviceControl);
+            }
+        } catch(Exception ex) {
+            reportProblem(ex);
         }
     }
     
@@ -418,8 +416,8 @@ public class MainActivity extends Activity {
         start(((TJWSApp) getApplication()).getServiceControl());
     }
     
-    private void start(RCServ serv) {
-        new AsyncTask<RCServ, Void, String>() {
+    private void start(TJWSService service) {
+        new AsyncTask<TJWSService, Void, String>() {
             
             @Override
             protected void onPostExecute(String host) {
@@ -428,15 +426,15 @@ public class MainActivity extends Activity {
             }
             
             @Override
-            protected String doInBackground(RCServ... sc) {
+            protected String doInBackground(TJWSService... services) {
                 try {
-                    return sc[0].start();
+                    return services[0].start();
                 } catch(Exception e) {
                     reportProblem(e);
                 }
                 return null;
             }
-        }.execute(serv);
+        }.execute(service);
     }
     
     private void stop() {
