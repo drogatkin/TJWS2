@@ -49,7 +49,7 @@
  * should be udpated as per the structure changes.
  *****************************************************************************/
  -->
-<project name="TJWS" default="all" basedir=".">
+<project name="tjws" default="all" basedir=".">
 	<echo />
 	<echo message="Building '${ant.project.name}' Project ..." />
 
@@ -163,7 +163,18 @@
 	<!-- Compiles all .java classes under the build folder. -->
 	<target name="compile" depends="init" description="Compiling .java files">
 		<echo message="Compiling '${src.dir}' into '${build.dir}'" />
-		<javac fork="${javac.fork}" srcdir="${src.dir}" destdir="${classes.dir}" optimize="${javac.optimize}" debug="${javac.debug}" debuglevel="${javac.debug.level}" listfiles="${javac.listfiles}" includeantruntime="false" source="${javac.source}" target="${javac.target}" classpathref="build.classpath" />
+		<javac 
+			fork="${javac.fork}" 
+			srcdir="${src.dir}" 
+			destdir="${classes.dir}" 
+			optimize="${javac.optimize}" 
+			debug="${javac.debug}" 
+			debuglevel="${javac.debug.level}" 
+			listfiles="${javac.listfiles}" 
+			includeantruntime="false" 
+			source="${javac.source}" 
+			target="${javac.target}" 
+			classpathref="build.classpath" />
 	</target>
 
 	<!-- Copies Logger.jar file into /../Libs Directory. -->
@@ -171,8 +182,8 @@
 		<!-- Create logger jar file and put in /deploy.dir/ directory -->
 		<mkdir dir="${deploy.dir}" />
 		<jar destfile="${deploy.dir}/${jar.file}">
-			<fileset dir="${classes.dir}" includes="**" />
-			<fileset dir="${basedir}" includes="log4j.properties, dLog4j.properties, dLog4j.xml" />
+			<fileset dir="${classes.dir}" includes="**" excludes="javax/" />
+			<!--fileset dir="${basedir}" includes="log4j.properties, dLog4j.properties, dLog4j.xml" /-->
 
 			<!-- MANIFEST.MF Properties -->
 			<manifest>
