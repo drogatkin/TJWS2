@@ -1174,10 +1174,6 @@ public class Utils {
 		}
 	}
 	
-	public static interface ThreadFactory {
-		Thread create(Runnable runnable);
-	}
-	
 	/**
 	 * ThreadPool
 	 */
