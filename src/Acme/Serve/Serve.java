@@ -1152,12 +1152,14 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 		}
+		
 		// destroy servlets
 		destroyAll(defaultRegistry);
 		if (virtuals != null) {
-			Iterator si = virtuals.values().iterator();
-			while (si.hasNext())
-				destroyAll((PathTreeDictionary) si.next());
+			Iterator<PathTreeDictionary> itr = virtuals.values().iterator();
+			while (itr.hasNext()) {
+				destroyAll(itr.next());
+			}
 		}
 		
 		// clean access tree
@@ -1188,6 +1190,10 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param registry
+	 */
 	private void destroyAll(PathTreeDictionary registry) {
 		final Enumeration servletIterator = registry.elements();
 		int dhc = 0;
@@ -1773,22 +1779,26 @@ public class Serve implements ServletContext, Serializable {
 	 * @date 03/16/2018 12:02:56 PM
 	 */
 	class KeepAliveCleaner extends Thread {
-		protected List connections;
-		protected List ingoings;
+		protected List<ServeConnection> connections;
+		protected List<ServeConnection> ingoings;
 		protected boolean stopped;
 		private boolean noCheckClose;
 		
 		KeepAliveCleaner() {
 			super("KeepAlive cleaner");
-			connections = new LinkedList();
-			ingoings = new LinkedList();
+			connections = new LinkedList<ServeConnection>();
+			ingoings = new LinkedList<ServeConnection>();
 			setDaemon(true);
 		}
 		
-		void addConnection(ServeConnection conn) {
+		/**
+		 * 
+		 * @param serveConnection
+		 */
+		void addConnection(ServeConnection serveConnection) {
 			synchronized (ingoings) {
 				if (stopped == false) {
-					ingoings.add(conn);
+					ingoings.add(serveConnection);
 				}
 			}
 		}
@@ -1801,12 +1811,17 @@ public class Serve implements ServletContext, Serializable {
 			clear(connections);
 		}
 		
-		private void clear(List ll) {
-			Iterator itr = ll.iterator();
+		/**
+		 * Clears the server connections.
+		 * 
+		 * @param serveConnections
+		 */
+		private void clear(List<ServeConnection> serveConnections) {
+			Iterator<ServeConnection> itr = serveConnections.iterator();
 			while (itr.hasNext()) {
-				ServeConnection conn = (ServeConnection) itr.next();
+				ServeConnection serveConnection = itr.next();
 				itr.remove();
-				conn.close();
+				serveConnection.close();
 			}
 		}
 		
@@ -1814,25 +1829,25 @@ public class Serve implements ServletContext, Serializable {
 			// int maxUse = getMaxTimesConnectionUse();
 			while (true) {
 				synchronized (ingoings) {
-					Iterator itr = ingoings.iterator();
+					Iterator<ServeConnection> itr = ingoings.iterator();
 					while (itr.hasNext()) {
 						connections.add(itr.next());
 						itr.remove();
 					}
 				}
 				
-				Iterator itr = connections.iterator();
+				Iterator<ServeConnection> itr = connections.iterator();
 				long ct = System.currentTimeMillis();
 				long keepAliveDuration = getKeepAliveDuration();
 				// System.err.println("===> keep alive time"+d);
 				while (itr.hasNext()) {
-					ServeConnection conn = (ServeConnection) itr.next();
-					boolean closed = conn.socket == null;
+					ServeConnection serveConnection = itr.next();
+					boolean closed = serveConnection.socket == null;
 					if (noCheckClose == false) {
-						synchronized (conn) {
-							if (conn.socket != null) {
+						synchronized (serveConnection) {
+							if (serveConnection.socket != null) {
 								try {
-									closed = ((Boolean) conn.socket.getClass().getMethod("isClosed", Utils.EMPTY_CLASSES).invoke(conn.socket, Utils.EMPTY_OBJECTS)).booleanValue();
+									closed = ((Boolean) serveConnection.socket.getClass().getMethod("isClosed", Utils.EMPTY_CLASSES).invoke(serveConnection.socket, Utils.EMPTY_OBJECTS)).booleanValue();
 								} catch (NoSuchMethodException e) {
 									noCheckClose = true;
 								} catch (Exception e) {
@@ -1841,17 +1856,16 @@ public class Serve implements ServletContext, Serializable {
 						}
 					}
 					
-					if (conn.lastRun < conn.lastWait && (closed || conn.keepAlive == false || (ct - conn.lastWait > keepAliveDuration)) || stopped
-					/* || conn.timesRequested > maxUse */) {
+					if (serveConnection.lastRun < serveConnection.lastWait && (closed || serveConnection.keepAlive == false || (ct - serveConnection.lastWait > keepAliveDuration)) || stopped) {
 						itr.remove();
-						synchronized (conn) {
-							if (conn.socket != null) {
+						synchronized (serveConnection) {
+							if (serveConnection.socket != null) {
 								try {
 									// System.err.println("Closing
 									// socket:"+conn.socket.getClass().getName());
 									// // !!!
 									// conn.socket.close();
-									conn.socket.getInputStream().close();
+									serveConnection.socket.getInputStream().close();
 								} catch (IOException ioe) {
 									// ignore
 								}
@@ -1862,27 +1876,30 @@ public class Serve implements ServletContext, Serializable {
 						// con"+conn+" of "+conn.keepAlive);
 					}
 					
-					if (conn.asyncTimeout > 0) {
-						if (ct >= conn.asyncTimeout) {
-							if (conn.asyncMode != null) {
-								conn.asyncMode.notifyTimeout();
-								conn.keepAlive = false;
-								if (conn.websocketUpgrade)
-									conn.asyncMode = null;
-								conn.joinAsync();
-							} /*
-								 * else if (conn.websocketUpgrade) {
-								 * try {
-								 * conn.keepAlive = false;
-								 * //conn.socket.getChannel().close(); // TODO
-								 * perhaps use normal close call
-								 * //conn.socket = null;
-								 * } catch(Exception e) {
-								 * }
-								 * }
-								 */
+					if (serveConnection.asyncTimeout > 0) {
+						if (ct >= serveConnection.asyncTimeout) {
+							if (serveConnection.asyncMode != null) {
+								serveConnection.asyncMode.notifyTimeout();
+								serveConnection.keepAlive = false;
+								if (serveConnection.websocketUpgrade) {
+									serveConnection.asyncMode = null;
+								}
+								serveConnection.joinAsync();
+							}
+							
+							/*
+							 * else if (conn.websocketUpgrade) {
+							 * try {
+							 * conn.keepAlive = false;
+							 * //conn.socket.getChannel().close(); // TODO
+							 * perhaps use normal close call
+							 * //conn.socket = null;
+							 * } catch(Exception e) {
+							 * }
+							 * }
+							 */
 						} else {
-							long nd = conn.asyncTimeout - ct;
+							long nd = serveConnection.asyncTimeout - ct;
 							if (nd < keepAliveDuration) {
 								keepAliveDuration = nd;
 							}
@@ -1917,7 +1934,7 @@ public class Serve implements ServletContext, Serializable {
 	protected static class ServeConfig implements ServletConfig {
 		
 		private ServletContext context;
-		private Hashtable init_params;
+		private Hashtable initParams;
 		private String servletName;
 		
 		public ServeConfig(ServletContext context) {
@@ -1926,7 +1943,7 @@ public class Serve implements ServletContext, Serializable {
 		
 		public ServeConfig(ServletContext context, Hashtable initParams, String servletName) {
 			this.context = context;
-			this.init_params = initParams;
+			this.initParams = initParams;
 			this.servletName = servletName;
 		}
 		
@@ -1941,8 +1958,10 @@ public class Serve implements ServletContext, Serializable {
 		// @param name the parameter name
 		public String getInitParameter(String name) {
 			// This server supports servlet init params. :)
-			if (init_params != null)
-				return (String) init_params.get(name);
+			if (initParams != null) {
+				return (String) initParams.get(name);
+			}
+			
 			return null;
 		}
 		
@@ -1950,9 +1969,10 @@ public class Serve implements ServletContext, Serializable {
 		// @param name the parameter name
 		public Enumeration getInitParameterNames() {
 			// This server does:) support servlet init params.
-			if (init_params != null) {
-				return init_params.keys();
+			if (initParams != null) {
+				return initParams.keys();
 			}
+			
 			return new Vector().elements();
 		}
 		
@@ -1967,6 +1987,7 @@ public class Serve implements ServletContext, Serializable {
 	 * provides request/response
 	 */
 	public static class ServeConnection implements Runnable, HttpServletRequest, HttpServletResponse {
+		
 		public final static String WWWFORMURLENCODE = "application/x-www-form-urlencoded";
 		public final static String TRANSFERENCODING = "transfer-encoding".toLowerCase();
 		public final static String KEEPALIVE = "Keep-Alive".toLowerCase();
@@ -2003,7 +2024,8 @@ public class Serve implements ServletContext, Serializable {
 		private String charEncoding; // req and resp
 		private String remoteUser;
 		private String authType;
-		private boolean oneOne; // HTTP/1.1 or better
+		// HTTP/1.1 or better
+		private boolean oneOne;
 		private boolean reqMime;
 		private boolean websocketUpgrade;
 		private Vector reqHeaderNames = new Vector();
@@ -5204,8 +5226,9 @@ public class Serve implements ServletContext, Serializable {
 		public synchronized Object[] put(String path, Object value) {
 			// TODO make returning Object[] for cconsitency
 			if (path.length() == 0) { // context
-				if (ctx == null)
+				if (ctx == null) {
 					ctx = new Node();
+				}
 				Object result = ctx;
 				ctx = value;
 				return new Object[] { result, INT_ZERO };
@@ -5213,23 +5236,27 @@ public class Serve implements ServletContext, Serializable {
 			
 			if (path.charAt(0) == '*') {
 				String ext_str = null;
-				if (path.length() > 2 && path.charAt(1) == '.')
+				if (path.length() > 2 && path.charAt(1) == '.') {
 					ext_str = path.substring(1);
-				else
+				} else {
 					throw new IllegalArgumentException("No extension specified for * starting pattern:" + path);
-				if (ext == null)
+				}
+				
+				if (ext == null) {
 					ext = new Node();
+				}
+				
 				return new Object[] { ext.put(ext_str, value), INT_ZERO };
 			}
 			// System.out.println("==>PUT path : "+path);
-			StringTokenizer st = new StringTokenizer(path, "\\/");
-			Node cur_node = rootNode;
-			while (st.hasMoreTokens()) {
-				String nodename = st.nextToken();
+			StringTokenizer stringTokenizer = new StringTokenizer(path, "\\/");
+			Node curNode = rootNode;
+			while (stringTokenizer.hasMoreTokens()) {
+				String nodename = stringTokenizer.nextToken();
 				// System.out.println("PUT curr node : "+nodename);
 				int wci = nodename.indexOf('*');
 				if (wci == 0) {
-					if (nodename.length() > 1 || st.hasMoreTokens()) {
+					if (nodename.length() > 1 || stringTokenizer.hasMoreTokens()) {
 						throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
 					}
 					
@@ -5238,25 +5265,34 @@ public class Serve implements ServletContext, Serializable {
 					throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
 				}
 				
-				Node node = (Node) cur_node.get(nodename);
+				Node node = (Node) curNode.get(nodename);
 				if (node == null) {
 					node = new Node();
-					cur_node.put(nodename, node);
+					curNode.put(nodename, node);
 				}
-				cur_node = node;
+				curNode = node;
 			}
 			
-			Object result = cur_node.object;
-			cur_node.object = value;
+			Object result = curNode.object;
+			curNode.object = value;
 			return new Object[] { result, INT_ZERO };
 		}
 		
+		/**
+		 * 
+		 * @param value
+		 * @return
+		 */
 		public synchronized Object[] remove(Object value) {
 			Object[] result = remove(rootNode, value);
-			if (result[0] == null)
+			if (result[0] == null) {
 				result = remove(null, value);
-			if (result[0] == null)
+			}
+			
+			if (result[0] == null) {
 				return remove(ext, value);
+			}
+			
 			return result;
 		}
 		
@@ -5267,6 +5303,12 @@ public class Serve implements ServletContext, Serializable {
 			return result;
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param value
+		 * @return
+		 */
 		public Object[] remove(Node node, Object value) {
 			// TODO make full path, not only last element
 			if (node == null) {
@@ -5279,25 +5321,28 @@ public class Serve implements ServletContext, Serializable {
 			
 			if (node == ext) {
 				// TODO potential bug since look for first entry
-				Enumeration e = ext.keys();
-				while (e.hasMoreElements()) {
-					Object key = e.nextElement();
+				Enumeration itrExt = ext.keys();
+				while (itrExt.hasMoreElements()) {
+					Object key = itrExt.nextElement();
 					if (ext.get(key) == value) {
 						return new Object[] { ext.remove(key), new Integer(0) };
 					}
 				}
 				return new Object[] { null, null };
 			}
+			
 			if (node.object == value) {
 				node.object = null;
 				return new Object[] { value, new Integer(0) };
 			}
-			Enumeration e = node.keys();
-			while (e.hasMoreElements()) {
-				Object[] result = remove((Node) node.get((String) e.nextElement()), value);
-				if (result[0] != null)
+			Enumeration itr = node.keys();
+			while (itr.hasMoreElements()) {
+				Object[] result = remove((Node) node.get((String) itr.nextElement()), value);
+				if (result[0] != null) {
 					return result;
+				}
 			}
+			
 			return new Object[] { null, null };
 		}
 		
@@ -5310,25 +5355,30 @@ public class Serve implements ServletContext, Serializable {
 			// System.out.println("==>GET " + path);
 			// new Exception("GET " + path).printStackTrace();
 			Object[] result = new Object[2];
-			if (path == null)
+			if (path == null) {
 				return result;
+			}
+			
 			if ((path.length() == 0 || path.equals("/")) && ctx != null) {
 				result[0] = ctx;
 				result[1] = INT_ZERO;
 				return result;
 			}
-			char[] ps = path.toCharArray();
+			char[] pathChars = path.toCharArray();
 			// default servlet
 			Node curNode = rootNode;
 			int p0 = 0, lm = 0; // last match
 			
 			boolean div_state = true;
-			for (int i = 0; i < ps.length; i++) {
+			for (int i = 0; i < pathChars.length; i++) {
 				// System.out.println("GET "+ps[i]);
-				if (ps[i] == '/' || ps[i] == '\\') { // next divider
-					if (div_state)
+				
+				// next divider
+				if (pathChars[i] == '/' || pathChars[i] == '\\') {
+					if (div_state) {
 						continue;
-					Node node = (Node) curNode.get(new String(ps, p0, i - p0));
+					}
+					Node node = (Node) curNode.get(new String(pathChars, p0, i - p0));
 					// System.out.println("GET Node " + node + " for " + new
 					// String(ps, p0, i - p0));
 					
@@ -5351,47 +5401,50 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 			
-			String last_part = new String(ps, p0, ps.length - p0);
-			Node last_node = (Node) curNode.get(last_part);
+			String pathLastPart = new String(pathChars, p0, pathChars.length - p0);
+			Node lastNode = (Node) curNode.get(pathLastPart);
 			// System.out.println("GET cur node : " + last_node + " for: " +
 			// last_part + " root ext:" + ext+" and pos:"+p0);
-			if (last_node != null) {
-				if (last_node.object == null) {
-					last_node = (Node) last_node.get(""); // check for *
+			if (lastNode != null) {
+				if (lastNode.object == null) {
+					lastNode = (Node) lastNode.get(""); // check for *
 				}
-				if (last_node != null && last_node.object != null) {
-					result[0] = last_node.object;
-					lm = last_part.length() > 0 ? ps.length : p0 - 1;
+				if (lastNode != null && lastNode.object != null) {
+					result[0] = lastNode.object;
+					lm = pathLastPart.length() > 0 ? pathChars.length : p0 - 1;
 				}
 			} else {
-				last_node = (Node) curNode.get("");
-				if (last_node != null && last_node.object != null) {
-					result[0] = last_node.object;
+				lastNode = (Node) curNode.get("");
+				if (lastNode != null && lastNode.object != null) {
+					result[0] = lastNode.object;
 					lm = p0 > 0 ? p0 - 1 : 0;
 				}
 			}
 			
 			// try ext
 			if (result[0] == null) {
-				lm = ps.length;
+				lm = pathChars.length;
 				if (ext != null) {
-					int ldi = last_part.lastIndexOf('.');
+					int ldi = pathLastPart.lastIndexOf('.');
 					if (ldi > 0) { // ignoring cases /.extension
-						result[0] = ext.get(last_part.substring(ldi));
+						result[0] = ext.get(pathLastPart.substring(ldi));
 						// System.out.println("GET ext node: " +
 						// last_part.substring(ldi));
 					}
 				}
+				
 				if (result[0] == null) { // look for default servlet
-					last_node = (Node) rootNode.get("");
-					if (last_node != null) {
-						result[0] = last_node.object;
+					lastNode = (Node) rootNode.get("");
+					if (lastNode != null) {
+						result[0] = lastNode.object;
 					}
+					
 					if (result[0] == null) {
 						result[0] = rootNode.object;
 					}
 				}
 			}
+			
 			// System.out.println("GET pos: "+lm);
 			result[1] = new Integer(lm);
 			return result;
@@ -5417,6 +5470,12 @@ public class Serve implements ServletContext, Serializable {
 			return result.elements();
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param result
+		 * @param path
+		 */
 		public void addSiblingNames(Node node, Vector result, String path) {
 			Enumeration nodeItr = node.keys();
 			while (nodeItr.hasMoreElements()) {
@@ -5439,6 +5498,11 @@ public class Serve implements ServletContext, Serializable {
 			return result.elements();
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param result
+		 */
 		public void addSiblingObjects(Node node, Vector result) {
 			Enumeration nodeItr = node.keys();
 			while (nodeItr.hasMoreElements()) {
@@ -5466,25 +5530,16 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	public static class AcmeSession extends Hashtable implements HttpSession {
 		private long createTime;
-		
 		private long lastAccessTime;
-		
 		private String id;
-		
 		private int inactiveInterval; // in seconds
-		
 		private boolean expired;
-		
 		private transient ServletContext servletContext;
-		
 		private transient HttpSessionContext sessionContext;
-		
-		private transient List listeners;
+		private transient List<EventListener> eventListeners;
 		
 		// TODO: check in documentation what is default inactive interval and
-		// what
-		// means 0
-		// and what is mesurement unit
+		// what means 0 and what is mesurement unit
 		AcmeSession(String id, ServletContext servletContext, HttpSessionContext sessionContext) {
 			this(id, 0, servletContext, sessionContext);
 		}
@@ -5540,8 +5595,9 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Object getAttribute(String name) throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
 			return get((Object) name);
 		}
 		
@@ -5550,8 +5606,9 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Enumeration getAttributeNames() throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
 			return keys();
 		}
 		
@@ -5566,32 +5623,55 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public void setAttribute(String name, Object value) throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
+			
 			Object oldValue = value != null ? put((Object) name, value) : remove(name);
 			if (oldValue != null) {
-				if (oldValue instanceof HttpSessionBindingListener)
+				if (oldValue instanceof HttpSessionBindingListener) {
 					((HttpSessionBindingListener) oldValue).valueUnbound(new HttpSessionBindingEvent(this, name));
+				}
 			}
+			
 			if (value != null) {
-				if (value instanceof HttpSessionBindingListener)
+				if (value instanceof HttpSessionBindingListener) {
 					((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name));
+				}
 				notifyListeners(name, oldValue, value);
-			} else
+			} else {
 				notifyListeners(name, oldValue);
+			}
 		}
 		
+		/**
+		 * 
+		 * @param name
+		 * @param value
+		 * @throws IllegalStateException
+		 * @see javax.servlet.http.HttpSession#putValue(java.lang.String,
+		 *      java.lang.Object)
+		 */
 		public void putValue(String name, Object value) throws IllegalStateException {
 			setAttribute(name, value);
 		}
 		
+		/**
+		 * 
+		 * @param name
+		 * @throws IllegalStateException
+		 * @see javax.servlet.http.HttpSession#removeAttribute(java.lang.String)
+		 */
 		public void removeAttribute(String name) throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
+			
 			Object value = remove((Object) name);
 			if (value != null) {
-				if (value instanceof HttpSessionBindingListener)
+				if (value instanceof HttpSessionBindingListener) {
 					((HttpSessionBindingListener) value).valueUnbound(new HttpSessionBindingEvent(this, name));
+				}
 				notifyListeners(name, value);
 			}
 		}
@@ -5601,32 +5681,41 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public synchronized void invalidate() throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
+			
 			notifyListeners();
 			Enumeration e = getAttributeNames();
 			while (e.hasMoreElements()) {
 				removeAttribute((String) e.nextElement());
 			}
-			listeners = null;
+			
+			eventListeners = null;
 			setExpired(true);
 			// would be nice remove it from hash table also
 		}
 		
 		public boolean isNew() throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
-			return lastAccessTime == 0;
+			}
+			
+			return (lastAccessTime == 0);
 		}
 		
-		public synchronized void setListeners(List l) {
-			if (listeners == null) {
-				listeners = l;
-				if (listeners != null) {
+		/**
+		 * 
+		 * @param eventListeners
+		 */
+		public synchronized void setListeners(List<EventListener> eventListeners) {
+			if (eventListeners == null) {
+				eventListeners = eventListeners;
+				if (eventListeners != null) {
 					HttpSessionEvent event = new HttpSessionEvent(this);
-					for (int i = 0; i < listeners.size(); i++)
+					for (int i = 0; i < eventListeners.size(); i++)
 						try {
-							((HttpSessionListener) listeners.get(i)).sessionCreated(event);
+							((HttpSessionListener) eventListeners.get(i)).sessionCreated(event);
 						} catch (ClassCastException cce) {
 							// servletContext. log("Wrong session listener
 							// type."+cce);
@@ -5649,42 +5738,43 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		private void notifyListeners() {
-			if (listeners != null) {
+			if (eventListeners != null) {
 				HttpSessionEvent event = new HttpSessionEvent(this);
-				for (int i = 0; i < listeners.size(); i++)
+				for (int i = 0; i < eventListeners.size(); i++)
 					try {
-						((HttpSessionListener) listeners.get(i)).sessionDestroyed(event);
-					} catch (ClassCastException cce) {
+						((HttpSessionListener) eventListeners.get(i)).sessionDestroyed(event);
+					} catch (ClassCastException ex) {
 						// servletContext.log("Wrong session listener
 						// type."+cce);
-					} catch (NullPointerException npe) {
+					} catch (NullPointerException ex) {
 						// servletContext. log("Null session listener.");
 					}
 			}
 		}
 		
 		private void notifyListeners(String name, Object value) {
-			if (listeners != null) {
+			if (eventListeners != null) {
 				HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
-				for (int i = 0, n = listeners.size(); i < n; i++)
+				for (int i = 0, n = eventListeners.size(); i < n; i++)
 					try {
-						((HttpSessionAttributeListener) listeners.get(i)).attributeRemoved(event);
-					} catch (ClassCastException cce) {
-					} catch (NullPointerException npe) {
+						((HttpSessionAttributeListener) eventListeners.get(i)).attributeRemoved(event);
+					} catch (ClassCastException ex) {
+					} catch (NullPointerException ex) {
 					}
 			}
 		}
 		
 		private void notifyListeners(String name, Object oldValue, Object value) {
-			if (listeners != null) {
+			if (eventListeners != null) {
 				HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
 				HttpSessionBindingEvent oldEvent = oldValue == null ? null : new HttpSessionBindingEvent(this, name, oldValue);
-				for (int i = 0, n = listeners.size(); i < n; i++)
+				for (int i = 0, n = eventListeners.size(); i < n; i++)
 					try {
-						HttpSessionAttributeListener l = (HttpSessionAttributeListener) listeners.get(i);
-						if (oldEvent != null)
-							l.attributeReplaced(oldEvent);
-						l.attributeAdded(event);
+						HttpSessionAttributeListener listener = (HttpSessionAttributeListener) eventListeners.get(i);
+						if (oldEvent != null) {
+							listener.attributeReplaced(oldEvent);
+						}
+						listener.attributeAdded(event);
 					} catch (ClassCastException cce) {
 					} catch (NullPointerException npe) {
 					}
@@ -5704,10 +5794,11 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		void userTouch() {
-			if (isValid())
+			if (isValid()) {
 				lastAccessTime = System.currentTimeMillis();
-			else
+			} else {
 				throw new IllegalStateException();
+			}
 		}
 		
 		// storing session in format
