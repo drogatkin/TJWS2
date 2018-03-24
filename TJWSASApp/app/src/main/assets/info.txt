@@ -1,0 +1,16 @@
+=> How to access your app data. <=
+adb shell
+run-as com.rslakra.android.tjwsasapp
+cp /data/data/com.rslakra.android.tjwsasapp/
+cp /data/user/0/com.rslakra.android.tjwsasapp/
+
+
+
+adb shell su -c "chmod 777 /data"
+adb shell su -c "chmod 777 /data/data"
+adb shell su -c "chmod 777 /data/user/0/com.rslakra.android.tjwsasapp/files"
+
+
+Pull Command: Copies the file from android device to local machine
+Convention: adb pull <remote path> <local path>
+adb pull "/data/user/0/com.rslakra.android.tjwsasapp/files/logs/android.log" android.log

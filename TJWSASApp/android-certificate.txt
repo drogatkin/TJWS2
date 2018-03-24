@@ -1,0 +1,13 @@
+keytool -importcert -trustcacerts -alias tjws -file tjws.crt -keypass password -keystore tjws.bks -storepass password -storetype BKS -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath ../../../../libs/bcprov-jdk15-146.jar
+
+
+
+/* java.io.IOException: Wrong version of key store. */
+
+openssl req -x509 -newkey rsa:2048 -keyout tjws.pem -out tjws.pem -days 365 -nodes
+keytool -importcert -v -trustcacerts -alias `openssl x509 -inform PEM -subject_hash -noout -in tjws.pem`  \
+      -file tjws.pem \
+      -keystore keyStore.bks -storetype BKS \
+      -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider \
+      -providerpath  ../../../../libs/bcprov-jdk15-146.jar\
+      -storepass password
