@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
+    "https://raw.githubusercontent.com/drogatkin/7Bee/master/bee.dtd" [
+      <!ENTITY android_sdk "E:\tools\adt-bundle-windows-x86_64-20140702\sdk">
+      <!ENTITY jdk_root "C:\Program Files\Java\jdk1.8.0_60">
+      <!ENTITY tjws_src "E:\projects\TJWS2\1.x">
+      <!ENTITY keystore "android-publish.keystore">
+      <!ENTITY alias "app_release">
+      <!ENTITY target "4.4W">
+]>
+<!-- Prepare war file for Android deployment Copyright 2015 (c) Dmitriy Rogatkin -->
+<bee name="apk-sign" type="script">
+     <expression name="apk tmp dir" >
+         <operator name="append" >
+             <value
+                 name="java.io.tmpdir"
+                 type="property" />
+             <value>apk_temp</value>
+         </operator>
+     </expression>
+     <expression name="apk file">
+         <function name="element">
+             <parameter variable="~#args#~"/>
+             <parameter>0</parameter>
+         </function>
+     </expression>
+     <expression name="unpacked apk">
+         <operator name="append">
+             <value variable="apk tmp dir"/>
+             <value>/</value>
+             <function name="filename">
+                 <parameter variable="apk file"/>
+             </function>
+             <value>.apk</value>
+         </operator>
+     </expression>
+     <target name="doit" dir=".">
+     <block>
+     <function name="mkd">
+         <parameter variable="unpacked apk"/>
+     </function>
+     <expression name="unpacked apk wc">
+         <operator name="append">
+             <value variable="unpacked apk"></value>
+             <value>/*/*/*/*/*/*/*/*/*/*/*/*/*/*</value>
+         </operator>
+     </expression>
+     <function name="rm">
+         <parameter variable="unpacked apk wc"/>
+     </function>
+     <function name="unzip">
+         <parameter variable="apk file"/>
+         <parameter variable="unpacked apk"/>
+     </function>
+     <expression name = "apk meta inf">
+         <operator name="append">
+             <value variable="unpacked apk"/>
+             <value>/META-INF/services</value>
+         </operator>
+     </expression>
+     <function name="mkd">
+         <parameter variable="apk meta inf"/>
+     </function>
+     <expression name = "meta inf">
+         <operator name="append">
+             <value>&tjws_src;/resources/META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator</value>
+         </operator>
+     </expression>
+     <function name="cp">
+         <parameter variable="meta inf"/>
+         <parameter variable="apk meta inf"/>
+     </function>
+     <expression name = "unpacked apk">
+         <operator name="append">
+             <value variable="unpacked apk"/>
+             <value>/*</value>
+         </operator>
+     </expression>
+     <function name="zip">
+         <parameter variable="apk file"/>
+         <parameter variable="unpacked apk" type="file"/>
+     </function>
+     <task exec="jarsigner.exe" path="&jdk_root;/bin">
+          <parameter>-verbose</parameter>
+          <parameter>-sigalg</parameter>
+          <parameter>SHA1withRSA</parameter>
+          <parameter>-digestalg</parameter>
+          <parameter>SHA1</parameter>
+          <parameter>-keystore</parameter>
+          <parameter>&keystore;</parameter>
+          <parameter variable="apk file"/>
+          <parameter>&alias;</parameter>
+     </task>
+     <expression name = "apk align">
+         <operator name="append">
+             <value variable="apk file"/>
+             <value>.align</value>
+         </operator>
+     </expression>
+     <task exec="&android_sdk;\build-tools\android-&target;/zipalign.exe" path="&android_sdk;\build-tools\android-&target;">
+          <parameter>-v</parameter>
+          <parameter>4</parameter>
+          <parameter variable="apk file"/>
+          <parameter variable="apk align"/>  
+      </task>
+      <function name="rm">
+         <parameter variable="apk file"/>
+      </function>
+     <function name="mv">
+         <parameter variable="apk align"/>
+         <parameter variable="apk file"/>
+     </function>  
+     <echo>Done.</echo>
+     </block>
+     </target>
+</bee>

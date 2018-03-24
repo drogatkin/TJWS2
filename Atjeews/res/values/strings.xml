@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Atjeews</string>
+    <string name="title">Atjeews - Web Container for Android</string>
+    <string name="enable_server">Enable Server</string>
+    <string name="web_app_url">Deploying Web application URL</string>
+    <string name="http_prfx">http://</string>
+    <string name="deploy">Deploy</string>
+    <string name="list_deployed">Deployed web apps</string>
+    <string name="app_version">1.10</string>
+    <string name="menu_app_redeploy">Redeploy</string>
+    <string name="menu_app_remove">Remove</string>
+    <string name="menu_app_stop">Stop</string>
+    <string name="menu_app_info">Info</string>
+    <string name="menu_app_open">Open</string>
+    <string name="alrt_noserver">Atjeews is stopped, launch it first</string>
+    <string name="t_info">Info</string>
+    <string name="t_warning">Warning</string>
+    <string name="rescan">Rescan Apps</string>
+    <string name="t_error">Error</string>
+    <string name="alrt_problem">Problem happened %s</string>
+    <string name="enable_log">Enable logging</string>
+    <string name="version_info">1.01</string>
+    <string name="enable_ssl">SSL</string>
+    <string name="at_port">&#169;</string>
+</resources>
