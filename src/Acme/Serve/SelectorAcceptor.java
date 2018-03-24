@@ -29,10 +29,10 @@
 package Acme.Serve;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.InetAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -40,24 +40,25 @@ import java.util.Iterator;
 import java.util.Map;
 
 import Acme.Serve.Serve.Acceptor;
+import rslakra.logger.LogHelper;
 
 public class SelectorAcceptor implements Acceptor {
+	
 	private ServerSocketChannel channel;
-	
 	private Selector selector;
-	
 	private Iterator readyItor;
 	
 	public Socket accept() throws IOException {
 		do {
-			if(readyItor == null) {
-				if(selector.select() > 0)
+			if (readyItor == null) {
+				if (selector.select() > 0) {
 					readyItor = selector.selectedKeys().iterator();
-				else
+				} else {
 					throw new IOException();
+				}
 			}
 			
-			if(readyItor.hasNext()) {
+			if (readyItor.hasNext()) {
 				
 				// Get key from set
 				SelectionKey key = (SelectionKey) readyItor.next();
@@ -65,7 +66,7 @@ public class SelectorAcceptor implements Acceptor {
 				// Remove current entry
 				readyItor.remove();
 				// TODO add processing CancelledKeyException
-				if(key.isValid() && key.isAcceptable()) {
+				if (key.isValid() && key.isAcceptable()) {
 					// Get channel
 					ServerSocketChannel keyChannel = (ServerSocketChannel) key.channel();
 					
@@ -77,49 +78,60 @@ public class SelectorAcceptor implements Acceptor {
 				}
 			} else
 				readyItor = null;
-		} while(true);
+		} while (true);
 	}
 	
 	public void destroy() throws IOException {
 		String exceptions = "";
 		try {
 			channel.close();
-		} catch(IOException e) {
+		} catch (IOException e) {
 			exceptions += e.toString();
 		}
 		try {
 			selector.close();
-		} catch(IOException e) {
+		} catch (IOException e) {
 			exceptions += e.toString();
 		}
-		if(exceptions.length() > 0)
+		
+		if (exceptions.length() > 0) {
 			throw new IOException(exceptions);
+		}
 	}
 	
+	/**
+	 * @see Acme.Serve.Serve.Acceptor#init(Acme.Serve.Serve, java.util.Map,
+	 *      java.util.Map)
+	 */
 	public void init(Map inProperties, Map outProperties) throws IOException {
 		selector = Selector.open();
-		
 		channel = ServerSocketChannel.open();
 		channel.configureBlocking(false);
 		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue() : Serve.DEF_PORT;
-		InetSocketAddress isa = null;
-		if(inProperties.get(Serve.ARG_BINDADDRESS) != null)
+		InetSocketAddress socketAddress = null;
+		if (inProperties.get(Serve.ARG_BINDADDRESS) != null) {
 			try {
-				isa = new InetSocketAddress((String) inProperties.get(Serve.ARG_BINDADDRESS), port);
-			} catch(Exception e) {
+				socketAddress = new InetSocketAddress((String) inProperties.get(Serve.ARG_BINDADDRESS), port);
+			} catch (Exception ex) {
+				LogHelper.log(ex);
 			}
-		if(isa == null)
-			isa = new InetSocketAddress(port);
+		}
+		
+		if (socketAddress == null) {
+			socketAddress = new InetSocketAddress(port);
+		}
+		
 		// TODO add ARG_BACKLOG
-		channel.socket().bind(isa);
+		channel.socket().bind(socketAddress);
 		
 		// Register interest in when connection
 		channel.register(selector, SelectionKey.OP_ACCEPT);
-		if(outProperties != null) {
-			if(channel.socket().isBound())
+		if (outProperties != null) {
+			if (channel.socket().isBound()) {
 				outProperties.put(Serve.ARG_BINDADDRESS, channel.socket().getInetAddress().getHostName());
-			else
+			} else {
 				outProperties.put(Serve.ARG_BINDADDRESS, InetAddress.getLocalHost().getHostName());
+			}
 		}
 	}
 	

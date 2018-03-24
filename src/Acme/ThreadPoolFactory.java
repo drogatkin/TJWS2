@@ -37,13 +37,11 @@ package Acme;
  * @version 1.0.0
  * @since 1.0.0
  */
-public interface ThreadFactory {
-	
+public interface ThreadPoolFactory {
 	/**
 	 * 
 	 * @param runnable
 	 * @return
 	 */
 	Thread create(Runnable runnable);
-	
 }

@@ -35,13 +35,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
+import rslakra.logger.LogHelper;
+
 public class SimpleAcceptor implements Serve.Acceptor {
+	
 	public Socket accept() throws IOException {
 		return socket.accept();
 	}
 	
 	public void destroy() throws IOException {
-		if(socket == null)
+		if (socket == null)
 			throw new IOException("Socket already destroyed");
 		try {
 			socket.close();
@@ -53,26 +56,32 @@ public class SimpleAcceptor implements Serve.Acceptor {
 	public void init(Map inProperties, Map outProperties) throws IOException {
 		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue() : Serve.DEF_PORT;
 		String bindAddrStr = (String) inProperties.get(Serve.ARG_BINDADDRESS);
+		LogHelper.log("bindAddrStr:" + bindAddrStr);
 		InetSocketAddress bindAddr = bindAddrStr != null ? new InetSocketAddress(InetAddress.getByName(bindAddrStr), port) : null;
 		String backlogStr = (String) inProperties.get(Serve.ARG_BACKLOG);
 		int backlog = backlogStr != null ? Integer.parseInt(backlogStr) : -1;
-		if(bindAddr != null) {
+		if (bindAddr != null) {
 			socket = new ServerSocket();
-			if(backlog < 0)
+			if (backlog < 0) {
 				socket.bind(bindAddr);
-			else
+			} else {
 				socket.bind(bindAddr, backlog);
+			}
 		} else {
-			if(backlog < 0)
+			if (backlog < 0) {
 				socket = new ServerSocket(port);
-			else
+			} else {
 				socket = new ServerSocket(port, backlog);
+			}
 		}
-		if(outProperties != null)
-			if(socket.isBound())
+		
+		if (outProperties != null) {
+			if (socket.isBound()) {
 				outProperties.put(Serve.ARG_BINDADDRESS, socket.getInetAddress().getHostName());
-			else
+			} else {
 				outProperties.put(Serve.ARG_BINDADDRESS, InetAddress.getLocalHost().getHostName());
+			}
+		}
 	}
 	
 	public String toString() {

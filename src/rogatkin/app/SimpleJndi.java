@@ -149,34 +149,63 @@ public class SimpleJndi implements InitialContextFactory {
 		return context;
 	}
 	
+	/**
+	 * 
+	 * @author Rohtash Singh Lakra
+	 * @date 03/19/2018 05:33:35 PM
+	 */
+	static class RootContextServlet extends HttpServlet {
+		protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, java.io.IOException {
+			if (mainContext != null) {
+				try {
+					resp.setContentType("text/plain");
+					resp.getWriter().write(orb.object_to_string(rootPoa.servant_to_reference(mainContext)));
+				} catch (org.omg.CORBA.UserException ce) {
+					ce.printStackTrace();
+					resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				}
+			} else
+				resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+		}
+	}
+	
+	/**
+	 * 
+	 * @author Rohtash Singh Lakra
+	 * @date 03/19/2018 05:37:46 PM
+	 */
+	static class ShutdownHook implements Runnable {
+		final Serve serve;
+		
+		public ShutdownHook(final Serve serve) {
+			this.serve = serve;
+		}
+		
+		/**
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Runnable#run()
+		 */
+		@Override
+		public void run() {
+			if (serve != null) {
+				serve.notifyStop();
+				serve.destroyAllServlets();
+			}
+		}
+	}
+	
 	private SimpleContext exposeContext(SimpleContext context, String host, int port) {
 		final Serve srv = new Acme.Serve.Serve();
 		Properties properties = new java.util.Properties();
 		properties.put(Serve.ARG_PORT, port);
 		properties.put(Serve.ARG_NOHUP, Serve.ARG_NOHUP);
-		if (host != null && host.length() > 0 && "localhost".equals(host) == false)
+		if (host != null && host.length() > 0 && "localhost".equals(host) == false) {
 			properties.put(Serve.ARG_BINDADDRESS, host);
+		}
 		srv.arguments = properties;
-		srv.addServlet("/getRootContext", new HttpServlet() {
-			protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, java.io.IOException {
-				if (mainContext != null) {
-					try {
-						resp.setContentType("text/plain");
-						resp.getWriter().write(orb.object_to_string(rootPoa.servant_to_reference(mainContext)));
-					} catch (org.omg.CORBA.UserException ce) {
-						ce.printStackTrace();
-						resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-					}
-				} else
-					resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-			}
-		});
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-			public void run() {
-				srv.notifyStop();
-				srv.destroyAllServlets();
-			}
-		}));
+		srv.addServlet("/getRootContext", new RootContextServlet());
+		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook(srv)));
 		Thread exposerThread = new Thread("ContextExposer") {
 			public void run() {
 				srv.serve();
@@ -188,6 +217,12 @@ public class SimpleJndi implements InitialContextFactory {
 		return context;
 	}
 	
+	/**
+	 * 
+	 * @param url
+	 * @return
+	 * @throws IOException
+	 */
 	private byte[] readUrl(URL url) throws IOException {
 		URLConnection uc = url.openConnection();
 		uc.setRequestProperty("connection", "close");

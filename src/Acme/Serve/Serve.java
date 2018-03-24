@@ -87,6 +87,7 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.Vector;
 
+import javax.net.ssl.SSLSocket;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -122,13 +123,9 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 import javax.servlet.http.Part;
 
-import com.devamatre.logger.LogManager;
-import com.devamatre.logger.Logger;
-
 import Acme.IOHelper;
-import Acme.ThreadFactory;
+import Acme.ThreadPoolFactory;
 import Acme.Utils;
-import Acme.Utils.ThreadPool;
 
 /// Minimal Java servlet container class.
 // <P>
@@ -186,9 +183,6 @@ import Acme.Utils.ThreadPool;
 
 // Inheritance can extend usage of this server
 public class Serve implements ServletContext, Serializable {
-	
-	/** logger */
-	private static Logger logger = LogManager.getLogger(Serve.class);
 	
 	public static final String ARG_PORT = "port";
 	public static final String ARG_THROTTLES = "throttles";
@@ -261,12 +255,11 @@ public class Serve implements ServletContext, Serializable {
 	
 	protected transient KeepAliveCleaner keepAliveCleaner;
 	protected transient ThreadGroup serverThreads;
-	protected transient ThreadPool threadPool;
+	protected transient Utils.ThreadPool threadPool;
 	protected transient Constructor gzipInStreamConstr;
 	private static final ThreadLocal<PathTreeDictionary> currentRegistry = new ThreadLocal<PathTreeDictionary>();
 	
-	// for sessions
-	// TODO consider configurable strength
+	// TODO for sessions consider configurable strength
 	private byte[] uniqer = new byte[20];
 	private SecureRandom secureRandom;
 	
@@ -286,17 +279,17 @@ public class Serve implements ServletContext, Serializable {
 	 * @version 1.0.0
 	 * @since 1.0.0
 	 */
-	private static class ServerThreadFactory implements ThreadFactory {
+	private static class ServerThreadPoolFactory implements ThreadPoolFactory {
 		
-		/** serverThreads */
-		private final ThreadGroup serverThreads;
+		/** serverThreadGroup */
+		private final ThreadGroup serverThreadGroup;
 		
 		/**
 		 * 
-		 * @param serverThreads
+		 * @param serverThreadGroup
 		 */
-		public ServerThreadFactory(final ThreadGroup serverThreads) {
-			this.serverThreads = serverThreads;
+		public ServerThreadPoolFactory(final ThreadGroup serverThreadGroup) {
+			this.serverThreadGroup = serverThreadGroup;
 		}
 		
 		/**
@@ -306,14 +299,17 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		@Override
 		public Thread create(Runnable runnable) {
-			final Thread result = new Thread(serverThreads, runnable);
+			final Thread result = new Thread(serverThreadGroup, runnable);
 			result.setDaemon(true);
 			return result;
 		}
-		
 	}
 	
-	// / Constructor.
+	/**
+	 * 
+	 * @param arguments
+	 * @param logStream
+	 */
 	public Serve(Map arguments, PrintStream logStream) {
 		this.arguments = arguments;
 		this.logStream = logStream;
@@ -324,7 +320,7 @@ public class Serve implements ServletContext, Serializable {
 		Properties props = new Properties();
 		props.putAll(arguments);
 		// TODO do not create thread pool unless requested
-		threadPool = new ThreadPool(props, new ServerThreadFactory(serverThreads));
+		threadPool = new Utils.ThreadPool(props, new ServerThreadPoolFactory(serverThreads));
 		setAccessLogged();
 		keepAlive = arguments.get(ARG_KEEPALIVE) == null || ((Boolean) arguments.get(ARG_KEEPALIVE)).booleanValue();
 		int timeoutKeepAliveSec = Utils.parseInt(arguments.get(ARG_KEEPALIVE_TIMEOUT), 30);
@@ -339,12 +335,13 @@ public class Serve implements ServletContext, Serializable {
 		if (seed != null && seedLen == 0) {
 			secureRandom = new SecureRandom(seed.getBytes());
 		} else {
-			if (randomProvider != null)
+			if (randomProvider != null) {
 				try {
 					secureRandom = SecureRandom.getInstance(randomProvider);
-				} catch (NoSuchAlgorithmException e) {
-					logger.error("TJWS: Unsupported or incorrect secure rndom algorithm: " + randomProvider + "(" + e + "), a default is used", e);
+				} catch (NoSuchAlgorithmException ex) {
+					log("TJWS: Unsupported or incorrect secure rndom algorithm: " + randomProvider + "(" + ex + "), a default is used", ex);
 				}
+			}
 			
 			if (secureRandom == null) {
 				secureRandom = new SecureRandom();
@@ -362,9 +359,9 @@ public class Serve implements ServletContext, Serializable {
 		try {
 			gzipInStreamConstr = Class.forName("java.util.zip.GZIPInputStream").getConstructor(new Class[] { InputStream.class });
 		} catch (ClassNotFoundException ex) {
-			logger.error(ex);
+			log(ex);
 		} catch (NoSuchMethodException ex) {
-			logger.error(ex);
+			log(ex);
 		}
 		
 		String proxyArg = (String) arguments.get(ARG_PROXY_CONFIG);
@@ -770,12 +767,17 @@ public class Serve implements ServletContext, Serializable {
 		return new File(workPath, hostName + '-' + (arguments.get(ARG_PORT) == null ? String.valueOf(DEF_PORT) : arguments.get(ARG_PORT)) + (servletContext == null ? "" : "-" + servletContext.getServletContextName()) + "-session.obj");
 	}
 	
+	/**
+	 * 
+	 * @param name
+	 * @return
+	 */
 	protected String sanitizeAsFile(String name) {
 		return name.replaceAll("\\.|:|\\\\|/", "-");
 	}
 	
 	// Run the server. Returns only on errors.
-	transient boolean running;
+	private transient boolean running;
 	protected transient Acceptor acceptor;
 	protected transient Thread ssclThread;
 	
@@ -802,11 +804,11 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		@Override
 		public void run() {
-			while (running) {
+			while (isRunning()) {
 				try {
 					Thread.sleep(expiredIn * 60 * 1000);
 				} catch (InterruptedException ie) {
-					if (running == false) {
+					if (!isRunning()) {
 						break;
 					}
 				}
@@ -833,6 +835,73 @@ public class Serve implements ServletContext, Serializable {
 	}
 	
 	/**
+	 * @author Rohtash Singh Lakra
+	 * @date 03/16/2018 12:00:30 PM
+	 */
+	public static enum Status {
+		BIND_ERROR(-5),
+		NOT_FINISHED_CORRECTLY(-4),
+		IO_ERROR(-3),
+		TERMINATED_WITH_ERROR(-2),
+		ERROR(-1),
+		STOPPED(0),
+		RUNNING(1),
+		STILL_RUNNING(2),;
+		
+		/** status */
+		private int status;
+		
+		/**
+		 * 
+		 * @param status
+		 */
+		private Status(int status) {
+			this.status = status;
+		}
+		
+		/**
+		 * 
+		 * @return
+		 */
+		public int getStatus() {
+			return status;
+		}
+		
+		/**
+		 * 
+		 * @see java.lang.Enum#toString()
+		 */
+		public String toString() {
+			return String.valueOf(getStatus());
+		}
+		
+		/**
+		 * 
+		 * @param status
+		 * @return
+		 */
+		public static Status toStatus(final int status) {
+			Status[] serveStatus = values();
+			for (int i = 0; i < serveStatus.length; i++) {
+				if (serveStatus[i].getStatus() == status) {
+					return serveStatus[i];
+				}
+			}
+			
+			return null;
+		}
+	}
+	
+	/**
+	 * Returns true if the server is running otherwise false.
+	 * 
+	 * @return
+	 */
+	public boolean isRunning() {
+		return running;
+	}
+	
+	/**
 	 * Launches the server It doesn't exist until server runs, so start it in a
 	 * dedicated thread.
 	 * 
@@ -845,35 +914,36 @@ public class Serve implements ServletContext, Serializable {
 	 * 
 	 * @return
 	 */
-	public int serve() {
-		if (running) {
+	public Status serve() {
+		if (isRunning()) {
 			// still running
-			return ServeStatus.STILL_RUNNING.getStatus();
+			return Status.STILL_RUNNING;
 		}
 		
 		if (acceptor != null) {
 			// not finished correctly
-			return ServeStatus.NOT_FINISHED_CORRECTLY.getStatus();
+			return Status.NOT_FINISHED_CORRECTLY;
 		}
 		
 		try {
 			acceptor = createAcceptor();
 		} catch (Throwable ex) {
+			log("TJWS:  Acceptor [" + acceptor + ": " + ex.getLocalizedMessage(), ex);
 			if (ex instanceof ThreadDeath) {
 				throw (ThreadDeath) ex;
 			}
-			log("TJWS:  Acceptor [" + acceptor + ": " + ex);
 			acceptor = null;
 			if (ex instanceof BindException) {
-				return ServeStatus.BIND_ERROR.getStatus();
+				return Status.BIND_ERROR;
 			} else if (ex instanceof IOException) {
-				return ServeStatus.IO_ERROR.getStatus();
+				return Status.IO_ERROR;
 			}
 			
-			return ServeStatus.UNKNOWN_ERROR.getStatus();
+			return Status.ERROR;
 		}
-		running = true;
 		
+		/* if here, means no error and server is running. */
+		running = true;
 		if (expiredIn > 0) {
 			// sessions cleaner thread
 			ssclThread = new Thread(serverThreads, new SessionCleaner(), "Session Cleaner");
@@ -881,6 +951,8 @@ public class Serve implements ServletContext, Serializable {
 			// ssclThread.setDaemon(true);
 			ssclThread.start();
 		}
+		
+		/* keep alive clearner */
 		keepAliveCleaner = new KeepAliveCleaner();
 		keepAliveCleaner.start();
 		File fileSessions = getPersistentFile();
@@ -903,13 +975,19 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		// TODO: display address as name and as ip
-		logger.info("[" + new Date() + "] TJWS httpd " + hostName + " - " + acceptor + " is listening.");
+		log("TJWS httpd " + hostName + " - " + acceptor + " is listening.");
 		try {
-			while (running) {
+			while (isRunning()) {
 				try {
 					Socket socket = acceptor.accept();
 					// TODO consider to use ServeConnection object pool
 					// TODO consider req/resp objects pooling
+					if (socket instanceof SSLSocket) {
+						String[] enabledCipherSuites = ((SSLSocket) socket).getEnabledCipherSuites();
+						log("enabledCipherSuites:" + IOHelper.toString(enabledCipherSuites));
+						String[] enabledProtocols = ((SSLSocket) socket).getEnabledProtocols();
+						log("enabledProtocols:" + IOHelper.toString(enabledProtocols));
+					}
 					keepAliveCleaner.addConnection(new ServeConnection(socket, this));
 				} catch (IOException ex) {
 					log("TJWS: Accept: " + ex);
@@ -919,19 +997,22 @@ public class Serve implements ServletContext, Serializable {
 					log("TJWS: Illegal state: " + ex);
 				}
 			}
-		} catch (Throwable t) {
-			if (t instanceof ThreadDeath) {
-				throw (Error) t;
+		} catch (Throwable th) {
+			log("TJWS: Unhandled exception: " + th + ", server is terminating.", th);
+			if (th instanceof ThreadDeath) {
+				throw (Error) th;
 			}
-			log("TJWS: Unhandled exception: " + t + ", server is terminating.", t);
-			return -1;
+			return Status.ERROR;
 		} finally {
-			if (acceptor != null)
+			if (acceptor != null) {
 				try {
 					acceptor.destroy();
 					acceptor = null;
-				} catch (IOException e) {
+				} catch (IOException ex) {
+					log(ex);
 				}
+			}
+			
 			running = false;
 			if (ssclThread != null) {
 				ssclThread.interrupt();
@@ -941,20 +1022,23 @@ public class Serve implements ServletContext, Serializable {
 			keepAliveCleaner.interrupt();
 			try {
 				keepAliveCleaner.join();
-			} catch (InterruptedException ie) {
+			} catch (InterruptedException ex) {
 			}
-			keepAliveCleaner.clear(); // clear rest, although should be empty
+			
+			// clear rest, although should be empty
+			keepAliveCleaner.clear();
 			keepAliveCleaner = null;
 			if (websocketProvider != null) {
 				try {
 					websocketProvider.destroy();
 				} catch (Exception ex) {
 					// just in case
+					log(ex);
 				}
 			}
 		}
 		
-		return 0;
+		return Status.STOPPED;
 	}
 	
 	/**
@@ -1016,8 +1100,8 @@ public class Serve implements ServletContext, Serializable {
 		// assured defaulting here
 		try {
 			acceptor = (Acceptor) Class.forName(acceptorClass).newInstance();
-		} catch (InstantiationException e) {
-			log("TJWS: Couldn't instantiate Acceptor, the Server is inoperable", e);
+		} catch (InstantiationException ex) {
+			log("TJWS: Couldn't instantiate Acceptor, the Server is inoperable", ex);
 		} catch (IllegalAccessException iEx) {
 			Constructor objectAcceptor;
 			try {
@@ -1028,8 +1112,8 @@ public class Serve implements ServletContext, Serializable {
 				log("TJWS: Acceptor is not accessable or can't be instantiated, the Server is inoperable", ex);
 			}
 		} catch (ClassNotFoundException ex) {
-			logger.error("TJWS: Acceptor class not found, the Server is inoperable", ex);
-			System.exit(-2);
+			log("TJWS: Acceptor class not found, the Server is inoperable", ex);
+			System.exit(Status.TERMINATED_WITH_ERROR.getStatus());
 		}
 		
 		Map acceptorProperties = new Properties();
@@ -1079,6 +1163,7 @@ public class Serve implements ServletContext, Serializable {
 		try {
 			return (Servlet) registry.get(name)[0];
 		} catch (NullPointerException ex) {
+			log(ex);
 		}
 		
 		return null;
@@ -1127,10 +1212,10 @@ public class Serve implements ServletContext, Serializable {
 			} catch (IOException ioe) {
 				log("TJWS: IO error in storing sessions " + ioe);
 			} catch (Throwable th) {
+				log("TJWS: Unexpected problem in storing sessions " + th);
 				if (th instanceof ThreadDeath) {
 					throw (ThreadDeath) th;
 				}
-				log("TJWS: Unexpected problem in storing sessions " + th);
 			} finally {
 				IOHelper.safeClose(writer);
 			}
@@ -1142,12 +1227,13 @@ public class Serve implements ServletContext, Serializable {
 					AcmeSession as = (AcmeSession) sessions.get(sid);
 					if (as != null) {
 						as = (AcmeSession) sessions.remove(sid);
-						if (as != null && as.isValid())
+						if (as != null && as.isValid()) {
 							try {
 								as.invalidate();
-							} catch (IllegalStateException ise) {
-								
+							} catch (IllegalStateException ex) {
+								log(ex);
 							}
+						}
 					}
 				}
 			}
@@ -1179,6 +1265,10 @@ public class Serve implements ServletContext, Serializable {
 		/** servletIterator */
 		private final Enumeration servletIterator;
 		
+		/**
+		 * 
+		 * @param servletIterator
+		 */
 		ServletDestroyer(final Enumeration servletIterator) {
 			this.servletIterator = servletIterator;
 		}
@@ -1235,6 +1325,7 @@ public class Serve implements ServletContext, Serializable {
 		synchronized (sessions) {
 			sessions.put(result.getId(), result);
 		}
+		
 		return result;
 	}
 	
@@ -1244,16 +1335,30 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
-	// / Write information to the servlet log.
-	// @param message the message to log
-	public void log(String message) {
-		Date date = new Date();
-		logStream.println("[" + date.toString() + "] " + message);
+	/**
+	 * Writes logs information in the servet logs.
+	 * 
+	 * @param message
+	 * @param logInAllLoggers
+	 */
+	public void log(String message, final boolean logInAllLoggers) {
+		message = "[" + new Date().toString() + "] " + message;
+		if (logInAllLoggers) {
+			System.out.println(message);
+		}
+		logStream.println(message);
+	}
+	
+	/**
+	 * @see javax.servlet.ServletContext#log(java.lang.String)
+	 */
+	public void log(final String message) {
+		log(message, true);
 	}
 	
 	public void log(String message, Throwable throwable) {
 		if (throwable != null) {
-			message = message + LINE_SEP + IOHelper.toString(throwable);
+			message += LINE_SEP + IOHelper.toString(throwable);
 		}
 		log(message);
 	}
@@ -1263,6 +1368,16 @@ public class Serve implements ServletContext, Serializable {
 	// @param message the message to log
 	public void log(Exception exception, String message) {
 		log(message, exception);
+	}
+	
+	/**
+	 * 
+	 * @param throwable
+	 */
+	public void log(Throwable throwable) {
+		if (throwable != null) {
+			log(LINE_SEP + IOHelper.toString(throwable));
+		}
 	}
 	
 	// / Applies alias rules to the specified virtual path and returns the
@@ -1288,7 +1403,6 @@ public class Serve implements ServletContext, Serializable {
 				} else {
 					path = "";
 				}
-				
 			} else if (pl > 0) {
 				for (int i = 0; i < pl; i++) {
 					char s = path.charAt(i);
@@ -1325,6 +1439,7 @@ public class Serve implements ServletContext, Serializable {
 		if (dp > 0) {
 			return mime.getProperty(file.substring(dp + 1).toUpperCase());
 		}
+		
 		return null;
 	}
 	
@@ -1536,6 +1651,7 @@ public class Serve implements ServletContext, Serializable {
 		try {
 			return getResource(path).openStream();
 		} catch (Exception ex) {
+			log(ex);
 		}
 		
 		return null;
@@ -1548,7 +1664,8 @@ public class Serve implements ServletContext, Serializable {
 		
 		try {
 			return new SimpleRequestDispatcher(urlpath);
-		} catch (NullPointerException npe) {
+		} catch (NullPointerException ex) {
+			log(ex);
 			return null;
 		}
 	}
@@ -2039,8 +2156,7 @@ public class Serve implements ServletContext, Serializable {
 		protected long lastRun, lastWait;
 		private Vector outCookies;
 		private Vector inCookies;
-		private String sessionCookieValue, sessionUrlValue, sessionValue,
-						reqSessionValue;
+		private String sessionCookieValue, sessionUrlValue, sessionValue, reqSessionValue;
 		protected String reqQuery;
 		private PrintWriter pw;
 		private ServletOutputStream rout;
@@ -2092,7 +2208,8 @@ public class Serve implements ServletContext, Serializable {
 			try {
 				in = new ServeInputStream(socket.getInputStream(), this);
 				out = new ServeOutputStream(socket.getOutputStream(), this);
-			} catch (IOException ioe) {
+			} catch (IOException ex) {
+				serve.log(ex);
 				close();
 				return;
 			}
@@ -2142,10 +2259,11 @@ public class Serve implements ServletContext, Serializable {
 			// System.err.println("===>CLOSE()");
 			IOException ioe = null;
 			try {
-				if (pw != null)
+				if (pw != null) {
 					pw.flush();
-				else
+				} else {
 					out.flush();
+				}
 			} catch (IOException io1) {
 				ioe = io1;
 			}
@@ -2153,22 +2271,26 @@ public class Serve implements ServletContext, Serializable {
 			try {
 				out.close();
 			} catch (IOException io1) {
-				if (ioe != null)
+				if (ioe != null) {
 					ioe = (IOException) ioe.initCause(io1);
-				else
+				} else {
 					ioe = io1;
+				}
 			}
 			try {
 				in.close();
 			} catch (IOException io1) {
-				if (ioe != null)
+				if (ioe != null) {
 					ioe = (IOException) ioe.initCause(io1);
-				else
+				} else {
 					ioe = io1;
+				}
 			}
 			
-			if (ioe != null)
+			if (ioe != null) {
+				serve.log(ioe);
 				throw ioe;
+			}
 		}
 		
 		/*
@@ -2192,15 +2314,17 @@ public class Serve implements ServletContext, Serializable {
 			reqMime = false;
 			
 			// considering that clear() works faster than new
-			if (reqHeaderNames == null)
+			if (reqHeaderNames == null) {
 				reqHeaderNames = new Vector();
-			else
+			} else {
 				reqHeaderNames.clear();
+			}
 			
-			if (reqHeaderValues == null)
+			if (reqHeaderValues == null) {
 				reqHeaderValues = new Vector();
-			else
+			} else {
 				reqHeaderValues.clear();
+			}
 			
 			locale = null;
 			uriLen = 0;
@@ -2219,13 +2343,15 @@ public class Serve implements ServletContext, Serializable {
 			rout = null;
 			formParameters = null;
 			
-			if (attributes == null)
+			if (attributes == null) {
 				attributes = new Hashtable();
-			else
+			} else {
 				attributes.clear();
+			}
 			
-			if (sslAttributes != null)
+			if (sslAttributes != null) {
 				attributes.putAll(sslAttributes);
+			}
 			
 			resCode = -1;
 			resMessage = null;
@@ -2246,8 +2372,10 @@ public class Serve implements ServletContext, Serializable {
 		
 		// Methods from Runnable.
 		public void run() {
-			if (socket == null)
+			if (socket == null) {
 				return;
+			}
+			
 			try {
 				do {
 					restart();
@@ -2256,8 +2384,9 @@ public class Serve implements ServletContext, Serializable {
 					// serve.log("A>"+asyncMode);
 					if (asyncMode != null) {
 						asyncTimeout = asyncMode.getTimeout();
-						if (asyncTimeout > 0)
+						if (asyncTimeout > 0) {
 							asyncTimeout += System.currentTimeMillis();
+						}
 						return;
 					}
 					
@@ -2267,31 +2396,35 @@ public class Serve implements ServletContext, Serializable {
 						try {
 							serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 							return;
-						} catch (Exception e) {
-							serve.log("TJWS: websocket upgrade protocol error: " + e, e);
+						} catch (Exception ex) {
+							serve.log("TJWS: websocket upgrade protocol error: " + ex, ex);
 							websocketUpgrade = false;
 						}
 					}
 				} while (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse());
 			} catch (IOException ioe) {
+				serve.log(ioe);
 				// System.err.println("Drop "+ioe);
 				if (ioe instanceof SocketTimeoutException) {
 					// serve.log("Keepalive timeout, async " + asyncMode, null);
 				} else {
 					String errMsg = ioe.getMessage();
-					if ((errMsg == null || errMsg.indexOf("ocket closed") < 0) && ioe instanceof java.nio.channels.AsynchronousCloseException == false)
-						if (socket != null)
+					if ((errMsg == null || errMsg.indexOf("ocket closed") < 0) && ioe instanceof java.nio.channels.AsynchronousCloseException == false) {
+						if (socket != null) {
 							serve.log("TJWS: IO error: " + ioe + " in processing a request " + (reqUriPathUn == null ? "(NULL)" : reqUriPathUn) + " from " + socket.getInetAddress() + ":" + socket.getLocalPort() + " / " + socket.getClass().getName());
-						else
+						} else {
 							serve.log("TJWS: IO error: " + ioe + "(socket NULL)");
-					else
+						}
+					} else {
 						synchronized (this) {
 							socket = null;
 						}
+					}
 				} // ioe.printStackTrace();
 			} finally {
-				if (asyncMode == null && !websocketUpgrade)
+				if (asyncMode == null && !websocketUpgrade) {
 					close();
+				}
 			}
 		}
 		
@@ -2318,10 +2451,12 @@ public class Serve implements ServletContext, Serializable {
 				}
 				return;
 			}
+			
 			if (len >= lineBytes.length) {
 				problem("Status-Code 414: Request-URI Too Long", SC_REQUEST_URI_TOO_LONG);
 				return;
 			}
+			
 			line = new String(lineBytes, 0, len, IOHelper.UTF_8);
 			// serve.log("R>"+line);
 			StringTokenizer ust = new StringTokenizer(line);
@@ -2345,20 +2480,23 @@ public class Serve implements ServletContext, Serializable {
 						reqProtocol = ust.nextToken();
 						oneOne = !reqProtocol.toUpperCase().equals("HTTP/1.0");
 						reqMime = true;
+						
 						// Read the rest of the lines.
-						String s;
-						while ((s = ((ServeInputStream) in).readLine(HTTP_MAX_HDR_LEN)) != null) {
+						String lineSegment;
+						while ((lineSegment = ((ServeInputStream) in).readLine(HTTP_MAX_HDR_LEN)) != null) {
 							// serve.log("H>"+s);
-							if (s.length() == 0)
+							if (lineSegment.length() == 0) {
 								break;
-							int c = s.indexOf(':', 0);
+							}
+							int c = lineSegment.indexOf(':', 0);
 							if (c > 0) {
-								String key = s.substring(0, c).trim().toLowerCase();
-								String value = s.substring(c + 1).trim();
+								String key = lineSegment.substring(0, c).trim().toLowerCase();
+								String value = lineSegment.substring(c + 1).trim();
 								reqHeaderNames.addElement(key);
 								reqHeaderValues.addElement(value);
-							} else
-								serve.log("TJWS: header field '" + s + "' without ':'");
+							} else {
+								serve.log("TJWS: header field '" + lineSegment + "' without ':'");
+							}
 						}
 					} else {
 						reqProtocol = "HTTP/0.9";
@@ -2375,20 +2513,20 @@ public class Serve implements ServletContext, Serializable {
 			}
 			// Check Host: header in HTTP/1.1 requests.
 			if (oneOne) {
-				String s = getHeader(HOST);
-				if (s == null) {
+				String strHeader = getHeader(HOST);
+				if (strHeader == null) {
 					problem("Status-Code 400: 'Host' header is missing in HTTP/1.1 request", SC_BAD_REQUEST);
 					return;
 				}
-				s = getHeader(CONNECTION);
-				if (s != null) {
-					s = s.toLowerCase();
+				strHeader = getHeader(CONNECTION);
+				if (strHeader != null) {
+					strHeader = strHeader.toLowerCase();
 				}
 				
-				websocketUpgrade = s != null && s.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
-				keepAlive = "close".equalsIgnoreCase(s) == false;
+				websocketUpgrade = strHeader != null && strHeader.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
+				keepAlive = "close".equalsIgnoreCase(strHeader) == false;
 				if (keepAlive) {
-					s = getHeader(KEEPALIVE);
+					strHeader = getHeader(KEEPALIVE);
 					// serve.log("upgrading protocol "+s);
 					// FF specific ?
 					// parse value to extract the connection
@@ -2517,8 +2655,10 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		private boolean assureHeaders() {
-			if (reqMime)
+			if (reqMime) {
 				setHeader("MIME-Version", "1.0");
+			}
+			
 			setDateHeader("Date", System.currentTimeMillis());
 			setHeader("Server", Serve.Identification.serverName + "/" + Serve.Identification.serverVersion);
 			if (keepAlive && serve.isKeepAlive() && !websocketUpgrade) {
@@ -2527,15 +2667,18 @@ public class Serve implements ServletContext, Serializable {
 					// because some client
 					// do not follow a
 					// standard
-					if (oneOne)
+					if (oneOne) {
 						setHeader(KEEPALIVE, serve.getKeepAliveParamStr());
+					}
 				}
 				return true;
 			} else if (websocketUpgrade) {
 				setHeader(CONNECTION, UPGRADE);
 				return true;
-			} else
+			} else {
 				setHeader(CONNECTION, "close");
+			}
+			
 			return false;
 		}
 		
@@ -2597,11 +2740,17 @@ public class Serve implements ServletContext, Serializable {
 			}
 		}
 		
+		/**
+		 * 
+		 * @return
+		 * @throws IOException
+		 */
 		private boolean authenificate() throws IOException {
 			Object[] o = serve.realms.get(reqUriPath); // by Niel Markwick
 			BasicAuthRealm realm = null;
-			if (o != null)
+			if (o != null) {
 				realm = (BasicAuthRealm) o[0];
+			}
 			// System.err.println("looking for realm for path "+getPathInfo()+"
 			// in
 			// "+serve.realms+" found "+realm);
@@ -2621,8 +2770,9 @@ public class Serve implements ServletContext, Serializable {
 				String realPassword = (String) realm.get(user);
 				// System.err.println("User "+user+" Password "+password+" real
 				// "+realPassword);
-				if (realPassword != null && realPassword.equals(password))
+				if (realPassword != null && realPassword.equals(password)) {
 					return true;
+				}
 			}
 			
 			setStatus(SC_UNAUTHORIZED);
@@ -2658,33 +2808,36 @@ public class Serve implements ServletContext, Serializable {
 			// System.err.println("JOIN==");
 			// new Exception("JOIN==").printStackTrace();
 			synchronized (this) {
-				if (asyncMode == null)
+				if (asyncMode == null) {
 					return;
+				}
 				asyncMode = null;
 			}
 			// System.err.println("Comparing request with current "+
 			// requestThread+" "+ Thread.currentThread());
-			if (requestThread == Thread.currentThread()) // detecting if called
-															// within request
-															// processing thread
+			if (requestThread == Thread.currentThread()) {
+				// detecting if called within request processing thread
 				return;
+			}
+			
 			try {
 				finalizerequest();
-				if (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse())
+				if (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse()) {
 					serve.threadPool.executeThread(this);
-				else
+				} else {
 					close();
+				}
 			} catch (IOException ioe) {
 				serve.log("TJWS: " + ioe);
-			} finally {
 			}
 		}
 		
 		public void extendAsyncTimeout(long period) {
-			if (period > 0)
+			if (period > 0) {
 				asyncTimeout = System.currentTimeMillis() + period;
-			else if (period < 0)
+			} else if (period < 0) {
 				asyncTimeout = 0;
+			}
 		}
 		
 		private static final int MAYBEVERSION = 1;
@@ -2724,19 +2877,24 @@ public class Serve implements ServletContext, Serializable {
 		// TODO see if it can be simplified
 		// TODO check if HTTPOnly can be transfere back
 		private void parseCookies() throws IOException {
-			if (inCookies == null)
+			if (inCookies == null) {
 				inCookies = new Vector();
+			}
 			String cookies = getHeader(COOKIE);
-			if (cookies == null)
+			if (cookies == null) {
 				return;
+			}
+			
 			try {
 				String cookie_name = null;
 				String cookie_value = null;
 				String cookie_path = null;
 				String cookie_domain = null;
 				// boolean httpOnly = false;
-				if (cookies.length() > 300 * 4096)
+				if (cookies.length() > 300 * 4096) {
 					throw new IOException("Cookie string too long:" + cookies.length());
+				}
+				
 				// System.err.println("We received:" + cookies);
 				char[] cookiesChars = cookies.toCharArray();
 				int state = MAYBEVERSION;
@@ -2751,9 +2909,10 @@ public class Serve implements ServletContext, Serializable {
 								token.append(c);
 								if (c == '$') {
 									state = INVERSION; // RFC 2965
-								} else
+								} else {
 									// RFC 2109
 									state = OLD_INNAME;
+								}
 							}
 							break;
 						case OLD_INNAME:
@@ -2761,8 +2920,9 @@ public class Serve implements ServletContext, Serializable {
 								state = OLD_INVAL;
 								cookie_name = token.toString();
 								token.setLength(0);
-							} else if (c != ' ' || token.length() > 0)
+							} else if (c != ' ' || token.length() > 0) {
 								token.append(c);
+							}
 							break;
 						// TODO introduce val_start. then quoted value and value
 						case OLD_INVAL:
@@ -2772,30 +2932,32 @@ public class Serve implements ServletContext, Serializable {
 									cookie_value = token.toString();
 									token.setLength(0);
 									addCookie(cookie_name, cookie_value, null, null);
-								} else if (c == '"' && token.length() == 0)
+								} else if (c == '"' && token.length() == 0) {
 									quoted = true;
-								else
+								} else {
 									token.append(c);
+								}
 							} else {
-								if (c == '"')
+								if (c == '"') {
 									quoted = false;
-								else
+								} else {
 									token.append(c);
+								}
 							}
 							break;
 						case INVERSION:
 							if (c == '=') {
-								if ("$Version".equals(token.toString()))
+								if ("$Version".equals(token.toString())) {
 									state = INVERSIONNUM;
-								else {
-									state = OLD_INVAL; // consider name starts
-														// with
-									// $
+								} else {
+									// consider name starts with $
+									state = OLD_INVAL;
 									cookie_name = token.toString();
 								}
 								token.setLength(0);
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case INVERSIONNUM:
 							if (c == ',' || c == ';') {
@@ -2803,16 +2965,18 @@ public class Serve implements ServletContext, Serializable {
 								state = NEW_INNAME;
 							} else if (Character.isDigit(c) == false) {
 								state = RECOVER;
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case NEW_INNAME:
 							if (c == '=') {
 								state = NEW_INVAL;
 								cookie_name = token.toString();
 								token.setLength(0);
-							} else if (c != ' ' || token.length() > 0)
+							} else if (c != ' ' || token.length() > 0) {
 								token.append(c);
+							}
 							break;
 						case NEW_INVAL:
 							if (c == ';') {
@@ -2825,8 +2989,9 @@ public class Serve implements ServletContext, Serializable {
 								cookie_value = token.toString();
 								token.setLength(0);
 								addCookie(cookie_name, cookie_value, null, null);
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case MAYBEINPATH:
 							if (c != ' ') {
@@ -2845,14 +3010,14 @@ public class Serve implements ServletContext, Serializable {
 									state = INPATHVALUE;
 								else {
 									addCookie(cookie_name, cookie_value, null, null);
-									state = NEW_INVAL; // consider name starts
-														// with
-									// $
+									// consider name starts with $
+									state = NEW_INVAL;
 									cookie_name = token.toString();
 								}
 								token.setLength(0);
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case INPATHVALUE:
 							if (c == ',') {
@@ -2864,8 +3029,9 @@ public class Serve implements ServletContext, Serializable {
 								state = MAYBEDOMAIN;
 								cookie_path = token.toString();
 								token.setLength(0);
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case MAYBEDOMAIN:
 							if (c != ' ') {
@@ -2880,13 +3046,12 @@ public class Serve implements ServletContext, Serializable {
 							break;
 						case INDOMAIN:
 							if (c == '=') {
-								if ("$Domain".equals(token.toString()))
+								if ("$Domain".equals(token.toString())) {
 									state = INDOMAINVALUE;
-								else {
+								} else {
 									addCookie(cookie_name, cookie_value, cookie_path, null);
-									state = NEW_INVAL; // consider name starts
-														// with
-									// $
+									// consider name starts with $
+									state = NEW_INVAL;
 									cookie_name = token.toString();
 								}
 								token.setLength(0);
@@ -2900,8 +3065,9 @@ public class Serve implements ServletContext, Serializable {
 							} else if (c == ';') {
 								cookie_domain = token.toString();
 								state = MAYBEPORT;
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case MAYBEPORT:
 							if (c != ' ') {
@@ -2920,9 +3086,8 @@ public class Serve implements ServletContext, Serializable {
 									state = INPORTVALUE;
 								else {
 									addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
-									state = NEW_INVAL; // consider name starts
-														// with
-									// $
+									// consider name starts with $
+									state = NEW_INVAL;
 									cookie_name = token.toString();
 								}
 								token.setLength(0);
@@ -2936,8 +3101,9 @@ public class Serve implements ServletContext, Serializable {
 								token.setLength(0);
 							} else if (Character.isDigit(c) == false) {
 								state = RECOVER;
-							} else
+							} else {
 								token.append(c);
+							}
 							break;
 						case RECOVER:
 							serve.log("TJWS: Parsing recover of cookie string " + cookies, null);
@@ -2948,6 +3114,7 @@ public class Serve implements ServletContext, Serializable {
 							break;
 					}
 				}
+				
 				if (state == OLD_INVAL || state == NEW_INVAL) {
 					cookie_value = token.toString();
 					addCookie(cookie_name, cookie_value, null, null);
@@ -2978,8 +3145,9 @@ public class Serve implements ServletContext, Serializable {
 				inCookies.addElement(c = new Cookie(name, value));
 				if (path != null) {
 					c.setPath(path);
-					if (domain != null)
+					if (domain != null) {
 						c.setDomain(domain);
+					}
 				}
 			}
 		}
@@ -3017,12 +3185,14 @@ public class Serve implements ServletContext, Serializable {
 		// a request may be reconstructed using this scheme, the server name
 		// and port, and additional information such as URIs.
 		public String getScheme() {
-			if (scheme == null)
+			if (scheme == null) {
 				// lazy stuf dlc
 				synchronized (this) {
 					if (scheme == null)
 						scheme = isSSLSocket() || (serve.proxySSL) ? "https" : "http";
 				}
+			}
+			
 			return scheme;
 		}
 		
@@ -3038,10 +3208,12 @@ public class Serve implements ServletContext, Serializable {
 			if (serverName != null && serverName.length() > 0) {
 				int colon = serverName.lastIndexOf(':');
 				if (colon >= 0) {
-					if (colon < serverName.length())
+					if (colon < serverName.length()) {
 						serverName = serverName.substring(0, colon);
+					}
 				}
 			}
+			
 			if (serverName == null) {
 				if (serve.proxyConfig)
 					serverName = getHeader(FORWARDED_SERVER);
@@ -3053,9 +3225,11 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 			}
+			
 			int slash = serverName.indexOf("/");
-			if (slash >= 0)
+			if (slash >= 0) {
 				serverName = serverName.substring(slash + 1);
+			}
 			return serverName;
 		}
 		
@@ -3074,11 +3248,14 @@ public class Serve implements ServletContext, Serializable {
 						
 					}
 				else {
-					if ("https".equals(getScheme()))
+					if ("https".equals(getScheme())) {
 						return 443;
+					}
+					
 					return 80;
 				}
 			}
+			
 			return socket.getLocalPort();
 		}
 		
@@ -3086,8 +3263,10 @@ public class Serve implements ServletContext, Serializable {
 		// proxy that sent the request.
 		// Same as the CGI variable REMOTE_ADDR.
 		public String getRemoteAddr() {
-			if (serve.proxyConfig && getHeader(FORWARDED_FOR) != null)
+			if (serve.proxyConfig && getHeader(FORWARDED_FOR) != null) {
 				return getHeader(FORWARDED_FOR);
+			}
+			
 			return socket.getInetAddress().getHostAddress();
 		}
 		
@@ -3096,10 +3275,11 @@ public class Serve implements ServletContext, Serializable {
 		//
 		// Same as the CGI variable REMOTE_HOST.
 		public String getRemoteHost() {
-			if (serve.proxyConfig && getHeader(FORWARDED_FOR) != null)
-				return getHeader(FORWARDED_FOR); // TODO resolve name by IP
-													// address from
-													// X-Forwarded-For
+			if (serve.proxyConfig && getHeader(FORWARDED_FOR) != null) {
+				// TODO resolve name by IP address from X-Forwarded-For
+				return getHeader(FORWARDED_FOR);
+			}
+			
 			String result = socket.getInetAddress().getHostName();
 			return result != null ? result : getRemoteAddr();
 		}
@@ -3119,10 +3299,12 @@ public class Serve implements ServletContext, Serializable {
 		// @exception IOException on other I/O-related errors
 		public ServletInputStream getInputStream() throws IOException {
 			synchronized (in) {
-				if (((ServeInputStream) in).isReturnedAsReader())
+				if (((ServeInputStream) in).isReturnedAsReader()) {
 					throw new IllegalStateException("Already returned as a reader.");
+				}
 				((ServeInputStream) in).setReturnedAsStream(true);
 			}
+			
 			return in;
 		}
 		
@@ -3138,11 +3320,13 @@ public class Serve implements ServletContext, Serializable {
 					throw new IllegalStateException("Already returned as a stream.");
 				((ServeInputStream) in).setReturnedAsReader(true);
 			}
-			if (charEncoding != null)
+			
+			if (charEncoding != null) {
 				try {
 					return new BufferedReader(new InputStreamReader(in, charEncoding));
 				} catch (UnsupportedEncodingException uee) {
 				}
+			}
 			return new BufferedReader(new InputStreamReader(in));
 		}
 		
@@ -3150,12 +3334,13 @@ public class Serve implements ServletContext, Serializable {
 			synchronized (resHeaderNames) { // supposes to not be null
 				if (formParameters == null) {
 					if ("GET".equals(reqMethod) || "HEAD".equals(reqMethod)) {
-						if (reqQuery != null)
+						if (reqQuery != null) {
 							try {
 								formParameters = Acme.Utils.parseQueryString(reqQuery, charEncoding);
 							} catch (IllegalArgumentException ex) {
 								serve.log("TJWS: Exception " + ex + " at parsing 'get|head' data " + reqQuery);
 							}
+						}
 					} else if ("POST".equals(reqMethod)) {
 						String contentType = getContentType();
 						if (contentType != null && WWWFORMURLENCODE.regionMatches(true, 0, contentType, 0, WWWFORMURLENCODE.length())) {
@@ -3169,18 +3354,25 @@ public class Serve implements ServletContext, Serializable {
 									// TODO propagate the exception ?
 									formParameters = EMPTYHASHTABLE;
 								}
-							} else
+							} else {
 								formParameters = Acme.Utils.parseQueryString(postCache[0], charEncoding);
-							if (reqQuery != null && reqQuery.length() > 0)
+							}
+							if (reqQuery != null && reqQuery.length() > 0) {
 								formParameters.putAll(Acme.Utils.parseQueryString(reqQuery, charEncoding));
-						} else if (reqQuery != null)
+							}
+						} else if (reqQuery != null) {
 							formParameters = Acme.Utils.parseQueryString(reqQuery, charEncoding);
-					} else
+						}
+					} else {
 						throw new IllegalArgumentException("Request parameters are not supported for method:" + reqMethod);
+					}
 				}
 			}
-			if (formParameters == null)
+			
+			if (formParameters == null) {
 				formParameters = EMPTYHASHTABLE;
+			}
+			
 			return formParameters;
 		}
 		
@@ -3195,8 +3387,9 @@ public class Serve implements ServletContext, Serializable {
 		// @param name the parameter name
 		public String getParameter(String name) {
 			String[] params = getParameterValues(name);
-			if (params == null || params.length == 0)
+			if (params == null || params.length == 0) {
 				return null;
+			}
 			
 			return params[0];
 		}
@@ -4198,10 +4391,10 @@ public class Serve implements ServletContext, Serializable {
 				while (he.hasMoreElements()) {
 					String name = (String) he.nextElement();
 					if (CONNECTION.equals(name) || KEEPALIVE.equals(name)) // skip
-																			// header
-																			// until
-																			// make
-																			// decision
+																			 // header
+																			 // until
+																			 // make
+																			 // decision
 						continue;
 					Object o = resHeaderNames.get(name);
 					if (o instanceof String) {
@@ -4655,29 +4848,21 @@ public class Serve implements ServletContext, Serializable {
 		 * The actual input stream (buffered).
 		 */
 		private InputStream in, origIn;
-		
-		private ServeConnection conn;
-		
+		private ServeConnection serveConnection;
 		private int chunksize = 0;
-		
 		private boolean chunking = false, compressed;
-		
 		private boolean returnedAsReader, returnedAsStream;
-		
 		private long contentLength = -1;
-		
 		private long readCount;
-		
 		private byte[] oneReadBuf = new byte[1];
-		
 		private boolean closed;
 		
 		/* ------------------------------------------------------------ */
 		/**
 		 * Constructor
 		 */
-		public ServeInputStream(InputStream in, ServeConnection conn) {
-			this.conn = conn;
+		public ServeInputStream(InputStream in, ServeConnection serveConnection) {
+			this.serveConnection = serveConnection;
 			this.in = in;
 		}
 		
@@ -4696,8 +4881,9 @@ public class Serve implements ServletContext, Serializable {
 		 * @param chunking
 		 */
 		public void chunking(boolean chunking) {
-			if (contentLength == -1)
+			if (contentLength == -1) {
 				this.chunking = chunking;
+			}
 		}
 		
 		boolean compressed(boolean on) {
@@ -4705,27 +4891,29 @@ public class Serve implements ServletContext, Serializable {
 				if (compressed == false) {
 					origIn = in;
 					try {
-						ServeInputStream sis = new ServeInputStream(in, conn);
+						ServeInputStream sis = new ServeInputStream(in, serveConnection);
 						if (chunking) {
 							sis.chunking(true);
 							chunking(false);
 						}
-						in = (InputStream) conn.serve.gzipInStreamConstr.newInstance(new Object[] { sis });
+						in = (InputStream) serveConnection.serve.gzipInStreamConstr.newInstance(new Object[] { sis });
 						compressed = true;
 						// conn.serve.log("Compressed stream was created with
 						// success",
 						// null);
 					} catch (Exception ex) {
-						if (ex instanceof InvocationTargetException)
-							conn.serve.log("TJWS: Problem in compressed stream creation", ((InvocationTargetException) ex).getTargetException());
-						else
-							conn.serve.log("TJWS: Problem in compressed stream obtaining", ex);
+						if (ex instanceof InvocationTargetException) {
+							serveConnection.serve.log("TJWS: Problem in compressed stream creation", ((InvocationTargetException) ex).getTargetException());
+						} else {
+							serveConnection.serve.log("TJWS: Problem in compressed stream obtaining", ex);
+						}
 					}
 				}
 			} else if (compressed) {
 				compressed = false;
 				in = origIn;
 			}
+			
 			return compressed;
 		}
 		
@@ -4740,10 +4928,12 @@ public class Serve implements ServletContext, Serializable {
 				// }
 				this.contentLength = contentLength;
 				readCount = 0;
-			} // else if (STREAM_DEBUG || true) {
-				// new Exception("Igonore Set content length:"+contentLength+"
-				// for "+this.contentLength).printStackTrace();
-				// }
+			}
+			
+			// else if (STREAM_DEBUG || true) {
+			// new Exception("Igonore Set content length:"+contentLength+"
+			// for "+this.contentLength).printStackTrace();
+			// }
 		}
 		
 		/* ------------------------------------------------------------ */
@@ -4752,112 +4942,154 @@ public class Serve implements ServletContext, Serializable {
 		 * No char encoding, ASCII only
 		 */
 		protected String readLine(int maxLen) throws IOException {
-			if (maxLen <= 0)
+			if (maxLen <= 0) {
 				throw new IllegalArgumentException("Max len:" + maxLen);
-			StringBuffer buf = new StringBuffer(Math.min(8192, maxLen));
+			}
+			
+			final StringBuffer lineBuffer = new StringBuffer(Math.min(8192, maxLen));
 			
 			int c;
-			boolean cr = false;
+			boolean newLine = false;
 			int i = 0;
 			while ((c = in.read()) != -1) {
 				if (c == 10) { // LF
-					if (cr)
+					if (newLine) {
 						break;
+					}
 					break;
 					// throw new IOException ("LF without CR");
-				} else if (c == 13) // CR
-					cr = true;
-				else {
-					// if (cr)
-					// throw new IOException ("CR without LF");
+				} else if (c == 13) { // CR
+					newLine = true;
+				} else {
+					// if (cr) throw new IOException ("CR without LF");
 					// see
 					// http://www.w3.org/Protocols/HTTP/1.1/rfc2616bis/draft-lafon-rfc2616bis-03.html#tolerant.applications
-					cr = false;
-					if (i >= maxLen)
+					newLine = false;
+					if (i >= maxLen) {
 						throw new IOException("Line lenght exceeds " + maxLen);
-					buf.append((char) c);
+					}
+					
+					lineBuffer.append((char) c);
 					i++;
 				}
 			}
-			if (STREAM_DEBUG)
-				System.err.println(buf);
-			if (c == -1 && buf.length() == 0)
-				return null;
 			
-			return buf.toString();
+			if (STREAM_DEBUG) {
+				System.err.println(lineBuffer);
+			}
+			
+			if (c == -1 && lineBuffer.length() == 0) {
+				return null;
+			}
+			
+			return lineBuffer.toString();
 		}
 		
-		/* ------------------------------------------------------------ */
+		/**
+		 * Reads the stream bytes.
+		 * 
+		 * @see java.io.InputStream#read()
+		 */
 		public int read() throws IOException {
 			int result = read(oneReadBuf, 0, 1);
-			if (result == 1)
+			if (result == 1) {
 				return 255 & oneReadBuf[0];
+			}
+			
 			return -1;
 		}
 		
-		/* ------------------------------------------------------------ */
+		/**
+		 * Reads the stream bytes.
+		 * 
+		 * @see java.io.InputStream#read(byte[])
+		 */
 		public int read(byte b[]) throws IOException {
 			return read(b, 0, b.length);
 		}
 		
-		/* ------------------------------------------------------------ */
+		/**
+		 * Reads the stream bytes.
+		 * 
+		 * @see java.io.InputStream#read(byte[], int, int)
+		 */
 		public synchronized int read(byte b[], int off, int len) throws IOException {
-			if (closed)
+			if (closed) {
 				throw new IOException("The stream is already closed");
+			}
+			
 			if (chunking) {
-				if (chunksize <= 0 && getChunkSize() <= 0)
+				if (chunksize <= 0 && getChunkSize() <= 0) {
 					return -1;
-				if (len > chunksize)
+				}
+				if (len > chunksize) {
 					len = chunksize;
+				}
 				len = in.read(b, off, len);
 				chunksize = (len < 0) ? -1 : (chunksize - len);
 			} else {
 				if (contentLength >= 0) {
 					if (readCount >= contentLength) {
-						if (STREAM_DEBUG)
+						if (STREAM_DEBUG) {
 							System.err.print("EOF at " + contentLength);
+						}
 						return -1;
 					}
-					if (contentLength - len < readCount)
+					
+					if (contentLength - len < readCount) {
 						len = (int) (contentLength - readCount);
+					}
 					
 					len = in.read(b, off, len);
-					if (len > 0)
+					if (len > 0) {
 						readCount += len;
-				} else
+					}
+				} else {
 					// to avoid extra if
 					len = in.read(b, off, len);
+				}
 			}
-			if (STREAM_DEBUG && len > 0)
+			
+			if (STREAM_DEBUG && len > 0) {
 				System.err.print(new String(b, off, len));
+			}
 			
 			return len;
 		}
 		
 		/* ------------------------------------------------------------ */
-		public long skip(long len) throws IOException {
-			if (STREAM_DEBUG)
-				System.err.println("instream.skip() :" + len);
-			if (closed)
+		public long skip(long length) throws IOException {
+			if (STREAM_DEBUG) {
+				System.err.println("instream.skip() :" + length);
+			}
+			if (closed) {
 				throw new IOException("The stream is already closed");
+			}
+			
 			if (chunking) {
-				if (chunksize <= 0 && getChunkSize() <= 0)
+				if (chunksize <= 0 && getChunkSize() <= 0) {
 					return -1;
-				if (len > chunksize)
-					len = chunksize;
-				len = in.skip(len);
-				chunksize = (len < 0) ? -1 : (chunksize - (int) len);
+				}
+				
+				if (length > chunksize) {
+					length = chunksize;
+				}
+				length = in.skip(length);
+				chunksize = (length < 0) ? -1 : (chunksize - (int) length);
 			} else {
 				if (contentLength >= 0) {
-					len = Math.min(len, contentLength - readCount);
-					if (len <= 0)
+					length = Math.min(length, contentLength - readCount);
+					if (length <= 0) {
 						return -1;
-					len = in.skip(len);
-					readCount += len;
-				} else
-					len = in.skip(len);
+					}
+					length = in.skip(length);
+					readCount += length;
+				} else {
+					length = in.skip(length);
+				}
 			}
-			return len;
+			
+			return length;
 		}
 		
 		/* ------------------------------------------------------------ */
@@ -4866,54 +5098,69 @@ public class Serve implements ServletContext, Serializable {
 		 * return 0 when there are more
 		 */
 		public int available() throws IOException {
-			if (STREAM_DEBUG)
+			if (STREAM_DEBUG) {
 				System.err.println("instream.available()");
-			if (closed)
+			}
+			
+			if (closed) {
 				// throw new IOException("The stream is already closed");
 				return 0;
+			}
+			
 			if (chunking) {
 				int len = in.available();
-				if (len <= chunksize)
+				if (len <= chunksize) {
 					return len;
+				}
 				return chunksize;
 			}
 			
 			if (contentLength >= 0) {
 				int len = in.available();
-				if (contentLength - readCount < Integer.MAX_VALUE)
+				if (contentLength - readCount < Integer.MAX_VALUE) {
 					return Math.min(len, (int) (contentLength - readCount));
+				}
+				
 				return len;
-			} else
+			} else {
 				return in.available();
+			}
 		}
 		
 		/* ------------------------------------------------------------ */
 		public void close() throws IOException {
 			// keep alive, will be closed by socket
 			// in.close();
-			if (STREAM_DEBUG)
+			if (STREAM_DEBUG) {
 				System.err.println("instream.close() " + closed);
+			}
 			// new Exception("instream.close()").printStackTrace();
-			if (closed)
-				return; // throw new
+			if (closed) {
+				return;
+			}
+			// throw new
 			// IOException("The stream is already closed");
 			// read until end of chunks or content length
-			if (chunking)
-				while (read() >= 0)
+			if (chunking) {
+				while (read() >= 0) {
 					;
-			else if (contentLength < 0)
+				}
+			} else if (contentLength < 0) {
 				;
-			else {
+			} else {
 				long skipCount = contentLength - readCount;
 				while (skipCount > 0) {
 					long skipped = skip(skipCount);
-					if (skipped <= 0)
+					if (skipped <= 0) {
 						break;
+					}
 					skipCount -= skipped;
 				}
 			}
-			if (conn.keepAlive == false)
+			
+			if (serveConnection.keepAlive == false) {
 				in.close();
+			}
 			closed = true;
 		}
 		
@@ -5172,7 +5419,7 @@ public class Serve implements ServletContext, Serializable {
 					else {
 						out = null;
 						conn = null; // the stream has to be recreated after
-										// closing
+									 // closing
 					}
 				}
 			} finally {
@@ -5202,12 +5449,12 @@ public class Serve implements ServletContext, Serializable {
 	 * format n1/n2/n2[/*.ext] and get match to a pattern and a unmatched tail
 	 */
 	public static class PathTreeDictionary {
-		Node rootNode;
+		Node root_node;
 		Node ext;
 		Object ctx;
 		
 		public PathTreeDictionary() {
-			rootNode = new Node();
+			root_node = new Node();
 		}
 		
 		/**
@@ -5226,37 +5473,31 @@ public class Serve implements ServletContext, Serializable {
 		public synchronized Object[] put(String path, Object value) {
 			// TODO make returning Object[] for cconsitency
 			if (path.length() == 0) { // context
-				if (ctx == null) {
+				if (ctx == null)
 					ctx = new Node();
-				}
 				Object result = ctx;
 				ctx = value;
 				return new Object[] { result, INT_ZERO };
 			}
-			
 			if (path.charAt(0) == '*') {
 				String ext_str = null;
-				if (path.length() > 2 && path.charAt(1) == '.') {
+				if (path.length() > 2 && path.charAt(1) == '.')
 					ext_str = path.substring(1);
-				} else {
+				else
 					throw new IllegalArgumentException("No extension specified for * starting pattern:" + path);
-				}
-				
-				if (ext == null) {
+				if (ext == null)
 					ext = new Node();
-				}
-				
 				return new Object[] { ext.put(ext_str, value), INT_ZERO };
 			}
 			// System.out.println("==>PUT path : "+path);
-			StringTokenizer stringTokenizer = new StringTokenizer(path, "\\/");
-			Node curNode = rootNode;
-			while (stringTokenizer.hasMoreTokens()) {
-				String nodename = stringTokenizer.nextToken();
+			StringTokenizer st = new StringTokenizer(path, "\\/");
+			Node cur_node = root_node;
+			while (st.hasMoreTokens()) {
+				String nodename = st.nextToken();
 				// System.out.println("PUT curr node : "+nodename);
 				int wci = nodename.indexOf('*');
 				if (wci == 0) {
-					if (nodename.length() > 1 || stringTokenizer.hasMoreTokens()) {
+					if (nodename.length() > 1 || st.hasMoreTokens()) {
 						throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
 					}
 					
@@ -5265,34 +5506,25 @@ public class Serve implements ServletContext, Serializable {
 					throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
 				}
 				
-				Node node = (Node) curNode.get(nodename);
+				Node node = (Node) cur_node.get(nodename);
 				if (node == null) {
 					node = new Node();
-					curNode.put(nodename, node);
+					cur_node.put(nodename, node);
 				}
-				curNode = node;
+				cur_node = node;
 			}
 			
-			Object result = curNode.object;
-			curNode.object = value;
+			Object result = cur_node.object;
+			cur_node.object = value;
 			return new Object[] { result, INT_ZERO };
 		}
 		
-		/**
-		 * 
-		 * @param value
-		 * @return
-		 */
 		public synchronized Object[] remove(Object value) {
-			Object[] result = remove(rootNode, value);
-			if (result[0] == null) {
+			Object[] result = remove(root_node, value);
+			if (result[0] == null)
 				result = remove(null, value);
-			}
-			
-			if (result[0] == null) {
+			if (result[0] == null)
 				return remove(ext, value);
-			}
-			
 			return result;
 		}
 		
@@ -5303,12 +5535,6 @@ public class Serve implements ServletContext, Serializable {
 			return result;
 		}
 		
-		/**
-		 * 
-		 * @param node
-		 * @param value
-		 * @return
-		 */
 		public Object[] remove(Node node, Object value) {
 			// TODO make full path, not only last element
 			if (node == null) {
@@ -5321,28 +5547,25 @@ public class Serve implements ServletContext, Serializable {
 			
 			if (node == ext) {
 				// TODO potential bug since look for first entry
-				Enumeration itrExt = ext.keys();
-				while (itrExt.hasMoreElements()) {
-					Object key = itrExt.nextElement();
+				Enumeration e = ext.keys();
+				while (e.hasMoreElements()) {
+					Object key = e.nextElement();
 					if (ext.get(key) == value) {
 						return new Object[] { ext.remove(key), new Integer(0) };
 					}
 				}
 				return new Object[] { null, null };
 			}
-			
 			if (node.object == value) {
 				node.object = null;
 				return new Object[] { value, new Integer(0) };
 			}
-			Enumeration itr = node.keys();
-			while (itr.hasMoreElements()) {
-				Object[] result = remove((Node) node.get((String) itr.nextElement()), value);
-				if (result[0] != null) {
+			Enumeration e = node.keys();
+			while (e.hasMoreElements()) {
+				Object[] result = remove((Node) node.get((String) e.nextElement()), value);
+				if (result[0] != null)
 					return result;
-				}
 			}
-			
 			return new Object[] { null, null };
 		}
 		
@@ -5355,42 +5578,36 @@ public class Serve implements ServletContext, Serializable {
 			// System.out.println("==>GET " + path);
 			// new Exception("GET " + path).printStackTrace();
 			Object[] result = new Object[2];
-			if (path == null) {
+			if (path == null)
 				return result;
-			}
-			
 			if ((path.length() == 0 || path.equals("/")) && ctx != null) {
 				result[0] = ctx;
 				result[1] = INT_ZERO;
 				return result;
 			}
-			char[] pathChars = path.toCharArray();
-			// default servlet
-			Node curNode = rootNode;
+			char[] ps = path.toCharArray();
+			Node cur_node = root_node; // default servlet
 			int p0 = 0, lm = 0; // last match
 			
 			boolean div_state = true;
-			for (int i = 0; i < pathChars.length; i++) {
+			for (int i = 0; i < ps.length; i++) {
 				// System.out.println("GET "+ps[i]);
-				
-				// next divider
-				if (pathChars[i] == '/' || pathChars[i] == '\\') {
-					if (div_state) {
+				if (ps[i] == '/' || ps[i] == '\\') { // next divider
+					if (div_state)
 						continue;
-					}
-					Node node = (Node) curNode.get(new String(pathChars, p0, i - p0));
+					Node node = (Node) cur_node.get(new String(ps, p0, i - p0));
 					// System.out.println("GET Node " + node + " for " + new
 					// String(ps, p0, i - p0));
 					
 					if (node == null) { // exact
-						node = (Node) curNode.get(""); // for *
+						node = (Node) cur_node.get(""); // for *
 						if (node != null && node.object != null) {
 							result[0] = node.object;
 							// System.out.println("GET * for " + node);
 						}
 						break;
 					}
-					curNode = node;
+					cur_node = node;
 					div_state = true;
 					p0 = i + 1;
 				} else {
@@ -5401,50 +5618,46 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 			
-			String pathLastPart = new String(pathChars, p0, pathChars.length - p0);
-			Node lastNode = (Node) curNode.get(pathLastPart);
+			String last_part = new String(ps, p0, ps.length - p0);
+			Node last_node = (Node) cur_node.get(last_part);
 			// System.out.println("GET cur node : " + last_node + " for: " +
 			// last_part + " root ext:" + ext+" and pos:"+p0);
-			if (lastNode != null) {
-				if (lastNode.object == null) {
-					lastNode = (Node) lastNode.get(""); // check for *
+			if (last_node != null) {
+				if (last_node.object == null) {
+					last_node = (Node) last_node.get(""); // check for *
 				}
-				if (lastNode != null && lastNode.object != null) {
-					result[0] = lastNode.object;
-					lm = pathLastPart.length() > 0 ? pathChars.length : p0 - 1;
+				if (last_node != null && last_node.object != null) {
+					result[0] = last_node.object;
+					lm = last_part.length() > 0 ? ps.length : p0 - 1;
 				}
 			} else {
-				lastNode = (Node) curNode.get("");
-				if (lastNode != null && lastNode.object != null) {
-					result[0] = lastNode.object;
+				last_node = (Node) cur_node.get("");
+				if (last_node != null && last_node.object != null) {
+					result[0] = last_node.object;
 					lm = p0 > 0 ? p0 - 1 : 0;
 				}
 			}
 			
 			// try ext
 			if (result[0] == null) {
-				lm = pathChars.length;
+				lm = ps.length;
 				if (ext != null) {
-					int ldi = pathLastPart.lastIndexOf('.');
+					int ldi = last_part.lastIndexOf('.');
 					if (ldi > 0) { // ignoring cases /.extension
-						result[0] = ext.get(pathLastPart.substring(ldi));
+						result[0] = ext.get(last_part.substring(ldi));
 						// System.out.println("GET ext node: " +
 						// last_part.substring(ldi));
 					}
 				}
-				
 				if (result[0] == null) { // look for default servlet
-					lastNode = (Node) rootNode.get("");
-					if (lastNode != null) {
-						result[0] = lastNode.object;
-					}
-					
+					last_node = (Node) root_node.get("");
+					if (last_node != null)
+						result[0] = last_node.object;
 					if (result[0] == null) {
-						result[0] = rootNode.object;
+						result[0] = root_node.object;
 					}
 				}
 			}
-			
 			// System.out.println("GET pos: "+lm);
 			result[1] = new Integer(lm);
 			return result;
@@ -5452,64 +5665,45 @@ public class Serve implements ServletContext, Serializable {
 		
 		public Enumeration keys() {
 			Vector result = new Vector();
-			if (ctx != null) {
+			if (ctx != null)
 				result.addElement("");
-			}
-			
-			if (rootNode.object != null) {
+			if (root_node.object != null)
 				result.addElement("/");
-			}
-			
-			addSiblingNames(rootNode, result, "");
+			addSiblingNames(root_node, result, "");
 			if (ext != null) {
 				Enumeration e = ext.keys();
-				while (e.hasMoreElements()) {
+				while (e.hasMoreElements())
 					result.addElement("*" + e.nextElement());
-				}
 			}
 			return result.elements();
 		}
 		
-		/**
-		 * 
-		 * @param node
-		 * @param result
-		 * @param path
-		 */
 		public void addSiblingNames(Node node, Vector result, String path) {
-			Enumeration nodeItr = node.keys();
-			while (nodeItr.hasMoreElements()) {
-				String pc = (String) nodeItr.nextElement();
+			Enumeration e = node.keys();
+			while (e.hasMoreElements()) {
+				String pc = (String) e.nextElement();
 				Node childNode = (Node) node.get(pc);
 				pc = path + '/' + (pc.length() == 0 ? "*" : pc);
-				if (childNode.object != null) {
+				if (childNode.object != null)
 					result.addElement(pc);
-				}
 				addSiblingNames(childNode, result, pc);
 			}
 		}
 		
 		public Enumeration elements() {
 			Vector result = new Vector();
-			if (rootNode.object != null) {
-				result.add(rootNode.object);
-			}
-			addSiblingObjects(rootNode, result);
+			if (root_node.object != null)
+				result.add(root_node.object);
+			addSiblingObjects(root_node, result);
 			return result.elements();
 		}
 		
-		/**
-		 * 
-		 * @param node
-		 * @param result
-		 */
 		public void addSiblingObjects(Node node, Vector result) {
-			Enumeration nodeItr = node.keys();
-			while (nodeItr.hasMoreElements()) {
-				Node childNode = (Node) node.get(nodeItr.nextElement());
-				if (childNode.object != null) {
+			Enumeration e = node.keys();
+			while (e.hasMoreElements()) {
+				Node childNode = (Node) node.get(e.nextElement());
+				if (childNode.object != null)
 					result.addElement(childNode.object);
-				}
 				addSiblingObjects(childNode, result);
 			}
 		}
@@ -5530,16 +5724,25 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	public static class AcmeSession extends Hashtable implements HttpSession {
 		private long createTime;
+		
 		private long lastAccessTime;
+		
 		private String id;
+		
 		private int inactiveInterval; // in seconds
+		
 		private boolean expired;
+		
 		private transient ServletContext servletContext;
+		
 		private transient HttpSessionContext sessionContext;
-		private transient List<EventListener> eventListeners;
+		
+		private transient List listeners;
 		
 		// TODO: check in documentation what is default inactive interval and
-		// what means 0 and what is mesurement unit
+		// what
+		// means 0
+		// and what is mesurement unit
 		AcmeSession(String id, ServletContext servletContext, HttpSessionContext sessionContext) {
 			this(id, 0, servletContext, sessionContext);
 		}
@@ -5595,9 +5798,8 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Object getAttribute(String name) throws IllegalStateException {
-			if (expired) {
+			if (expired)
 				throw new IllegalStateException();
-			}
 			return get((Object) name);
 		}
 		
@@ -5606,9 +5808,8 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Enumeration getAttributeNames() throws IllegalStateException {
-			if (expired) {
+			if (expired)
 				throw new IllegalStateException();
-			}
 			return keys();
 		}
 		
@@ -5633,7 +5834,6 @@ public class Serve implements ServletContext, Serializable {
 					((HttpSessionBindingListener) oldValue).valueUnbound(new HttpSessionBindingEvent(this, name));
 				}
 			}
-			
 			if (value != null) {
 				if (value instanceof HttpSessionBindingListener) {
 					((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name));
@@ -5644,24 +5844,10 @@ public class Serve implements ServletContext, Serializable {
 			}
 		}
 		
-		/**
-		 * 
-		 * @param name
-		 * @param value
-		 * @throws IllegalStateException
-		 * @see javax.servlet.http.HttpSession#putValue(java.lang.String,
-		 *      java.lang.Object)
-		 */
 		public void putValue(String name, Object value) throws IllegalStateException {
 			setAttribute(name, value);
 		}
 		
-		/**
-		 * 
-		 * @param name
-		 * @throws IllegalStateException
-		 * @see javax.servlet.http.HttpSession#removeAttribute(java.lang.String)
-		 */
 		public void removeAttribute(String name) throws IllegalStateException {
 			if (expired) {
 				throw new IllegalStateException();
@@ -5676,7 +5862,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 		}
 		
-		public void removeValue(java.lang.String name) throws IllegalStateException {
+		public void removeValue(String name) throws IllegalStateException {
 			removeAttribute(name);
 		}
 		
@@ -5690,8 +5876,7 @@ public class Serve implements ServletContext, Serializable {
 			while (e.hasMoreElements()) {
 				removeAttribute((String) e.nextElement());
 			}
-			
-			eventListeners = null;
+			listeners = null;
 			setExpired(true);
 			// would be nice remove it from hash table also
 		}
@@ -5706,22 +5891,23 @@ public class Serve implements ServletContext, Serializable {
 		
 		/**
 		 * 
-		 * @param eventListeners
+		 * @param listeners
 		 */
-		public synchronized void setListeners(List<EventListener> eventListeners) {
-			if (eventListeners == null) {
-				eventListeners = eventListeners;
-				if (eventListeners != null) {
+		public synchronized void setListeners(List listeners) {
+			if (listeners == null) {
+				this.listeners = listeners;
+				if (listeners != null) {
 					HttpSessionEvent event = new HttpSessionEvent(this);
-					for (int i = 0; i < eventListeners.size(); i++)
+					for (int i = 0; i < listeners.size(); i++) {
 						try {
-							((HttpSessionListener) eventListeners.get(i)).sessionCreated(event);
+							((HttpSessionListener) listeners.get(i)).sessionCreated(event);
 						} catch (ClassCastException cce) {
 							// servletContext. log("Wrong session listener
 							// type."+cce);
 						} catch (NullPointerException npe) {
 							// servletContext. log("Null session listener.");
 						}
+					}
 				}
 			}
 		}
@@ -5730,54 +5916,69 @@ public class Serve implements ServletContext, Serializable {
 		 * something hack, to update servlet context since session created out
 		 * of scope
 		 * 
-		 * @param sc
+		 * @param servletContext
 		 */
-		public synchronized void setServletContext(ServletContext sc) {
+		public synchronized void setServletContext(ServletContext servletContext) {
 			// System.err.println("ctx to:"+servletContext); //!!!
-			servletContext = sc;
+			this.servletContext = servletContext;
 		}
 		
 		private void notifyListeners() {
-			if (eventListeners != null) {
+			if (listeners != null) {
 				HttpSessionEvent event = new HttpSessionEvent(this);
-				for (int i = 0; i < eventListeners.size(); i++)
+				for (int i = 0; i < listeners.size(); i++) {
 					try {
-						((HttpSessionListener) eventListeners.get(i)).sessionDestroyed(event);
+						((HttpSessionListener) listeners.get(i)).sessionDestroyed(event);
 					} catch (ClassCastException ex) {
 						// servletContext.log("Wrong session listener
 						// type."+cce);
 					} catch (NullPointerException ex) {
 						// servletContext. log("Null session listener.");
 					}
+				}
 			}
 		}
 		
+		/**
+		 * 
+		 * @param name
+		 * @param value
+		 */
 		private void notifyListeners(String name, Object value) {
-			if (eventListeners != null) {
+			if (listeners != null) {
 				HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
-				for (int i = 0, n = eventListeners.size(); i < n; i++)
+				for (int i = 0, n = listeners.size(); i < n; i++) {
 					try {
-						((HttpSessionAttributeListener) eventListeners.get(i)).attributeRemoved(event);
-					} catch (ClassCastException ex) {
-					} catch (NullPointerException ex) {
-					}
-			}
-		}
-		
-		private void notifyListeners(String name, Object oldValue, Object value) {
-			if (eventListeners != null) {
-				HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
-				HttpSessionBindingEvent oldEvent = oldValue == null ? null : new HttpSessionBindingEvent(this, name, oldValue);
-				for (int i = 0, n = eventListeners.size(); i < n; i++)
-					try {
-						HttpSessionAttributeListener listener = (HttpSessionAttributeListener) eventListeners.get(i);
-						if (oldEvent != null) {
-							listener.attributeReplaced(oldEvent);
-						}
-						listener.attributeAdded(event);
+						((HttpSessionAttributeListener) listeners.get(i)).attributeRemoved(event);
 					} catch (ClassCastException cce) {
 					} catch (NullPointerException npe) {
 					}
+				}
+			}
+		}
+		
+		/**
+		 * 
+		 * @param name
+		 * @param oldValue
+		 * @param value
+		 */
+		private void notifyListeners(String name, Object oldValue, Object value) {
+			if (listeners != null) {
+				HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
+				HttpSessionBindingEvent oldEvent = oldValue == null ? null : new HttpSessionBindingEvent(this, name, oldValue);
+				for (int i = 0, n = listeners.size(); i < n; i++) {
+					try {
+						HttpSessionAttributeListener sessionListener = (HttpSessionAttributeListener) listeners.get(i);
+						if (oldEvent != null) {
+							sessionListener.attributeReplaced(oldEvent);
+						}
+						
+						sessionListener.attributeAdded(event);
+					} catch (ClassCastException cce) {
+					} catch (NullPointerException npe) {
+					}
+				}
 			}
 		}
 		
@@ -5790,7 +5991,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		boolean checkExpired() {
-			return inactiveInterval > 0 && (inactiveInterval * 1000 < System.currentTimeMillis() - lastAccessTime);
+			return (inactiveInterval > 0 && (inactiveInterval * 1000 < System.currentTimeMillis() - lastAccessTime));
 		}
 		
 		void userTouch() {
@@ -5807,8 +6008,10 @@ public class Serve implements ServletContext, Serializable {
 		// entry:base64 ser data
 		// $$
 		void save(Writer w) throws IOException {
-			if (expired)
+			if (expired) {
 				return;
+			}
+			
 			// can't use append because old JDK
 			w.write(id);
 			w.write(':');
@@ -5818,6 +6021,7 @@ public class Serve implements ServletContext, Serializable {
 			w.write(':');
 			w.write(Long.toString(lastAccessTime));
 			w.write("\r\n");
+			
 			Enumeration e = getAttributeNames();
 			ByteArrayOutputStream os = new ByteArrayOutputStream(1024 * 16);
 			while (e.hasMoreElements()) {
@@ -5825,9 +6029,9 @@ public class Serve implements ServletContext, Serializable {
 				Object so = get(aname);
 				if (so instanceof Serializable) {
 					os.reset();
-					ObjectOutputStream oos = new ObjectOutputStream(os);
+					ObjectOutputStream outputStream = new ObjectOutputStream(os);
 					try {
-						oos.writeObject(so);
+						outputStream.writeObject(so);
 						w.write(aname);
 						w.write(":");
 						w.write(Utils.base64Encode(os.toByteArray()));
@@ -5835,21 +6039,37 @@ public class Serve implements ServletContext, Serializable {
 					} catch (IOException ioe) {
 						servletContext.log("TJWS: Can't replicate/store a session value of '" + aname + "' class:" + so.getClass().getName(), ioe);
 					}
-				} else
+				} else {
 					servletContext.log("TJWS: Non serializable session object has been " + so.getClass().getName() + " skiped in storing of " + aname, null);
-				if (so instanceof HttpSessionActivationListener)
+				}
+				
+				if (so instanceof HttpSessionActivationListener) {
 					((HttpSessionActivationListener) so).sessionWillPassivate(new HttpSessionEvent(this));
+				}
 			}
 			w.write("$$\r\n");
 		}
 		
+		/**
+		 * 
+		 * @param r
+		 * @param inactiveInterval
+		 * @param servletContext
+		 * @param sessionContext
+		 * @return
+		 * @throws IOException
+		 */
 		static AcmeSession restore(BufferedReader r, int inactiveInterval, ServletContext servletContext, HttpSessionContext sessionContext) throws IOException {
 			String s = r.readLine();
-			if (s == null) // eos
+			if (s == null) {// eos
 				return null;
+			}
+			
 			int cp = s.indexOf(':');
-			if (cp < 0)
+			if (cp < 0) {
 				throw new IOException("Invalid format for a session header, no session id: " + s);
+			}
+			
 			String id = s.substring(0, cp);
 			int cp2 = s.indexOf(':', cp + 1);
 			if (cp2 < 0)
@@ -5872,35 +6092,43 @@ public class Serve implements ServletContext, Serializable {
 			}
 			do {
 				s = r.readLine();
-				if (s == null)
+				if (s == null) {
 					throw new IOException("Unexpected end of a stream.");
-				if ("$$".equals(s))
+				}
+				if ("$$".equals(s)) {
 					return result;
+				}
+				
 				cp = s.indexOf(':');
-				if (cp < 0)
+				if (cp < 0) {
 					throw new IOException("Invalid format for a session entry: " + s);
+				}
+				
 				String aname = s.substring(0, cp);
 				// if (lazyRestore)
 				// result.put(aname, s.substring(cp+1));
-				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Utils.decode64(s.substring(cp + 1))));
+				ObjectInputStream oInputStream = new ObjectInputStream(new ByteArrayInputStream(Utils.decode64(s.substring(cp + 1))));
 				Throwable restoreError;
 				try {
-					Object so;
-					result.put(aname, so = ois.readObject());
+					Object so = oInputStream.readObject();
+					result.put(aname, so);
 					restoreError = null;
-					if (so instanceof HttpSessionActivationListener)
+					if (so instanceof HttpSessionActivationListener) {
 						((HttpSessionActivationListener) so).sessionDidActivate(new HttpSessionEvent(result));
+					}
 					
 				} catch (ClassNotFoundException cnfe) {
 					restoreError = cnfe;
-					
 				} catch (NoClassDefFoundError ncdfe) {
 					restoreError = ncdfe;
 				} catch (IOException ioe) {
 					restoreError = ioe;
 				}
-				if (restoreError != null)
+				
+				if (restoreError != null) {
 					servletContext.log("TJWS: Can't restore :" + aname + ", " + restoreError);
+				}
+				
 			} while (true);
 		}
 	}
@@ -5919,18 +6147,16 @@ public class Serve implements ServletContext, Serializable {
 		public void setHttpOnly(boolean isHttpOnly) {
 			httpOnly = isHttpOnly;
 		}
-		
 	}
 	
 	protected static class LocaleWithWeight implements Comparable {
-		protected float weight; // should be int
-		
+		// should be int
+		protected float weight;
 		protected Locale locale;
 		
-		LocaleWithWeight(Locale l, float w) {
-			locale = l;
-			weight = w;
-			// System.err.println("Created "+l+", with:"+w);
+		LocaleWithWeight(Locale locale, float weight) {
+			this.locale = locale;
+			this.weight = weight;
 		}
 		
 		public int compareTo(Object o) {
@@ -5945,22 +6171,18 @@ public class Serve implements ServletContext, Serializable {
 	}
 	
 	protected static class AcceptLocaleEnumeration implements Enumeration {
-		Iterator i;
+		private Iterator itr;
 		
-		public AcceptLocaleEnumeration(TreeSet/* <LocaleWithWeight> */ ts) {
-			i = ts.iterator();
+		public AcceptLocaleEnumeration(TreeSet ts) {
+			itr = ts.iterator();
 		}
 		
 		public boolean hasMoreElements() {
-			return i.hasNext();
+			return itr.hasNext();
 		}
 		
 		public Object nextElement() {
-			return ((LocaleWithWeight) i.next()).getLocale();
-			/*
-			 * Locale l =((LocaleWithWeight)i.next()).getLocale();
-			 * System.err.println("Returned l:"+l); return l;
-			 */
+			return ((LocaleWithWeight) itr.next()).getLocale();
 		}
 	}
 	
@@ -5968,10 +6190,9 @@ public class Serve implements ServletContext, Serializable {
 	// inner class implementing HttpSessionContext
 	// and returning it on request
 	// to avoid casting this class to Hashtable
-	
 	protected static class HttpSessionContextImpl extends Hashtable implements HttpSessionContext {
 		
-		public java.util.Enumeration getIds() {
+		public Enumeration getIds() {
 			return keys();
 		}
 		
@@ -5981,16 +6202,20 @@ public class Serve implements ServletContext, Serializable {
 		
 		void save(Writer w) throws IOException {
 			Enumeration e = elements();
-			while (e.hasMoreElements())
+			while (e.hasMoreElements()) {
 				((AcmeSession) e.nextElement()).save(w);
+			}
 		}
 		
 		static HttpSessionContextImpl restore(BufferedReader br, int inactiveInterval, ServletContext servletContext) throws IOException {
 			HttpSessionContextImpl result = new HttpSessionContextImpl();
 			AcmeSession session;
-			while ((session = AcmeSession.restore(br, inactiveInterval, servletContext, result)) != null)
-				if (session.checkExpired() == false)
+			while ((session = AcmeSession.restore(br, inactiveInterval, servletContext, result)) != null) {
+				if (session.checkExpired() == false) {
 					result.put(session.getId(), session);
+				}
+			}
+			
 			return result;
 		}
 	}
@@ -6002,232 +6227,167 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	@Override
 	public int getEffectiveMajorVersion() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getEffectiveMinorVersion()
 	 */
 	@Override
 	public int getEffectiveMinorVersion() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#setInitParameter(java.lang.String,
 	 *      java.lang.String)
 	 */
 	@Override
 	public boolean setInitParameter(String paramString1, String paramString2) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addServlet(java.lang.String,
 	 *      java.lang.Class)
 	 */
 	@Override
 	public Dynamic addServlet(String paramString, Class<? extends Servlet> paramClass) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#createServlet(java.lang.Class)
 	 */
 	@Override
 	public <T extends Servlet> T createServlet(Class<T> paramClass) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getServletRegistration(java.lang.String)
 	 */
 	@Override
 	public ServletRegistration getServletRegistration(String paramString) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getServletRegistrations()
 	 */
 	@Override
 	public Map<String, ? extends ServletRegistration> getServletRegistrations() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addFilter(java.lang.String,
 	 *      java.lang.String)
 	 */
 	@Override
 	public javax.servlet.FilterRegistration.Dynamic addFilter(String paramString1, String paramString2) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addFilter(java.lang.String,
 	 *      javax.servlet.Filter)
 	 */
 	@Override
 	public javax.servlet.FilterRegistration.Dynamic addFilter(String paramString, Filter paramFilter) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addFilter(java.lang.String,
 	 *      java.lang.Class)
 	 */
 	@Override
 	public javax.servlet.FilterRegistration.Dynamic addFilter(String paramString, Class<? extends Filter> paramClass) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#createFilter(java.lang.Class)
 	 */
 	@Override
 	public <T extends Filter> T createFilter(Class<T> paramClass) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getFilterRegistration(java.lang.String)
 	 */
 	@Override
 	public FilterRegistration getFilterRegistration(String paramString) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getFilterRegistrations()
 	 */
 	@Override
 	public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getSessionCookieConfig()
 	 */
 	@Override
 	public SessionCookieConfig getSessionCookieConfig() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#setSessionTrackingModes(java.util.Set)
 	 */
 	@Override
 	public void setSessionTrackingModes(Set<SessionTrackingMode> paramSet) {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getDefaultSessionTrackingModes()
 	 */
 	@Override
 	public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getEffectiveSessionTrackingModes()
 	 */
 	@Override
 	public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addListener(java.lang.String)
 	 */
 	@Override
 	public void addListener(String paramString) {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addListener(java.util.EventListener)
 	 */
 	@Override
 	public <T extends EventListener> void addListener(T paramT) {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#addListener(java.lang.Class)
 	 */
 	@Override
 	public void addListener(Class<? extends EventListener> paramClass) {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#createListener(java.lang.Class)
 	 */
 	@Override
 	public <T extends EventListener> T createListener(Class<T> paramClass) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
@@ -6238,29 +6398,22 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	@Override
 	public JspConfigDescriptor getJspConfigDescriptor() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
-	 * 
 	 * @see javax.servlet.ServletContext#getClassLoader()
 	 */
 	@Override
 	public ClassLoader getClassLoader() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	/**
-	 * (non-Javadoc)
 	 * 
 	 * @see javax.servlet.ServletContext#declareRoles(java.lang.String[])
 	 */
 	@Override
 	public void declareRoles(String... paramVarArgs) {
-		// TODO Auto-generated method stub
-		
 	}
 }

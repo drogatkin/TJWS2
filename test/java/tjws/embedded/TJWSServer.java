@@ -1,16 +1,42 @@
-/**
- * 
- */
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
+
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// http://tjws.sourceforge.net
 package tjws.embedded;
 
 import java.io.PrintStream;
 import java.util.Properties;
 
-import com.devamatre.logger.LogManager;
-import com.devamatre.logger.Logger;
-
 import rogatkin.web.WarRoller;
 import rogatkin.web.WebAppServlet;
+import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra (Rohtash.Lakra@nasdaq.com)
@@ -26,9 +52,6 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	
 	/** serialVersionUID */
 	private static final long serialVersionUID = 2121247574146350235L;
-	
-	/** logger */
-	private static Logger logger = LogManager.getLogger(TJWSServer.class);
 	
 	/** warDeployer */
 	private WarRoller warDeployer;
@@ -50,10 +73,10 @@ public final class TJWSServer extends Acme.Serve.Serve {
 		try {
 			WebAppServlet.setRuntimeEnv(runtime);
 		} catch (Exception ex) {
-			logger.error(ex);
+			LogHelper.log(ex);
 		}
 		
-		logger.info("TJWSServer(" + arguments + ", " + logStream + ", " + runtime + ")");
+		LogHelper.log("TJWSServer(" + arguments + ", " + logStream + ", " + runtime + ")");
 	}
 	
 	/**
@@ -69,7 +92,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * @param deployed
 	 */
 	public void setDeployed(boolean deployed) {
-		logger.debug("setDeployed(" + deployed + ")");
+		LogHelper.log("setDeployed(" + deployed + ")");
 		this.deployed = deployed;
 	}
 	
@@ -81,7 +104,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@Override
 	public void setMappingTable(PathTreeDictionary mappingTable) {
-		logger.debug("setMappingTable(" + mappingTable + ")");
+		LogHelper.log("setMappingTable(" + mappingTable + ")");
 		super.setMappingTable(mappingTable);
 	}
 	
@@ -92,7 +115,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@Override
 	protected void setRealms(PathTreeDictionary realms) {
-		logger.debug("setRealms(" + realms + ")");
+		LogHelper.log("setRealms(" + realms + ")");
 		super.setRealms(realms);
 	}
 	
@@ -102,7 +125,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void setProperty(Object key, Object value) {
-		logger.debug("setProperty(" + key + ", " + value + ")");
+		LogHelper.log("setProperty(" + key + ", " + value + ")");
 		if (super.arguments == null) {
 			super.arguments = new Properties();
 		}
@@ -116,7 +139,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * @param key
 	 */
 	public synchronized void removeProperty(Object key) {
-		logger.debug("removeProperty(" + key + ")");
+		LogHelper.log("removeProperty(" + key + ")");
 		if (super.arguments != null) {
 			super.arguments.remove(key);
 		}
@@ -126,7 +149,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * Deploy the local web server into the warDeployer.
 	 */
 	public synchronized void deployWebServer() {
-		logger.debug("+deployWebServer(), deployed:" + isDeployed());
+		LogHelper.log("+deployWebServer(), deployed:" + isDeployed());
 		try {
 			if (!isDeployed()) {
 				if (warDeployer == null) {
@@ -137,13 +160,13 @@ public final class TJWSServer extends Acme.Serve.Serve {
 				setDeployed(true);
 			}
 		} catch (Throwable ex) {
-			logger.error("Unexpected problem in deployment, ex:", ex);
+			LogHelper.log("Unexpected problem in deployment, ex:", ex);
 			if (ex instanceof ThreadDeath) {
 				throw (ThreadDeath) ex;
 			}
 		}
 		
-		logger.debug("-deployWebServer(), deployed:" + isDeployed());
+		LogHelper.log("-deployWebServer(), deployed:" + isDeployed());
 	}
 	
 	/**

@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -488,8 +487,8 @@ public class Utils {
 					++p;
 					for (i = string.length(); i >= s; --i)
 						if (match(pattern.substring(p), string.substring(i))) // not
-																				// quite
-																				// right
+																				 // quite
+																				 // right
 							return true;
 					break;
 				}
@@ -750,7 +749,8 @@ public class Utils {
 				out.write(new String(buf, 0, len).getBytes(charSet));
 	}
 	
-	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+			'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
 	
 	/**
 	 * base 64 encoding, string converted to bytes using specified encoding
@@ -840,39 +840,39 @@ public class Utils {
 	 * negative number indicating some other meaning.
 	 */
 	protected final static byte[] DECODABET = { -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
-																					// 0
-																					// -
-																					// 8
-					-5, -5, // Whitespace: Tab and Linefeed
-					-9, -9, // Decimal 11 - 12
-					-5, // Whitespace: Carriage Return
-					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
-																		// 14 -
-					// 26
-					-9, -9, -9, -9, -9, // Decimal 27 - 31
-					-5, // Whitespace: Space
-					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
-					62, // Plus sign at decimal 43
-					-9, -9, -9, // Decimal 44 - 46
-					63, // Slash at decimal 47
-					52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero
-															// through nine
-					-9, -9, -9, // Decimal 58 - 60
-					-1, // Equals sign at decimal 61
-					-9, -9, -9, // Decimal 62 - 64
-					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
-					// through 'N'
-					14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters
-																	// 'O'
-					// through 'Z'
-					-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
-					26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters
-																		// 'a'
-					// through 'm'
-					39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters
-																		// 'n'
-					// through 'z'
-					-9, -9, -9, -9 // Decimal 123 - 126
+																					 // 0
+																					 // -
+																					 // 8
+			-5, -5, // Whitespace: Tab and Linefeed
+			-9, -9, // Decimal 11 - 12
+			-5, // Whitespace: Carriage Return
+			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
+																 // 14 -
+			// 26
+			-9, -9, -9, -9, -9, // Decimal 27 - 31
+			-5, // Whitespace: Space
+			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
+			62, // Plus sign at decimal 43
+			-9, -9, -9, // Decimal 44 - 46
+			63, // Slash at decimal 47
+			52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero
+													 // through nine
+			-9, -9, -9, // Decimal 58 - 60
+			-1, // Equals sign at decimal 61
+			-9, -9, -9, // Decimal 62 - 64
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
+			// through 'N'
+			14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters
+															 // 'O'
+			// through 'Z'
+			-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
+			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters
+																 // 'a'
+			// through 'm'
+			39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters
+																 // 'n'
+			// through 'z'
+			-9, -9, -9, -9 // Decimal 123 - 126
 	};
 	
 	// Indicates white space in encoding
@@ -1147,13 +1147,20 @@ public class Utils {
 		return System.getProperty("java.class.path");
 	}
 	
-	public static int parseInt(Object num, int def) {
-		if (num instanceof Number)
-			return ((Number) num).intValue();
+	/**
+	 * 
+	 * @param numObject
+	 * @param defValue
+	 * @return
+	 */
+	public static int parseInt(Object numObject, int defValue) {
+		if (numObject instanceof Number) {
+			return ((Number) numObject).intValue();
+		}
 		try {
-			return Integer.parseInt(num.toString());
-		} catch (Exception e) {
-			return def;
+			return Integer.parseInt(numObject.toString());
+		} catch (Exception ex) {
+			return defValue;
 		}
 	}
 	
@@ -1186,7 +1193,7 @@ public class Utils {
 		protected ArrayList<PooledThread> freeThreads;
 		protected HashMap<PooledThread, PooledThread> busyThreads;
 		protected int maxThreads;
-		protected ThreadFactory threadFactory;
+		protected ThreadPoolFactory threadFactory;
 		
 		/**
 		 * Creates a thread pool not queued with max number of threads defined
@@ -1197,7 +1204,7 @@ public class Utils {
 		 *            THREADSINPOOL not integers, or negative then
 		 *            DEF_MAX_POOLED_THREAD used
 		 */
-		public ThreadPool(Properties properties, ThreadFactory threadfactory) {
+		public ThreadPool(Properties properties, ThreadPoolFactory threadfactory) {
 			maxThreads = parseInt(properties.getProperty(MAXNOTHREAD), DEF_MAX_POOLED_THREAD);
 			if (maxThreads < 0) {
 				maxThreads = DEF_MAX_POOLED_THREAD;
@@ -1387,14 +1394,14 @@ public class Utils {
 		}
 	}
 	
-	public static class DummyPrintStream extends PrintStream {
-		public DummyPrintStream() {
-			super(new OutputStream() {
-				public void write(int i) {
-				}
-			});
-		}
-	}
+	// public static class DummyPrintStream extends PrintStream {
+	// public DummyPrintStream() {
+	// super(new OutputStream() {
+	// public void write(int i) {
+	// }
+	// });
+	// }
+	// }
 	
 	public static class SimpleBuffer {
 		byte[] buffer;

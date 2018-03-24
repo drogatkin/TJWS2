@@ -31,10 +31,12 @@ package Acme.Serve;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyStore;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Map;
@@ -44,29 +46,36 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import Acme.IOHelper;
 import Acme.Utils;
 import Acme.Serve.Serve.Acceptor;
+import rslakra.logger.LogHelper;
 
 public class SSLAcceptor implements Acceptor {
 	// SUNX509
 	public static final String ARG_ALGORITHM = "algorithm";
 	// by default false
 	public static final String ARG_CLIENTAUTH = "clientAuth";
-	//
+	// ARG_KEYSTOREFILE
 	public static final String ARG_KEYSTOREFILE = "keystoreFile";
-	//
+	// ARG_USE_KEYSTORE_BYTES
+	public static final String ARG_USE_KEYSTORE_BYTES = "useKeyStoreBytes";
+	// ARG_KEYSTORE_BYTES
+	public static final String ARG_KEYSTORE_BYTES = "keyStoreBytes";
+	// PROP_KEYSTOREFILE
 	public static final String PROP_KEYSTOREFILE = "javax.net.ssl.keyStore";
 	// KEYSTOREPASS
 	public static final String ARG_KEYSTOREPASS = "keystorePass";
 	public static final String PROP_KEYSTOREPASS = "javax.net.ssl.keyStorePassword";
 	// KEYSTORETYPE
 	public static final String ARG_KEYSTORETYPE = "keystoreType";
-	//
+	// PROP_KEYSTORETYPE
 	public static final String PROP_KEYSTORETYPE = "javax.net.ssl.keyStoreType";
-	//
+	// PROP_KEYSTORETYPE
 	public static final String ARG_KEYPASS = "keyPass";
-	// TLS
+	// TLS ARG_PROTOCOL
 	public static final String ARG_PROTOCOL = "protocol";
 	public static final String ARG_BACKLOG = Serve.ARG_BACKLOG;
 	public static final String ARG_SO_HS_TIMEOUT = "socket-handshake-timeout";
@@ -126,17 +135,44 @@ public class SSLAcceptor implements Acceptor {
 	 */
 	protected String keystoreFile = System.getProperty("user.home") + File.separator + ".keystore";
 	protected ServerSocket socket;
-	protected static int so_hs_timeout;
-	protected boolean android, jsse10;
+	protected static int socketHandshakeTimeout;
 	
+	static {
+		try {
+			if (IOHelper.isAndroid()) {
+				/* add bouncy castle provider. */
+				Security.addProvider(new BouncyCastleProvider());
+				LogHelper.log("Added BouncyCastleProvider!");
+			}
+		} catch (Exception ex) {
+			LogHelper.log(ex);
+		}
+	}
+	
+	/**
+	 * Returns the keystore file path.
+	 * 
+	 * @return
+	 */
 	private String getKeystoreFile() {
 		return (this.keystoreFile);
 	}
 	
+	/**
+	 * 
+	 * (non-Javadoc)
+	 * 
+	 * @see Acme.Serve.Serve.Acceptor#accept()
+	 */
 	public Socket accept() throws IOException {
 		return socket.accept();
 	}
 	
+	/**
+	 * Disconnects the socket and set it null.
+	 * 
+	 * @see Acme.Serve.Serve.Acceptor#destroy()
+	 */
 	public void destroy() throws IOException {
 		IOHelper.safeClose(socket, true);
 	}
@@ -172,7 +208,7 @@ public class SSLAcceptor implements Acceptor {
 		 * note it isn't use for the implementation since there is no control
 		 * over handshake
 		 */
-		so_hs_timeout = Utils.parseInt(inProperties.get(ARG_SO_HS_TIMEOUT), SO_HS_TIMEOIUT);
+		socketHandshakeTimeout = Utils.parseInt(inProperties.get(ARG_SO_HS_TIMEOUT), SO_HS_TIMEOIUT);
 	}
 	
 	/**
@@ -185,46 +221,61 @@ public class SSLAcceptor implements Acceptor {
 	protected SSLContext initSSLContext(Map inProperties, Map outProperties) throws IOException {
 		// init keystore
 		KeyStore keyStore = null;
-		FileInputStream istream = null;
+		InputStream keyStoreStream = null;
 		String keystorePass = null;
-		android = System.getProperty("java.vm.name") != null && System.getProperty("java.vm.name").startsWith("Dalvik");
+		LogHelper.log("isAndroid:" + IOHelper.isAndroid());
 		try {
 			String keystoreType = getWithDefault(inProperties, ARG_KEYSTORETYPE, KEYSTORETYPE);
+			LogHelper.log("keystoreType:" + keystoreType);
 			keyStore = KeyStore.getInstance(keystoreType);
 			String keystoreFile = (String) inProperties.get(ARG_KEYSTOREFILE);
 			if (keystoreFile == null) {
 				keystoreFile = getKeystoreFile();
 			}
-			
-			istream = new FileInputStream(keystoreFile);
+			LogHelper.log("keystoreFile:" + keystoreFile);
+			// if (IOHelper.toBoolean(inProperties.get(ARG_USE_KEYSTORE_BYTES)))
+			// {
+			// LogHelper.log("using keystore bytes.");
+			// final byte[] keyStoreBytes = (byte[])
+			// inProperties.get(ARG_KEYSTORE_BYTES);
+			// keyStoreStream = IOHelper.toInputStream(keyStoreBytes);
+			// } else {
+			// keyStoreStream = new FileInputStream(keystoreFile);
+			// }
+			keyStoreStream = new FileInputStream(keystoreFile);
 			keystorePass = getWithDefault(inProperties, ARG_KEYSTOREPASS, KEYSTOREPASS);
-			keyStore.load(istream, keystorePass.toCharArray());
+			keyStore.load(keyStoreStream, keystorePass.toCharArray());
 		} catch (Exception ex) {
+			LogHelper.log("Error initializing SSLAcceptor!", ex);
 			throw (IOException) new IOException(ex.toString()).initCause(ex);
 		} finally {
-			IOHelper.safeClose(istream);
+			IOHelper.safeClose(keyStoreStream);
 		}
 		
 		try {
 			// Register the JSSE security Provider (if it is not already there)
-			if (android == false) {
+			if (!IOHelper.isAndroid()) {
 				try {
-					Security.addProvider((java.security.Provider) Class.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
-				} catch (Throwable t) {
-					if (t instanceof ThreadDeath)
-						throw (ThreadDeath) t;
+					Security.addProvider((Provider) Class.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
+				} catch (Throwable th) {
+					LogHelper.log("Error adding SSL provider!", th);
+					if (th instanceof ThreadDeath) {
+						throw (ThreadDeath) th;
+					}
 					// TODO think to do not propagate absence of the provider,
 					// since other can still work
-					throw (IOException) new IOException(t.toString()).initCause(t);
+					throw (IOException) new IOException(th.toString()).initCause(th);
 				}
 			}
 			
 			// Create an SSL context used to create an SSL socket factory
 			String protocol = getWithDefault(inProperties, ARG_PROTOCOL, TLS);
+			LogHelper.log("protocol:" + protocol);
 			SSLContext context = SSLContext.getInstance(protocol);
 			
 			// Create the key manager factory used to extract the server key
 			String algorithm = getWithDefault(inProperties, ARG_ALGORITHM, KeyManagerFactory.getDefaultAlgorithm());
+			LogHelper.log("algorithm:" + algorithm);
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
 			
 			String keyPass = getWithDefault(inProperties, ARG_KEYPASS, keystorePass);
@@ -234,8 +285,7 @@ public class SSLAcceptor implements Acceptor {
 			context.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
 			return context;
 		} catch (Exception ex) {
-			System.err.println("SSLsocket creation:  " + ex);
-			ex.printStackTrace();
+			LogHelper.log("Error while creating SSLSocket!", ex);
 			throw (IOException) new IOException(ex.toString()).initCause(ex);
 		}
 	}
@@ -259,7 +309,7 @@ public class SSLAcceptor implements Acceptor {
 	 * @see java.lang.Object#toString()
 	 */
 	public String toString() {
-		return socket != null ? socket.toString() : "SSLAcceptor uninitialized";
+		return (socket != null ? socket.toString() : "SSLAcceptor Uninitialized!");
 	}
 	
 	static {
@@ -269,17 +319,15 @@ public class SSLAcceptor implements Acceptor {
 	/**
 	 * Set the requested properties for this server socket.
 	 * 
-	 * @param ssocket
-	 *            The server socket to be configured
+	 * @param serverSocket
+	 * @param needClientAuth
 	 */
-	protected void initServerSocket(final ServerSocket serverSocket, final boolean clientAuth) {
-		SSLServerSocket socket = (SSLServerSocket) serverSocket;
-		
+	protected void initServerSocket(final ServerSocket serverSocket, final boolean needClientAuth) {
+		SSLServerSocket sslSocket = (SSLServerSocket) serverSocket;
 		// Enable all available cipher suites when the socket is connected
-		String cipherSuites[] = socket.getSupportedCipherSuites();
-		socket.setEnabledCipherSuites(cipherSuites);
+		sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
 		// Set client authentication if necessary
-		socket.setNeedClientAuth(clientAuth);
+		sslSocket.setNeedClientAuth(needClientAuth);
 	}
 	
 	/**
@@ -291,9 +339,6 @@ public class SSLAcceptor implements Acceptor {
 	 */
 	private String getWithDefault(Map args, String name, String defValue) {
 		String result = (String) args.get(name);
-		if (result == null) {
-			return defValue;
-		}
-		return result;
+		return (result == null ? defValue : result);
 	}
 }

@@ -66,16 +66,15 @@ public class Main {
 					String[] cps = cp.split(File.pathSeparator);
 					URL urls[] = new URL[cps.length];
 					for (int i = 0; i < cps.length; i++) {
-						if (cps[i].startsWith("file:") == false && cps[i].startsWith("http:") == false && cps[i].startsWith("https:") == false)
-							urls[i] = new URL("file:/" + cps[i]); // new
-																	 // URL("file",
-																	 // "localhost/",
-																	 // cps[i])
-						else
+						if (cps[i].startsWith("file:") == false && cps[i].startsWith("http:") == false && cps[i].startsWith("https:") == false) {
+							urls[i] = new URL("file:/" + cps[i]);
+						} else {
 							urls[i] = new URL(cps[i]);
+						}
 					}
 					cl = new URLClassLoader(urls);
 				}
+				
 				Class main = cl == null ? Class.forName(mainClass) : Class.forName(mainClass, true, cl);
 				if (cl != null)
 					Thread.currentThread().setContextClassLoader(cl);
@@ -138,8 +137,9 @@ public class Main {
 								dsmap.add(sds); // System.err.printf("Adding %s
 												 // for %s%n", sds, name);
 							}
-						} else
+						} else {
 							namingContext.addToEnvironment(name, obj);
+						}
 					} catch (NamingException nce) {
 						throw new RuntimeException("Can't delegate naming context operation", nce);
 					}

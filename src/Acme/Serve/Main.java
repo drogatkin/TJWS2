@@ -74,13 +74,14 @@ public class Main extends Serve {
 		
 		int argc = args.length;
 		int argn;
-		if (argc == 0) { 
+		if (argc == 0) {
 			// a try to read from file for java -jar server.jar
 			args = readArguments(workPath, CLI_FILENAME);
 			if (args == null) {
 				messages = appendMessage(messages, "Can't read from CLI file (" + CLI_FILENAME + ") at " + workPath + "\n");
-			} else
+			} else {
 				argc = args.length;
+			}
 		}
 		
 		Map arguments = new HashMap(20);
@@ -105,10 +106,11 @@ public class Main extends Serve {
 				arguments.put(ARG_ALIASES, args[argn]);
 			} else if (args[argn].equals("-b") && argn + 1 < argc) {
 				++argn;
-				if (arguments.containsKey(ARG_BINDADDRESS))
+				if (arguments.containsKey(ARG_BINDADDRESS)) {
 					messages = appendMessage(messages, "Multiple usage of a bind address. " + args[argn] + " ignored\n");
-				else
+				} else {
 					arguments.put(ARG_BINDADDRESS, args[argn]);
+				}
 			} else if (args[argn].equals("-k") && argn + 1 < argc) {
 				++argn;
 				arguments.put(ARG_BACKLOG,
@@ -178,8 +180,9 @@ public class Main extends Serve {
 					} catch (Exception ex) {
 						messages = appendMessage(messages, "Exception in processing class parameter of error redirection stream: ").append(ex).append('\n');
 					}
-				} else
+				} else {
 					arguments.put(ARG_ERR, System.err);
+				}
 			} else if (args[argn].equals("-out")) {
 				if (argn + 1 < argc && args[argn + 1].startsWith("-") == false) {
 					++argn;
@@ -197,10 +200,11 @@ public class Main extends Serve {
 				arguments.put(ARG_SECUREONLY_SC, ARG_SECUREONLY_SC);
 			} else if (args[argn].equals("-g") && argn + 1 < argc) {
 				arguments.put(ARG_LOGROLLING_LINES, Integer.valueOf(args[++argn]));
-			} else if (args[argn].startsWith("-")) { // free args, note it
-													 // generate problem since
-													 // free arguments can match
-													 // internal arguments
+			} else if (args[argn].startsWith("-")) {
+				/*
+				 * free args, note it generate problem since free arguments can
+				 * match internal arguments
+				 */
 				if (args[argn].length() > 1) {
 					String name = args[argn].substring(1);
 					if (arguments.containsKey(name))
@@ -217,16 +221,21 @@ public class Main extends Serve {
 			
 			++argn;
 		}
-		if (argn != argc)
+		
+		if (argn != argc) {
 			usage();
-		if (System.getProperty(DEF_PROXY_CONFIG) != null)
+		}
+		
+		if (System.getProperty(DEF_PROXY_CONFIG) != null) {
 			arguments.put(ARG_PROXY_CONFIG, System.getProperty(DEF_PROXY_CONFIG));
+		}
+		
 		// log and error stream manipulation
 		// TODO add log rotation feature, it can be done as plug-in
 		PrintStream printstream = System.err;
-		if (arguments.get(ARG_OUT) != null)
+		if (arguments.get(ARG_OUT) != null) {
 			printstream = (PrintStream) arguments.get(ARG_OUT);
-		else {
+		} else {
 			String logEncoding = System.getProperty(DEF_LOGENCODING);
 			try {
 				File logDir = new File(workPath);
@@ -254,29 +263,35 @@ public class Main extends Serve {
 		} else {
 			System.setErr(printstream);
 		}
-		if (messages != null)
+		if (messages != null) {
 			System.err.println(messages);
+		}
 		/**
 		 * format path mapping from=givenpath;dir=realpath
 		 */
 		PathTreeDictionary mappingtable = new PathTreeDictionary();
 		if (arguments.get(ARG_ALIASES) != null) {
 			File file = new File((String) arguments.get(ARG_ALIASES));
-			if (file.isAbsolute() == false)
+			if (file.isAbsolute() == false) {
 				file = new File(workPath, file.getPath());
+			}
+			
 			if (file.exists() && file.canRead()) {
 				try {
 					// DataInputStream in = new DataInputStream(
 					// new FileInputStream(file));
 					BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 					do {
-						String mappingstr = in.readLine(); // no arguments in
-															 // non ASCII
-															 // encoding allowed
-						if (mappingstr == null)
+						// no arguments in non ASCII encoding allowed
+						String mappingstr = in.readLine();
+						if (mappingstr == null) {
 							break;
-						if (mappingstr.startsWith("#"))
+						}
+						
+						if (mappingstr.startsWith("#")) {
 							continue;
+						}
+						
 						StringTokenizer maptokenzr = new StringTokenizer(mappingstr, "=;");
 						if (maptokenzr.hasMoreTokens()) {
 							if (maptokenzr.nextToken("=").equalsIgnoreCase("from")) {
@@ -369,26 +384,29 @@ public class Main extends Serve {
 			tempFile = new File(workPath, tempFile.getPath());
 		final File servFile = tempFile;
 		// TODO analyze possible race condition
-		if (servFile != null)
+		if (servFile != null) {
 			new Thread(new Runnable() {
 				public void run() {
 					readServlets(servFile);
 				}
 			}).start();
+		}
 		// And add the standard Servlets.
 		String throttles = (String) arguments.get(ARG_THROTTLES);
-		if (throttles == null)
+		if (throttles == null) {
 			serve.addDefaultServlets((String) arguments.get(ARG_CGI_PATH));
-		else
+		} else {
 			try {
 				serve.addDefaultServlets((String) arguments.get(ARG_CGI_PATH), throttles);
 			} catch (IOException e) {
 				serve.log("Problem reading throttles file: " + e, e);
 				System.exit(1);
 			}
+		}
+		
 		serve.addWebsocketProvider((String) arguments.get(ARG_WEBSOCKET));
 		serve.addWarDeployer((String) arguments.get(ARG_WAR), throttles);
-		if (arguments.get(ARG_NOHUP) == null)
+		if (arguments.get(ARG_NOHUP) == null) {
 			new Thread(new Runnable() {
 				public void run() {
 					BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -408,35 +426,44 @@ public class Main extends Serve {
 					}
 				}
 			}, "Stop Monitor").start();
-		else {
-			Runtime.getRuntime().addShutdownHook(sdHook = new Thread(new Runnable() {
+		} else {
+			sdHook = new Thread(new Runnable() {
 				synchronized public void run() {
 					serve.destroyAllServlets();
 				}
-			}, "ShutDownHook"));
+			}, "ShutDownHook");
+			Runtime.getRuntime().addShutdownHook(sdHook);
 		}
+		
 		// And run.
-		int code = serve.serve();
-		if (code != 0 && arguments.get(ARG_NOHUP) == null)
+		Status code = serve.serve();
+		if (code != Status.STOPPED && arguments.get(ARG_NOHUP) == null) {
 			try {
+				// to break termination thread
 				System.out.println();
-				System.in.close(); // to break termination thread
-			} catch (IOException e) {
+				System.in.close();
+			} catch (IOException ex) {
+				serve.log(ex);
 			}
+		}
+		
 		try {
-			if (sdHook != null)
+			if (sdHook != null) {
 				Runtime.getRuntime().removeShutdownHook(sdHook);
+			}
 			serve.destroyAllServlets();
 		} catch (IllegalStateException ise) {
 			
-		} catch (Throwable t) {
-			if (t instanceof ThreadDeath)
-				throw (ThreadDeath) t;
-			serve.log("At destroying ", t);
+		} catch (Throwable th) {
+			if (th instanceof ThreadDeath) {
+				throw (ThreadDeath) th;
+			}
+			serve.log("At destroying ", th);
 		}
 		killAliveThreads();
 		printstream.close();
-		return code;
+		
+		return code.getStatus();
 	}
 	
 	private static StringBuffer appendMessage(StringBuffer messages, String message) {

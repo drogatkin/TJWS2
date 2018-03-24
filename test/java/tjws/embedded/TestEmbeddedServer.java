@@ -1,29 +1,53 @@
-/**
- * 
- */
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
+
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// http://tjws.sourceforge.net
 package tjws.embedded;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import com.devamatre.logger.LogManager;
-import com.devamatre.logger.Logger;
-
 import Acme.IOHelper;
 import Acme.Serve.SSLAcceptor;
 import Acme.Serve.Serve;
+import Acme.Serve.Serve.Status;
 import rogatkin.web.WebApp;
 import rogatkin.web.WebAppServlet;
+import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra
  * @date 03/15/2018 03:35:59 PM
  */
 public final class TestEmbeddedServer {
-	
-	/** logger */
-	private static Logger logger = LogManager.getLogger(TestEmbeddedServer.class);
 	
 	/** sslEnabled */
 	private boolean sslEnabled;
@@ -35,8 +59,6 @@ public final class TestEmbeddedServer {
 	private TJWSServer webServer;
 	/** logStream */
 	private PrintStream logStream;
-	/** status */
-	private int status;
 	
 	/**
 	 * 
@@ -87,7 +109,7 @@ public final class TestEmbeddedServer {
 	private void initLogging() {
 		File logDir = new File(IOHelper.getLogsDir());
 		if (!logDir.exists()) {
-			logger.debug("Creating [" + logDir.getAbsolutePath() + "] folder ...");
+			LogHelper.log("Creating [" + logDir.getAbsolutePath() + "] folder ...");
 			logDir.mkdirs();
 		}
 		
@@ -95,7 +117,7 @@ public final class TestEmbeddedServer {
 			try {
 				logStream = new PrintStream(new File(logDir, "tjws.logs"), "UTF-8");
 			} catch (Exception ex) {
-				logger.error(ex);
+				LogHelper.log(ex);
 			}
 			
 			if (logStream == null) {
@@ -134,10 +156,20 @@ public final class TestEmbeddedServer {
 				// properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
 				// "rogatkin.wskt.SSLSelectorAcceptor");
 				String parentFolderPath = IOHelper.pathString(TestEmbeddedServer.class);
-				logger.debug("parentFolderPath:" + parentFolderPath);
+				LogHelper.log("parentFolderPath:" + parentFolderPath);
 				final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, "conf/tjws.jks");
-				logger.debug("keyStoreFilePath:" + keyStoreFilePath);
+				LogHelper.log("keyStoreFilePath:" + keyStoreFilePath);
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE, keyStoreFilePath);
+				// properties.setProperty(SSLAcceptor.ARG_USE_KEYSTORE_BYTES,
+				// String.valueOf(true));
+				// try {
+				// final byte[] keyStoreBytes =
+				// IOHelper.readBytes(keyStoreFilePath, true);
+				// properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE,
+				// keyStoreBytes);
+				// } catch (IOException ex) {
+				// LogHelper.log(ex);
+				// }
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
 				properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "no");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREPASS, "password");
@@ -167,11 +199,11 @@ public final class TestEmbeddedServer {
 			// System.setProperty(WebApp.DEF_WEBAPP_CLASSLOADER,
 			// AndroidClassLoader.class.getName());
 			System.setProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR, IOHelper.getLogsDir());
-			logger.debug("webappdir:" + System.getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR) + ", for app:" + IOHelper.getLogsDir());
+			LogHelper.log("webappdir:" + System.getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR) + ", for app:" + IOHelper.getLogsDir());
 			webServer.deployWebServer();
 			
 		} else {
-			logger.debug("webServer is already initialized!");
+			LogHelper.log("webServer is already initialized!");
 		}
 	}
 	
@@ -181,7 +213,7 @@ public final class TestEmbeddedServer {
 	 * @return
 	 */
 	public boolean isRunning() {
-		return (webServer != null && status != 0);
+		return (webServer != null && webServer.isRunning());
 	}
 	
 	/**
@@ -201,7 +233,7 @@ public final class TestEmbeddedServer {
 			logStream = null;
 		}
 		
-		logger.debug("Web Server is stopped successfully!");
+		LogHelper.log("Web Server is stopped successfully!");
 	}
 	
 	/**
@@ -211,17 +243,35 @@ public final class TestEmbeddedServer {
 		if (!isRunning()) {
 			new Thread() {
 				/**
+				 * Check the staus of the server.
+				 * 
+				 * @see Thread#run()
+				 */
+				@Override
+				public void run() {
+					try {
+						// give a chance to server to run
+						Thread.sleep(1000);
+					} catch (InterruptedException ex) {
+						// ignore me!
+					} finally {
+						LogHelper.log("Serve running:" + webServer.isRunning());
+					}
+				}
+			}.start();
+			new Thread() {
+				/**
 				 * Starts the web server here.
 				 *
 				 * @see Thread#run()
 				 */
 				@Override
 				public void run() {
-					int status = 0;
 					try {
-						status = webServer.serve();
+						Status result = webServer.serve();
+						webServer.log("Error running server! Error code:" + result);
 					} finally {
-						logger.info("Serve status:" + status);
+						LogHelper.log("Serve running:" + webServer.isRunning());
 					}
 				}
 			}.start();
@@ -247,11 +297,16 @@ public final class TestEmbeddedServer {
 	 * https://localhost:9161/html
 	 * </pre>
 	 * 
+	 * Even you can use the following command, to get the server information and
+	 * it's certificate:
+	 * openssl s_client -connect localhost:9161 | openssl x509 -noout -subject
+	 * -issuer
+	 * 
 	 * @param args
 	 */
 	public static void main(String... args) {
-		LogManager.configure(LogManager.LOG4J_PROPERTY_FILE);
-		// logger.debug("TempDir:" + IOHelper.getTempDir());
+		LogHelper.setLogEnabled(true);
+		// LogHelper.log("TempDir:" + IOHelper.getTempDir());
 		TestEmbeddedServer server = new TestEmbeddedServer();
 		server.initServer(true);
 		server.startServer();

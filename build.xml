@@ -116,10 +116,6 @@
 		</sequential>
 	</macrodef>
 
-	<!-- Print path(s) -->
-	<echopath pathid="build.classpath" />
-	<echo />
-
 	<!-- create a property containing all .jar files, 
 		 prefix lib/, and seperated with a space -->
 	<pathconvert property="lib.classpath" pathsep=" ">
@@ -137,10 +133,7 @@
 
 	<!-- Default Target -->
 	<!--<target name="all" description="Default Target" depends="clean, build" /> -->
-
-	<target name="all" description="Default Target" depends="clean">
-		<antcall target="build" />
-	</target>
+	<target name="all" description="Default Target" depends="clean, build" />
 
 	<!-- Remove /build Directory and its sub-directories... -->
 	<target name="clean" description="Removing Directories...">
@@ -163,18 +156,7 @@
 	<!-- Compiles all .java classes under the build folder. -->
 	<target name="compile" depends="init" description="Compiling .java files">
 		<echo message="Compiling '${src.dir}' into '${build.dir}'" />
-		<javac 
-			fork="${javac.fork}" 
-			srcdir="${src.dir}" 
-			destdir="${classes.dir}" 
-			optimize="${javac.optimize}" 
-			debug="${javac.debug}" 
-			debuglevel="${javac.debug.level}" 
-			listfiles="${javac.listfiles}" 
-			includeantruntime="false" 
-			source="${javac.source}" 
-			target="${javac.target}" 
-			classpathref="build.classpath" />
+		<javac fork="${javac.fork}" srcdir="${src.dir}" destdir="${classes.dir}" optimize="${javac.optimize}" debug="${javac.debug}" debuglevel="${javac.debug.level}" listfiles="${javac.listfiles}" includeantruntime="false" source="${javac.source}" target="${javac.target}" classpathref="build.classpath" />
 	</target>
 
 	<!-- Copies Logger.jar file into /../Libs Directory. -->
@@ -182,8 +164,8 @@
 		<!-- Create logger jar file and put in /deploy.dir/ directory -->
 		<mkdir dir="${deploy.dir}" />
 		<jar destfile="${deploy.dir}/${jar.file}">
-			<fileset dir="${classes.dir}" includes="**" excludes="javax/" />
-			<!--fileset dir="${basedir}" includes="log4j.properties, dLog4j.properties, dLog4j.xml" /-->
+			<fileset dir="${classes.dir}" includes="**" excludes="javax/**" />
+			<fileset dir="${basedir}" includes="realm.properties" />
 
 			<!-- MANIFEST.MF Properties -->
 			<manifest>
@@ -200,7 +182,7 @@
 			</manifest>
 		</jar>
 
-		<!-- copy dLogger jar file into base directory -->
+		<!-- copy .jar file into base directory -->
 		<copy file="${deploy.dir}/${jar.file}" todir="${basedir}" overwrite="true" />
 
 		<tstamp>
