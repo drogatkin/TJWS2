@@ -4,6 +4,7 @@
 package com.rslakra.android.tjwsasapp;
 
 import android.content.Context;
+import android.util.Base64;
 
 import com.rslakra.android.logger.LogHelper;
 import com.rslakra.android.utils.SSLHelper;
@@ -168,17 +169,26 @@ public final class TestConnection {
                 // Create socket factory
                 if(sslSocketFactory == null) {
                     sslSocketFactory = newSSLSocketFactory();
+//                    sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
                     /*
                     SSLContext sslContext = SSLContext.getInstance("SSLv3");
                     sslContext.init(null, null, null);
                     sslSocketFactory = new TLSSocketFactory(sslContext.getSocketFactory());
                     */
                 }
+    
+//                final byte[] authBytes  = "admin:admin".getBytes("UTF-8");
+                final byte[] authBytes  = "password".getBytes("UTF-8");
+                final String authString  = Base64.encodeToString(authBytes, Base64.DEFAULT);
+                urlConnection.setRequestProperty("Authorization", "Basic " + authString);
                 
                 // Install the SSL socket factory on the connection.
                 ((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+                ((HttpsURLConnection) urlConnection).setHostnameVerifier(new AllHostNameVerifier());
+                
+//                HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
                 // Install the all-trusting host verifier
-                HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
+//                HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
             }
             
             bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
