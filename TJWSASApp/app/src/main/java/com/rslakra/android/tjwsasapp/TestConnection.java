@@ -33,15 +33,15 @@ import Acme.IOHelper;
 
 /**
  * How to Turn Off Certificate Validation in Java HTTPS Connections?
- *
+ * <p>
  * Avoiding these exceptions is possible by switching off the certificate
  * validation and host verification for SSL for the current Java virtual
  * machine. This can be done by replacing the default SSL trust manager and the
  * default SSL hostname verifier using this class.
- *
+ * <p>
  * Voilla! Now the code runs as expected: it downloads the resource from an
  * https address with invalid certificate.
- *
+ * <p>
  * Note: -
  * Be careful when using this hack! Skipping certificate validation is dangerous
  * and should be done in testing environments only.
@@ -59,7 +59,9 @@ public final class TestConnection {
     private final String keyStoreFile = "newConf/tjws.bks";
     private final String PASSWORD = "password";
     
-    /** mContext */
+    /**
+     * mContext
+     */
     private final Context mContext;
     private final boolean sslEnabled;
     
@@ -97,7 +99,8 @@ public final class TestConnection {
             TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
             
             // Initialize SSLContext
-            sslContext = SSLContext.getInstance("TLS");
+//            sslContext = SSLContext.getInstance("TLS");
+            sslContext = SSLContext.getInstance("TLSv1");
             sslContext.init(keyManagers, trustManagers, new SecureRandom());
         } catch(Exception ex) {
             LogHelper.e(LOG_TAG, ex);
@@ -107,30 +110,39 @@ public final class TestConnection {
     }
     
     /**
-     * Create a socket factory that trusts all certificates.
+     * Create a socket factory with certificate.
      *
-     * @param trustAllCerts
      * @return
      */
-    public final SSLSocketFactory newSSLSocketFactory(final boolean trustAllCerts) {
+    public final SSLSocketFactory newSSLSocketFactory() {
         SSLSocketFactory sslSocketFactory = null;
         try {
-            final SSLContext sslContext;
-            if(trustAllCerts) {
-                final InputStream keyStoreStream = LogHelper.readAssets(mContext, keyStoreFile);
-                final KeyStore keyStore = SSLHelper.initKeyStore(keyStoreStream, PASSWORD);
-                // Create key manager
-                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                keyManagerFactory.init(keyStore, PASSWORD.toCharArray());
-                final KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
-                
-                sslContext = SSLContext.getInstance("TLSv1");
-                sslContext.init(keyManagers, new TrustManager[]{new AllCertsTrustManager()}, new SecureRandom());
-                sslSocketFactory = sslContext.getSocketFactory();
-            } else {
-                sslContext = createSSLContext(mContext, keyStoreFile, PASSWORD);
-                sslSocketFactory = sslContext.getSocketFactory();
-            }
+            sslSocketFactory = createSSLContext(mContext, keyStoreFile, PASSWORD).getSocketFactory();
+        } catch(Exception ex) {
+            LogHelper.d(LOG_TAG, ex);
+        }
+        
+        return sslSocketFactory;
+    }
+    
+    /**
+     * Create a socket factory that trusts all certificates.
+     *
+     * @return
+     */
+    public final SSLSocketFactory newSSLSocketFactoryWithTrustAllCerts() {
+        SSLSocketFactory sslSocketFactory = null;
+        try {
+            final InputStream keyStoreStream = LogHelper.readAssets(mContext, keyStoreFile);
+            final KeyStore keyStore = SSLHelper.initKeyStore(keyStoreStream, PASSWORD);
+            // Create key manager
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, PASSWORD.toCharArray());
+            final KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
+            
+            final SSLContext sslContext = SSLContext.getInstance("TLSv1");
+            sslContext.init(keyManagers, new TrustManager[]{new AllCertsTrustManager()}, new SecureRandom());
+            sslSocketFactory = sslContext.getSocketFactory();
         } catch(Exception ex) {
             LogHelper.d(LOG_TAG, ex);
         }
@@ -145,19 +157,17 @@ public final class TestConnection {
         SSLSocketFactory sslSocketFactory = null;
         BufferedReader bReader = null;
         try {
-            URL url = null;
+            HttpURLConnection urlConnection = null;
             if(sslEnabled) {
-                url = new URL("https://localhost:9161/");
+                urlConnection = (HttpsURLConnection) new URL("https://localhost:9161/").openConnection();
             } else {
-                url = new URL("http://localhost:5161/");
+                urlConnection = (HttpURLConnection) new URL("http://localhost:5161/").openConnection();
             }
             
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             if(sslEnabled && (urlConnection instanceof HttpsURLConnection)) {
                 // Create socket factory
                 if(sslSocketFactory == null) {
-                    sslSocketFactory = newSSLSocketFactory(false);
-                    
+                    sslSocketFactory = newSSLSocketFactory();
                     /*
                     SSLContext sslContext = SSLContext.getInstance("SSLv3");
                     sslContext.init(null, null, null);
@@ -165,9 +175,10 @@ public final class TestConnection {
                     */
                 }
                 
-                if(urlConnection instanceof HttpsURLConnection) {
-                    ((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
-                }
+                // Install the SSL socket factory on the connection.
+                ((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+                // Install the all-trusting host verifier
+                HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
             }
             
             bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
@@ -183,14 +194,15 @@ public final class TestConnection {
     }
     
     /**
-     * Test the server connection.
+     * Test the SSL server connection.
      */
     public void testSSLSocketConnection() {
         SSLSocketFactory sslSocketFactory = null;
         try {
             if(sslEnabled) {
                 // Create socket factory
-                sslSocketFactory = newSSLSocketFactory(true);
+                sslSocketFactory = newSSLSocketFactory();
+//                sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
                 HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
                 /*
                 // Install the all-trusting host verifier
@@ -199,20 +211,22 @@ public final class TestConnection {
             }
             
             // Create socket
-            SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket("localhost", 9161);
+            final SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket("localhost", 9161);
             LogHelper.d(LOG_TAG, "SSL client started");
-            new ClientThread(sslSocket).start();
+            new SSLSocketThread(sslSocket).start();
         } catch(Exception ex) {
             LogHelper.e(LOG_TAG, ex);
         }
     }
     
-    // Thread handling the socket to server
-    private class ClientThread extends Thread {
+    /**
+     * Thread handling the socket to server.
+     */
+    private final class SSLSocketThread extends Thread {
         
         private SSLSocket sslSocket = null;
         
-        ClientThread(SSLSocket sslSocket) {
+        SSLSocketThread(final SSLSocket sslSocket) {
             this.sslSocket = sslSocket;
         }
         
@@ -234,12 +248,9 @@ public final class TestConnection {
                 OutputStream outputStream = sslSocket.getOutputStream();
                 
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(outputStream));
                 
-                // Write data
-                printWriter.println("Hello Server");
-                printWriter.println();
-                printWriter.flush();
+                // Write data (Send Request to server).
+                outputStream.write("GET / HTTP/1.1\r\nHost: localhost/\r\n\r\n".getBytes());
                 
                 String line = null;
                 while((line = bufferedReader.readLine()) != null) {

@@ -83,7 +83,6 @@ public class SplashActivity extends BaseActivity {
                 handleError(this, false);
                 break;
             
-            
             default:
                 break;
         }
@@ -103,7 +102,7 @@ public class SplashActivity extends BaseActivity {
             } else {
                 final Context mContext = TJWSApp.getInstance().getApplicationContext();
                 TestConnection testConnection = new TestConnection(mContext, true);
-                final boolean checkSocketConnection = true;
+                final boolean checkSocketConnection = false;
                 if(checkSocketConnection) {
                     testConnection.testSSLSocketConnection();
                 } else {
