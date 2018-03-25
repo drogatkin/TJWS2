@@ -22,13 +22,19 @@ import com.rslakra.android.logger.LogHelper;
  */
 public class MainActivity extends BaseActivity {
     
-    /** LOG_TAG */
+    /**
+     * LOG_TAG
+     */
     private static final String LOG_TAG = "MainActivity";
     
-    /** webViewContainer */
+    /**
+     * webViewContainer
+     */
     private FrameLayout webViewContainer;
     
-    /** mWebView */
+    /**
+     * mWebView
+     */
     private WebView mWebView;
     
     public MainActivity() {
@@ -180,17 +186,10 @@ public class MainActivity extends BaseActivity {
              */
             @Override
             public void run() {
-                final boolean useWebView = false;
-                if(useWebView) {
-                    //                String urlString = "http://www.google.com";
-                    // String urlString = "http://mbp-rohtash:8080/html";
-                    String urlString = TJWSApp.getTJWSService().getServerUrl();
-                    LogHelper.i(LOG_TAG, "urlString:" + urlString);
-                    mWebView.loadUrl(urlString);
-                    
-                } else {
-                
-                }
+//                String urlString = "https://www.google.com/";
+                String urlString = TJWSApp.getTJWSService().getServerUrl();
+                LogHelper.i(LOG_TAG, "urlString:" + urlString);
+                mWebView.loadUrl(urlString);
             }
         });
     }
