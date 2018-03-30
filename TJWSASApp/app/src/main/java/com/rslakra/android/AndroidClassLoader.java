@@ -13,7 +13,7 @@ import dalvik.system.DexClassLoader;
  * loader will not work in Android, so added this custom class loader as per the
  * Android specification.
  *
- * @author Rohtash Singh (rsingh@boardvantage.com)
+ * @author Rohtash Singh
  * @version 1.0.0
  * @since Apr 28, 2015 7:16:21 PM
  */

@@ -49,6 +49,16 @@ public class SplashActivity extends BaseActivity {
         setContentView(R.layout.activity_splash);
         TJWSApp.setParentActivity(this);
         
+//        try {
+//            ProviderInstaller.installIfNeeded(this);
+//        } catch(GooglePlayServicesRepairableException ex) {
+//            // Thrown when Google Play Services is not installed, up-to-date, or enabled
+//            // Show dialog to allow users to install, update, or otherwise enable Google Play services.
+//            GooglePlayServicesUtil.getErrorDialog(ex.getConnectionStatusCode(), this, 0);
+//        } catch(GooglePlayServicesNotAvailableException ex) {
+//            LogHelper.e(LOG_TAG, "Google Play Services not available.", ex);
+//        }
+        
         if(getTJWSService() != null) {
             startNextActivity();
         } else {
@@ -96,13 +106,13 @@ public class SplashActivity extends BaseActivity {
         // check if the server is started properly
         if(TJWSApp.getTJWSService().isWebServerRunning()) {
             EventManager.unsubscribe(this, EventType.SERVICE_CONNECTED, EventType.SERVER_STARTED);
-            final boolean useWebView = false;
+            final boolean useWebView = true;
             if(useWebView) {
                 MainActivity.startMainActivity(this, true);
             } else {
                 final Context mContext = TJWSApp.getInstance().getApplicationContext();
                 TestConnection testConnection = new TestConnection(mContext, true);
-                final boolean checkSocketConnection = false;
+                final boolean checkSocketConnection = true;
                 if(checkSocketConnection) {
                     testConnection.testSSLSocketConnection();
                 } else {

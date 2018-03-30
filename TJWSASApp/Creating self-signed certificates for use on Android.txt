@@ -41,6 +41,8 @@ openssl pkcs12 -export -out server.pfx -inkey server_key.pem -in server.pem
 5. CONVERT FROM PKCS12 (this step is not working, even i tried the same in stop 3 here)
 keytool –importkeystore –srckeystore client.p12 –srcstoretype pkcs12 –destkeystore client.bks –deststoretype bks –provider org.bouncycastle.jce.provider.BouncyCastleProvider –providerpath <path_to_bcprov_jar>
 keytool –importkeystore –srckeystore server.p12 –srcstoretype pkcs12 –destkeystore server.jks –deststoretype jks
+keytool -import -alias tjws -file tjws.cer -keystore tjws.bks -storetype BKS -providerClass org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath ./BouncyCastle/bcprov-jdk15on-159.jar
+
 
 
 getSupportedProtocols

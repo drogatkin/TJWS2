@@ -11,7 +11,6 @@ import com.rslakra.android.logger.LogHelper;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 /*
  * class EventManager:
@@ -29,17 +28,22 @@ public class EventManager {
     private static final String LOG_TAG = "EventManager";
     /** NO_EVENT */
     private static final int NO_EVENT = -1;
-    private static EventType[] mEventTypeList = EventType.values();
-    private static HashMap<EventType, HashSet<EventListener>> mSubscribers = new HashMap<EventType, HashSet<EventListener>>();
-    
-    private final Object mLock = new Object();
-    private Looper mEventHandlerLooper = null;
-    private EventHandler mEventHandler = null;
-    private HandlerThread mEventHandlerThread = null;
     
     // Note that this declaration must come last; it uses the objects above.
-    private static EventManager sInstance = new EventManager();
+    private static EventManager sInstance;
     
+    /** mLock */
+    private final Object mLock = new Object();
+    /** mEventHandlerLooper */
+    private Looper mEventHandlerLooper;
+    /** mEventHandler */
+    private EventHandler mEventHandler;
+    /** mEventHandlerThread */
+    private HandlerThread mEventHandlerThread;
+    /** mSubscribers */
+    private final HashMap<EventType, HashSet<EventListener>> mSubscribers = new HashMap<EventType, HashSet<EventListener>>();
+    /** mEventTypes */
+    private final EventType[] mEventTypes = EventType.values();
     
     /**
      * Singleton
@@ -70,6 +74,9 @@ public class EventManager {
         return (mEventHandlerLooper != null);
     }
     
+    /**
+     *
+     */
     public void start() {
         synchronized(mLock) {
             // Start only if it was not started before.
@@ -108,8 +115,8 @@ public class EventManager {
         if(unInitialize) {
             mSubscribers.clear();
         } else {
-            for(EventType e : mEventTypeList) {
-                mSubscribers.put(e, new HashSet<EventListener>());
+            for(EventType eventType : mEventTypes) {
+                mSubscribers.put(eventType, new HashSet<EventListener>());
             }
         }
     }
@@ -299,7 +306,7 @@ public class EventManager {
     // ----------------------------------------------------------------
     
     // Event handler class
-    private final static class EventHandler extends Handler {
+    private final class EventHandler extends Handler {
         
         /**
          * @param looper
@@ -314,10 +321,10 @@ public class EventManager {
         //			message handling part.
         @Override
         public void handleMessage(final Message mMessage) {
-            if(mMessage.what >= 0 && mMessage.what < mEventTypeList.length) {
-                HashSet<EventListener> subscriberList = mSubscribers.get(mEventTypeList[mMessage.what]);
-                if(subscriberList != null) {
-                    synchronized(subscriberList) {
+            if(mMessage.what >= 0 && mMessage.what < mSubscribers.size()) {
+                final HashSet<EventListener> mEventListeners = mSubscribers.get(mEventTypes[mMessage.what]);
+                if(mEventListeners != null) {
+                    synchronized(mEventListeners) {
                     
 						/*
                          *  Publish event to all subscribers.
@@ -356,13 +363,13 @@ public class EventManager {
 						 *		is our code too. We should make both robust enough instead of one component trying to cover up silly mistakes 
 						 *		of other components. 
 						 */
-                        Iterator<EventListener> itr = subscriberList.iterator();
-                        while(itr.hasNext()) {
-                            AndroidEvent event = new AndroidEvent(mMessage);
-                            try {
-                                itr.next().onEvent(event);
-                            } catch(Throwable ex) {
-                                LogHelper.e(LOG_TAG, "Unable to send event to subscriber:" + itr.toString(), ex);
+                        if(!mEventListeners.isEmpty()) {
+                            for(EventListener eventListener : mEventListeners) {
+                                try {
+                                    eventListener.onEvent(new AndroidEvent(mMessage));
+                                } catch(Throwable ex) {
+                                    LogHelper.e(LOG_TAG, ex, "Unable to send event to subscriber:" + eventListener);
+                                }
                             }
                         }
                     }

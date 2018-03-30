@@ -1,5 +1,6 @@
 package com.rslakra.android.utils;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.rslakra.android.logger.LogHelper;
@@ -49,12 +50,45 @@ public final class SSLHelper {
     }
     
     /**
+     * @param strings
+     * @return
+     */
+    public static String toString(final String[] strings, final boolean newLine) {
+        final StringBuilder sBuilder = new StringBuilder();
+        if(strings != null) {
+            sBuilder.append("\n");
+            for(String string : strings) {
+                sBuilder.append(string).append("\n");
+            }
+        }
+        
+        return sBuilder.toString();
+    }
+    
+    /**
+     * @param strings
+     * @return
+     */
+    public static String toString(final String[] strings) {
+        return toString(strings, false);
+    }
+    
+    /**
      * Returns the SSL supported protocols.
      *
      * @return
      */
     public static String[] getSSLSupportedProtocols() {
         return SSL_SUPPORTED_PROTOCOLS;
+    }
+    
+    /**
+     * @param context
+     * @param fileName
+     * @return
+     */
+    public static InputStream rawResource(final Context context, final String fileName) {
+        return context.getResources().openRawResource(context.getResources().getIdentifier(fileName, "raw", context.getPackageName()));
     }
     
     /**
@@ -137,7 +171,6 @@ public final class SSLHelper {
      * @return
      */
     public static KeyStore initKeyStore(final InputStream keyStoreStream, final char[] passChars) {
-        final String trustStoreType = KeyStore.getDefaultType();
         KeyStore keyStore = null;
         if(keyStoreStream == null) {
             throw new IllegalArgumentException("Invalid keyStoreStream:" + keyStoreStream);
@@ -148,7 +181,8 @@ public final class SSLHelper {
         }
         
         try {
-            keyStore = KeyStore.getInstance(trustStoreType);
+            keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            LogHelper.d(LOG_TAG, "trustStoreType:" + keyStore.getType());
             keyStore.load(keyStoreStream, passChars);
         } catch(NoSuchAlgorithmException ex) {
             LogHelper.e(LOG_TAG, ex);

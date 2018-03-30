@@ -1,0 +1,24 @@
+How to create the certificate for testing.
+========================================================================================================================================================
+Using this certificate for R&D
+========================================================================================================================================================
+--.jks certificate
+keytool -genkey -keyalg RSA -alias selfsigned -keystore tjws.jks -storepass password -validity 65537 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999
+keytool -importkeystore -srckeystore tjws.jks -destkeystore tjws.jks -deststoretype pkcs12
+openssl x509 -in tjws.jks -text -noout
+
+
+--.bks certificate
+keytool -genkey -keyalg RSA -alias selfsigned -keystore tjws.bks -storepass password -validity 65537 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999
+keytool -importkeystore -srckeystore tjws.bks -destkeystore tjws.bks -deststoretype pkcs12
+openssl x509 -in tjws.bks -text -noout
+
+
+========================================================================================================================================================
+================ Generate the self-signed key and certficate ================
+Password:password
+openssl req -newkey rsa:2048 -nodes -keyout tjws.key -out tjws.csr
+openssl req -newkey rsa:2048 -nodes -keyout tjws.key -x509 -days 65537 -out tjws.crt
+
+#If you want to decode certificates on your own computer, run this OpenSSL command:
+openssl x509 -in tjws.crt -text -noout

@@ -9,5 +9,5 @@ keytool \
       -keystore tjws.bks \
       -storetype BKS \
       -provider org.bouncycastle.jce.provider.BouncyCastleProvider \
-      -providerpath ../../../../libs/bcprov-jdk15-146.jar \
+      -providerpath ../../../../libs/bcprov-jdk15on-159.jar \
       -storepass password

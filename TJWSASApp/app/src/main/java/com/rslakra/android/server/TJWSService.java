@@ -16,8 +16,7 @@ import com.rslakra.android.framework.events.EventType;
 import com.rslakra.android.logger.LogHelper;
 import com.rslakra.android.tjwsasapp.TJWSApp;
 import com.rslakra.android.utils.NetHelper;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.rslakra.android.utils.SSLHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,7 +26,6 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
-import java.security.Security;
 import java.util.Properties;
 
 import Acme.IOHelper;
@@ -39,7 +37,8 @@ import rogatkin.web.WebAppServlet;
 /**
  * Android TJWS server service
  *
- * @author drogatki
+ * @author Rohtash Singh Lakra
+ * @date 03/15/2018 03:39:08 PM*
  */
 public class TJWSService extends Service {
     
@@ -49,13 +48,7 @@ public class TJWSService extends Service {
     private static final String LOG_TAG = "TJWSService";
     
     static {
-        try {
-            /* add bouncy castle provider. */
-            Security.addProvider(new BouncyCastleProvider());
-            LogHelper.i(LOG_TAG, "Added BouncyCastleProvider Provider");
-        } catch(Exception ex) {
-            LogHelper.e(LOG_TAG, ex);
-        }
+        IOHelper.addBouncyCastleProvider();
     }
     
     /**
@@ -99,7 +92,6 @@ public class TJWSService extends Service {
     public TJWSService() {
         LogHelper.i(LOG_TAG, "TJWSService()");
     }
-    
     
     /**
      * Class used for the client Binder. Because we know this service always
@@ -149,7 +141,6 @@ public class TJWSService extends Service {
             LogHelper.w(LOG_TAG, "TJWSServer is already running!!!");
         }
     }
-    
     
     /**
      * @return
@@ -207,7 +198,6 @@ public class TJWSService extends Service {
         return (webServer != null && webServer.isRunning());
     }
     
-    
     /**
      * @return
      */
@@ -224,23 +214,22 @@ public class TJWSService extends Service {
         return (getScheme() + "://" + getBindAddress() + ":" + getPort() + "/");
     }
     
-    
     /**
      * Initializes the logging stream.
      */
-    //    @SuppressLint("NewApi")
+    // @SuppressLint("NewApi")
     private void initLogging() {
         if(logStream != null) {
             return;
         }
         
         File logDir = new File(TJWSApp.getInstance().getLogsFolder());
-        //make sure, the folder exists.
+        // make sure, the folder exists.
         if(!logDir.exists()) {
             LogHelper.w(LOG_TAG, "The logs folder [" + logDir.getAbsolutePath() + "] does not exist!");
         }
         
-        //initialize the logs file.
+        // initialize the logs file.
         try {
             logStream = new PrintStream(new File(logDir, "access-" + System.currentTimeMillis() + ".log"), "UTF-8");
         } catch(Exception ex) {
@@ -270,13 +259,12 @@ public class TJWSService extends Service {
         setDefaultPort();
         
         File deployFolder = new File(TJWSApp.getInstance().getDeployFolder());
-        //make sure, the folder exists.
+        // make sure, the folder exists.
         if(!deployFolder.exists()) {
             if(!deployFolder.mkdir()) {
                 LogHelper.w(LOG_TAG, "Unable to create deploy folder:" + deployFolder.getAbsolutePath());
             }
         }
-        
         
         // setting properties for the server, and exchangeable Acceptors
         Properties properties = new Properties();
@@ -298,7 +286,7 @@ public class TJWSService extends Service {
             // properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
             // "rogatkin.wskt.SSLSelectorAcceptor");
             
-            final String keyStoreFile = "newConf/tjws.bks";
+            final String keyStoreFile = "servertruststore.bks";
             String keyStoreFilePath = null;
             if(useAssetsPath) {
                 String parentFolderPath = IOHelper.pathString(TJWSService.class);
@@ -314,7 +302,8 @@ public class TJWSService extends Service {
                     }
                 }
                 try {
-                    final InputStream keyStoreStream = LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), keyStoreFile);
+                    //                    final InputStream keyStoreStream = LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), keyStoreFile);
+                    final InputStream keyStoreStream = SSLHelper.rawResource(TJWSApp.getInstance().getApplicationContext(), "servertruststore");
                     int keyStoreBytes = IOHelper.copyStream(keyStoreStream, new FileOutputStream(keyStoreFilePath), true);
                     LogHelper.d(LOG_TAG, "keyStoreBytes:" + keyStoreBytes);
                 } catch(IOException ex) {
@@ -329,6 +318,11 @@ public class TJWSService extends Service {
             
             properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE, keyStoreFilePath);
             properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, KeyStore.getDefaultType());
+            properties.setProperty(SSLAcceptor.ARG_PROTOCOL, TJWSServer.PROTOCOLS[3]);
+            // properties.setProperty(SSLAcceptor.ARG_PROTOCOL,
+            // TJWSServer.PROTOCOLS[1]);
+            // properties.setProperty(SSLAcceptor.ARG_PROTOCOL,
+            // TJWSServer.PROTOCOLS[2]);
             properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "false");
             properties.setProperty(SSLAcceptor.ARG_KEYSTOREPASS, "password");
         } else {
@@ -338,11 +332,11 @@ public class TJWSService extends Service {
             // "Acme.Serve.SelectorAcceptor");
         }
         
-        //set port
+        // set port
         properties.setProperty(Serve.ARG_PORT, String.valueOf(getPort()));
         
         webServer = new TJWSServer(properties, logStream, this);
-        //Add root servlet
+        // Add root servlet
         webServer.addServlet("/", new EmbeddedServlet());
         
         // add shutdown hook.
@@ -359,8 +353,8 @@ public class TJWSService extends Service {
         System.setProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR, TJWSApp.getInstance().getDeployFolder());
         LogHelper.d(LOG_TAG, "webappdir:" + System.getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR) + ", for app:" + TJWSApp.getInstance().getDeployFolder());
         
-        //initialize the deploy directory
-        webServer.deployApplications();
+        //        // initialize the deploy directory
+        //        webServer.deployApplications();
     }
     
     /**
@@ -380,7 +374,6 @@ public class TJWSService extends Service {
             return null;
         }
     }
-    
     
     /**
      * Returns the hostname.
@@ -430,7 +423,9 @@ public class TJWSService extends Service {
             }
         }
         
-        
+        // initialize the deploy directory
+        webServer.setProperty(SSLAcceptor.ARG_IFADDRESS, webServer.getProperty(Serve.ARG_BINDADDRESS));
+        webServer.deployApplications();
     }
     
     /**
@@ -474,22 +469,23 @@ public class TJWSService extends Service {
                  */
                 @Override
                 public void run() {
-                    //                    getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                    //                    WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                    //                    wifiLock = wifiManager.createWifiLock(LOG_TAG);
+                    // getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                    // WifiManager wifiManager = (WifiManager)
+                    // getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                    // wifiLock = wifiManager.createWifiLock(LOG_TAG);
                     //
                     try {
-                        //lock on wifi to start server.
-                        //                        wifiLock.acquire();
+                        // lock on wifi to start server.
+                        // wifiLock.acquire();
                         Serve.Status result = webServer.serve();
                         LogHelper.i(LOG_TAG, "Serve result:" + result);
                     } catch(Throwable throwable) {
                         LogHelper.e(LOG_TAG, throwable);
                     } finally {
-                        //unlock the wifi lock after server start call.
-                        //                        if(wifiLock != null && wifiLock.isHeld()) {
-                        //                            wifiLock.release();
-                        //                        }
+                        // unlock the wifi lock after server start call.
+                        // if(wifiLock != null && wifiLock.isHeld()) {
+                        // wifiLock.release();
+                        // }
                     }
                 }
             }.start();
@@ -526,7 +522,6 @@ public class TJWSService extends Service {
     public void stopServer() {
         stopServer(true);
     }
-    
     
     /**
      * Destroys the current service.

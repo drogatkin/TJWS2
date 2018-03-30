@@ -36,7 +36,6 @@ import javax.net.ssl.SSLSession;
 
 /**
  * @author Rohtash Singh Lakra
- *         (Rohtash.Lakra@nasdaq.com)
  * @date 03/22/2018 03:56:15 PM
  */
 public class AllHostNameVerifier implements HostnameVerifier {

@@ -4,17 +4,16 @@
 package com.rslakra.android.tjwsasapp;
 
 import android.content.Context;
-import android.util.Base64;
+import android.os.Build;
 
 import com.rslakra.android.logger.LogHelper;
+import com.rslakra.android.server.TJWSServer;
 import com.rslakra.android.utils.SSLHelper;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.KeyStore;
@@ -57,7 +56,9 @@ public final class TestConnection {
      */
     private static final String LOG_TAG = "TestConnection";
     
-    private final String keyStoreFile = "newConf/tjws.bks";
+    //    private final String keyStoreFile = "conf/tjws.bks";
+    //    private final String keyStoreFile = "tjws.keystore";
+    private final String keyStoreFile = "clienttruststore.bks";
     private final String PASSWORD = "password";
     
     /**
@@ -73,6 +74,7 @@ public final class TestConnection {
     public TestConnection(final Context context, final boolean sslEnabled) {
         this.mContext = context;
         this.sslEnabled = sslEnabled;
+        IOHelper.addBouncyCastleProvider();
     }
     
     /**
@@ -100,8 +102,8 @@ public final class TestConnection {
             TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
             
             // Initialize SSLContext
-//            sslContext = SSLContext.getInstance("TLS");
-            sslContext = SSLContext.getInstance("TLSv1");
+            sslContext = SSLContext.getInstance(TJWSServer.PROTOCOLS[0]);
+            //            sslContext = SSLContext.getInstance(TJWSServer.PROTOCOLS[2]);
             sslContext.init(keyManagers, trustManagers, new SecureRandom());
         } catch(Exception ex) {
             LogHelper.e(LOG_TAG, ex);
@@ -118,7 +120,12 @@ public final class TestConnection {
     public final SSLSocketFactory newSSLSocketFactory() {
         SSLSocketFactory sslSocketFactory = null;
         try {
-            sslSocketFactory = createSSLContext(mContext, keyStoreFile, PASSWORD).getSocketFactory();
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                sslSocketFactory = new TLSSocketFactory();
+            } else {
+                sslSocketFactory = createSSLContext(mContext, keyStoreFile, PASSWORD).getSocketFactory();
+            }
+            //            sslSocketFactodry = createSSLContext(mContext, keyStoreFile, PASSWORD).getSocketFactory();
         } catch(Exception ex) {
             LogHelper.d(LOG_TAG, ex);
         }
@@ -134,14 +141,15 @@ public final class TestConnection {
     public final SSLSocketFactory newSSLSocketFactoryWithTrustAllCerts() {
         SSLSocketFactory sslSocketFactory = null;
         try {
-            final InputStream keyStoreStream = LogHelper.readAssets(mContext, keyStoreFile);
+            //            final InputStream keyStoreStream = LogHelper.readAssets(mContext, keyStoreFile);
+            final InputStream keyStoreStream = SSLHelper.rawResource(mContext, "tjws");
             final KeyStore keyStore = SSLHelper.initKeyStore(keyStoreStream, PASSWORD);
             // Create key manager
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, PASSWORD.toCharArray());
             final KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
             
-            final SSLContext sslContext = SSLContext.getInstance("TLSv1");
+            final SSLContext sslContext = SSLContext.getInstance(TJWSServer.PROTOCOLS[0]);
             sslContext.init(keyManagers, new TrustManager[]{new AllCertsTrustManager()}, new SecureRandom());
             sslSocketFactory = sslContext.getSocketFactory();
         } catch(Exception ex) {
@@ -169,26 +177,35 @@ public final class TestConnection {
                 // Create socket factory
                 if(sslSocketFactory == null) {
                     sslSocketFactory = newSSLSocketFactory();
-//                    sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
+                    /*
+                    sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
+                    */
+                    /*
+                    SSLContext sslContext = SSLContext.getInstance(TJWSServer.PROTOCOLS[0]);
+                    sslContext.init(null, null, null);
+                    sslSocketFactory = new NoSSLv3SocketFactory(sslContext.getSocketFactory());
+                    sslSocketFactory = sslContext.getSocketFactory();
+                    */
+                    
                     /*
                     SSLContext sslContext = SSLContext.getInstance("SSLv3");
                     sslContext.init(null, null, null);
-                    sslSocketFactory = new TLSSocketFactory(sslContext.getSocketFactory());
+                    sslSocketFactory = new TLSSocketFactory();
                     */
                 }
-    
-//                final byte[] authBytes  = "admin:admin".getBytes("UTF-8");
-                final byte[] authBytes  = "password".getBytes("UTF-8");
-                final String authString  = Base64.encodeToString(authBytes, Base64.DEFAULT);
-                urlConnection.setRequestProperty("Authorization", "Basic " + authString);
+                
+                //                final byte[] authBytes  = "admin:admin".getBytes("UTF-8");
+                //                final byte[] authBytes  = PASSWORD.getBytes("UTF-8");
+                //                final String authString  = Base64.encodeToString(authBytes, Base64.DEFAULT);
+                //                urlConnection.setRequestProperty("Authorization", "Basic " + authString);
                 
                 // Install the SSL socket factory on the connection.
                 ((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
-                ((HttpsURLConnection) urlConnection).setHostnameVerifier(new AllHostNameVerifier());
+                //                ((HttpsURLConnection) urlConnection).setHostnameVerifier(new AllHostNameVerifier());
                 
-//                HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
+                //                HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
                 // Install the all-trusting host verifier
-//                HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
+                //                HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
             }
             
             bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
@@ -212,8 +229,8 @@ public final class TestConnection {
             if(sslEnabled) {
                 // Create socket factory
                 sslSocketFactory = newSSLSocketFactory();
-//                sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
-                HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
+                //                sslSocketFactory = newSSLSocketFactoryWithTrustAllCerts();
+                //                HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
                 /*
                 // Install the all-trusting host verifier
                 HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
@@ -234,34 +251,40 @@ public final class TestConnection {
      */
     private final class SSLSocketThread extends Thread {
         
-        private SSLSocket sslSocket = null;
+        /** mSSLSocket */
+        private SSLSocket mSSLSocket = null;
         
         SSLSocketThread(final SSLSocket sslSocket) {
-            this.sslSocket = sslSocket;
+            this.mSSLSocket = sslSocket;
         }
         
         public void run() {
-            sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
-            
             try {
+                LogHelper.d(LOG_TAG, "isBound:" + mSSLSocket.isBound());
+                LogHelper.d(LOG_TAG, "isClosed:" + mSSLSocket.isClosed());
+                LogHelper.d(LOG_TAG, "isConnected:" + mSSLSocket.isConnected());
+                LogHelper.d(LOG_TAG, "supportedCipherSuites:" + SSLHelper.toString(mSSLSocket.getSupportedCipherSuites(), true));
+                LogHelper.d(LOG_TAG, "supportedProtocols:" + SSLHelper.toString(mSSLSocket.getSupportedProtocols(), true));
+                mSSLSocket.setEnabledCipherSuites(mSSLSocket.getSupportedCipherSuites());
+                
                 // Start handshake
-                sslSocket.startHandshake();
+                mSSLSocket.startHandshake();
                 
                 // Get session after the connection is established
-                SSLSession sslSession = sslSocket.getSession();
+                SSLSession sslSession = mSSLSocket.getSession();
                 LogHelper.d(LOG_TAG, "SSLSession :");
                 LogHelper.d(LOG_TAG, "Protocol : " + sslSession.getProtocol());
                 LogHelper.d(LOG_TAG, "Cipher suite : " + sslSession.getCipherSuite());
                 
                 // Start handling application content
-                InputStream inputStream = sslSocket.getInputStream();
-                OutputStream outputStream = sslSocket.getOutputStream();
-                
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                InputStream inputStream = mSSLSocket.getInputStream();
                 
                 // Write data (Send Request to server).
+                OutputStream outputStream = mSSLSocket.getOutputStream();
                 outputStream.write("GET / HTTP/1.1\r\nHost: localhost/\r\n\r\n".getBytes());
+                outputStream.flush();
                 
+                final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                 String line = null;
                 while((line = bufferedReader.readLine()) != null) {
                     LogHelper.d(LOG_TAG, line);
@@ -270,7 +293,7 @@ public final class TestConnection {
                     }
                 }
                 
-                IOHelper.safeClose(sslSocket);
+                IOHelper.safeClose(mSSLSocket);
             } catch(Exception ex) {
                 LogHelper.e(LOG_TAG, ex);
             }

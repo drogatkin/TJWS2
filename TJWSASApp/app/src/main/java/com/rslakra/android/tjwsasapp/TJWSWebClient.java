@@ -8,7 +8,7 @@ import android.webkit.WebView;
 import com.rslakra.android.logger.LogHelper;
 
 /**
- * @author Rohtash Singh (rsingh@boardvantage.com)
+ * @author Rohtash Singh
  * @version 1.0.0
  * @since Jun 15, 2015 1:04:16 PM
  */

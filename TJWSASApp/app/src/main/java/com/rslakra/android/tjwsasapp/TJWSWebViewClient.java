@@ -3,6 +3,10 @@ package com.rslakra.android.tjwsasapp;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
+import android.net.http.SslError;
+import android.webkit.ClientCertRequest;
+import android.webkit.HttpAuthHandler;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -12,7 +16,7 @@ import com.rslakra.android.logger.LogHelper;
 /**
  * Provides an opportunity to intercept the WebView calls.
  *
- * @author Rohtash Singh (rsingh@boardvantage.com)
+ * @author Rohtash Singh
  * @version 1.0.0
  * @since Apr 28, 2015 7:16:05 PM
  */
@@ -93,23 +97,37 @@ public class TJWSWebViewClient extends WebViewClient {
      * rendering picture may not be updated yet. To get the notification for the
      * new Picture, use {@link WebView.PictureListener#onNewPicture}.
      *
-     * @see android.webkit.WebViewClient#onPageFinished(android.webkit.WebView, * java.lang.String)
+     * @see android.webkit.WebViewClient#onPageFinished(android.webkit.WebView, java.lang.String)
      */
     @Override
-    public void onPageFinished(WebView view, String url) {
+    public void onPageFinished(WebView view, String urlString) {
+        LogHelper.d(LOG_TAG, "onPageFinished(" + view + ", " + urlString + ")");
         // super.onPageFinished(view, url);
         showHideProgressDialog(false);
     }
     
     /**
      * onReceivedError
-     *
-     * @see android.webkit.WebViewClient#onReceivedError(android.webkit.WebView, * int,
-     * java.lang.String, java.lang.String)
      */
     @Override
     public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
         LogHelper.d(LOG_TAG, "onReceivedError(" + view + ", " + errorCode + ", " + description + ", " + failingUrl + ")");
         Toast.makeText(view.getContext(), description, Toast.LENGTH_LONG).show();
+    }
+    
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+        LogHelper.d(LOG_TAG, "onReceivedSslError(" + view + ", " + handler + ", " + error + ")");
+        handler.proceed(); // Ignore SSL certificate errors
+    }
+    
+    @Override
+    public void onReceivedClientCertRequest(WebView view, ClientCertRequest certRequest) {
+        LogHelper.d(LOG_TAG, "onReceivedClientCertRequest(" + view + ", " + certRequest + ")");
+    }
+    
+    @Override
+    public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
+        LogHelper.d(LOG_TAG, "onReceivedHttpAuthRequest(" + view + ", " + handler + ", " + host + ", " + realm + ")");
     }
 }

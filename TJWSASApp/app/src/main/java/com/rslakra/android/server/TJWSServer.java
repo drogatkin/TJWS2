@@ -4,7 +4,7 @@
 package com.rslakra.android.server;
 
 import com.rslakra.android.logger.LogHelper;
-
+import com.rslakra.android.tjwsasapp.TJWSApp;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Properties;
@@ -15,7 +15,7 @@ import rogatkin.web.WebApp;
 import rogatkin.web.WebAppServlet;
 
 /**
- * @author Rohtash Singh Lakra (Rohtash.Lakra@nasdaq.com)
+ * @author Rohtash Singh Lakra
  * @version 1.0.0
  * @date 03/15/2018 04:00:49 PM
  */
@@ -25,6 +25,9 @@ public final class TJWSServer extends Acme.Serve.Serve {
      * LOG_TAG
      */
     private static final String LOG_TAG = "TJWSServer";
+    
+    /** PROTOCOLS */
+    public static final String[] PROTOCOLS = new String[]{"SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"};
     
     /**
      * warDeployer
@@ -88,6 +91,17 @@ public final class TJWSServer extends Acme.Serve.Serve {
      */
     public final String getDeployFolder() {
         return (String) getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR);
+    }
+    
+    @Override
+    public void initMime() {
+        mime = new Properties();
+        try {
+            mime.load(LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), "mime.properties"));
+            LogHelper.d(LOG_TAG, "MIME map is loaded successfully!");
+        } catch(Exception ex) {
+            LogHelper.e(LOG_TAG, ex, "MIME map can't be loaded!");
+        }
     }
     
     /**
@@ -196,11 +210,8 @@ public final class TJWSServer extends Acme.Serve.Serve {
     public synchronized boolean deployApplication(String appName) {
         // deployer must be not null
         try {
-            WebAppServlet webAppServlet = WebAppServlet.create(new File(
-                    new File(getDeployFolder(), WarRoller.DEPLOYMENT_DIR_TARGET),
-                    appName), appName, this, null);
-            addServlet(webAppServlet.getContextPath() + "/*",
-                    webAppServlet, null);
+            WebAppServlet webAppServlet = WebAppServlet.create(new File(new File(getDeployFolder(), WarRoller.DEPLOYMENT_DIR_TARGET), appName), appName, this, null);
+            addServlet(webAppServlet.getContextPath() + "/*", webAppServlet, null);
             return true;
         } catch(Throwable ex) {
             LogHelper.e(LOG_TAG, "Unexpected problem in deployment appName:" + appName, ex);

@@ -23,7 +23,8 @@ import com.rslakra.android.server.TJWSService;
 import java.io.File;
 
 /**
- *
+ * @author Rohtash Singh Lakra
+ * @date 03/15/2018 03:39:08 PM
  */
 public class TJWSApp extends Application {
     
@@ -277,8 +278,8 @@ public class TJWSApp extends Application {
      * NetworkConnectivityTester's BroadcastReceiver when it hears
      * about an actual network-reachability change.
      *
-     * @param mContext The context passed to the broadcast receiver. No idea what it is, but I don't
-     *                 care, because it lets me send myself a message.
+     * @param mContext The context passed to the broadcast receiver. No idea what it is, but I
+     * don't care, because it lets me send myself a message.
      */
     public static void checkReachability(final Context mContext) {
         // only the key matters to me, not the payload. See onStartCommand().
