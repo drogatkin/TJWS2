@@ -14,25 +14,25 @@ import javax.servlet.ServletResponse;
 
 public class MultipartParser {
 	public static final String MULTIPARTDATA = "multipart/form-data";
-
+	
 	public static final String BOUNDARY_EQ = "boundary=";
-
+	
 	public static final String BOUNDARY_END_SFX = "--";
-
+	
 	public static final String CONTENT_DISP = "Content-Disposition";
-
+	
 	public static final String FORM_DATA = "form-data";
-
+	
 	public static final String FILENAME_EQ_QT = "filename=\"";
-
+	
 	public static final String NAME_EQ_QT = "name=\"";
-
+	
 	public static final String FILENAME = "filename";
 	
 	public static final String CONTENT_TYPE = "Content-Type";
 	
 	protected HashMap<String, Object[]> multipartData;
-
+	
 	public MultipartParser(ServletRequest req, ServletResponse response) throws IOException {
 		String contentType = req.getContentType();
 		ServletInputStream sis = null;
@@ -42,15 +42,19 @@ public class MultipartParser {
 			throw new IOException("Input stream is unaccessible");
 		}
 		int bp = contentType.indexOf(BOUNDARY_EQ);
-		if (bp < 0)
+		if (bp < 0) {
 			return;
+		}
+		
 		String boundary = contentType.substring(bp + BOUNDARY_EQ.length()); // it
 		// can be not last attribute
 		int boundaryLength = boundary.length();
-		int contentLength = req.getContentLength(); // TODO can be -1, it is
-													// normal
-		if (contentLength <= 0)
+		// TODO can be -1, it is normal
+		int contentLength = req.getContentLength();
+		if (contentLength <= 0) {
 			return;
+		}
+		
 		int maxReqLength = 30 * 1024 * 1024;
 		if (contentLength > maxReqLength) {
 			sis.skip(contentLength);
@@ -61,56 +65,68 @@ public class MultipartParser {
 		// reading
 		byte[] buffer = new byte[contentLength];
 		int contentRead = 0;
-		main_loop: do {
-			if (contentRead > contentLength)
+		main_loop:
+		do {
+			if (contentRead > contentLength) {
 				break main_loop;
+			}
+			
 			// read --------------boundary
 			int ec = sis.readLine(buffer, contentRead, contentLength - contentRead);
-			if (ec < 0)
+			if (ec < 0) {
 				break main_loop;
+			}
+			
 			String s = new String(buffer, contentRead, ec, "UTF-8");
 			contentRead += ec;
 			int p = s.indexOf(boundary);
 			if (p >= 0) {
-				if (s.regionMatches(p + boundaryLength, BOUNDARY_END_SFX, 0, BOUNDARY_END_SFX.length()))
-					break; // it shouldn't happen here, but it's Ok
+				if (s.regionMatches(p + boundaryLength, BOUNDARY_END_SFX, 0, BOUNDARY_END_SFX.length())) {
+					// it shouldn't happen here, but it's Ok
+					break;
+				}
 				// skip the boundary, if it happens, because it's first
 				ec = sis.readLine(buffer, contentRead, contentLength - contentRead);
 				s = new String(buffer, contentRead, ec, "UTF-8");
 				contentRead += ec;
 			}
+			
 			// s contains here first line of a part
 			int dp, ep;
 			String header, name = null, filename = null, token, partContentType = null;
 			do {
 				dp = s.indexOf(':');
-				if (dp < 0) // throw new IOException( ..
+				if (dp < 0) { // throw new IOException( ..
 					break main_loop;
-
+				}
+				
 				header = s.substring(0, dp);
 				s = s.substring(dp + 2);
 				if (CONTENT_DISP.equalsIgnoreCase(header)) {
 					StringTokenizer ast = new StringTokenizer(s, ";");
 					if (ast.hasMoreTokens()) {
 						token = ast.nextToken();
-						if (token.indexOf(FORM_DATA) < 0)
+						if (token.indexOf(FORM_DATA) < 0) {
 							break main_loop; // throw new IOException( ..
-
+						}
+						
 						while (ast.hasMoreTokens()) {
 							token = ast.nextToken();
 							dp = token.indexOf(FILENAME_EQ_QT);
 							if (dp >= 0) {
 								ep = token.indexOf('"', dp + FILENAME_EQ_QT.length());
-								if (ep < 0 || filename != null)
+								if (ep < 0 || filename != null) {
 									break main_loop;
+								}
 								filename = token.substring(dp + FILENAME_EQ_QT.length(), ep);
 								continue;
 							}
 							dp = token.indexOf(NAME_EQ_QT);
 							if (dp >= 0) {
 								ep = token.indexOf('"', dp + NAME_EQ_QT.length());
-								if (ep < 0 || ep == dp + NAME_EQ_QT.length() || name != null)
+								if (ep < 0 || ep == dp + NAME_EQ_QT.length() || name != null) {
 									break main_loop; // throw new
+								}
 								// IOException( ..
 								name = token.substring(dp + NAME_EQ_QT.length(), ep);
 								continue;
@@ -134,9 +150,7 @@ public class MultipartParser {
 			if (name == null)
 				break main_loop; // throw new IOException( ..
 			int marker = contentRead;
-			if (partContentType == null || partContentType.indexOf("text/") >= 0
-					|| partContentType.indexOf("application/") >= 0 || partContentType.indexOf("message/") >= 0
-					|| partContentType.indexOf("unknown") >= 0) { // read
+			if (partContentType == null || partContentType.indexOf("text/") >= 0 || partContentType.indexOf("application/") >= 0 || partContentType.indexOf("message/") >= 0 || partContentType.indexOf("unknown") >= 0) { // read
 				// everything
 				do {
 					ec = sis.readLine(buffer, contentRead, contentLength - contentRead);
@@ -214,7 +228,7 @@ public class MultipartParser {
 					ec = sis.readLine(buffer, contentRead, contentLength - contentRead);
 					if (ec < 0)
 						throw new IOException("Premature ending of input stream");
-
+					
 					s = new String(buffer, contentRead, ec, "UTF-8");
 					p = s.indexOf(boundary);
 					if (p >= 0) { // we met a bounder
@@ -234,7 +248,7 @@ public class MultipartParser {
 			}
 		} while (true);
 	}
-
+	
 	protected void addPart(String name, Object data) {
 		Object[] curData = multipartData.get(name);
 		if (curData == null) {
@@ -248,7 +262,7 @@ public class MultipartParser {
 		}
 		multipartData.put(name, curData);
 	}
-
+	
 	public Object getParameter(String name) {
 		if (multipartData == null)
 			return null;
@@ -256,6 +270,6 @@ public class MultipartParser {
 		if (curData == null)
 			return null;
 		return curData[0];
-
+		
 	}
 }
