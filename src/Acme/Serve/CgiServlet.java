@@ -29,7 +29,6 @@
 package Acme.Serve;
 
 import java.io.BufferedReader;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,10 +39,12 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Cookie;
+
+import Acme.Utils;
 
 /// Runs CGI programs.
 // <P>
@@ -72,19 +73,19 @@ public class CgiServlet extends HttpServlet {
 	// @param req the servlet response
 	// @exception ServletException when an exception has occurred
 	public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		if(!(req.getMethod().equalsIgnoreCase("get") || req.getMethod().equalsIgnoreCase("post"))) {
+		if (!(req.getMethod().equalsIgnoreCase("get") || req.getMethod().equalsIgnoreCase("post"))) {
 			res.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
 			return;
 		}
 		String pathInfo = req.getPathInfo();
-		if(pathInfo == null)
+		if (pathInfo == null)
 			dispatchPathname(req, res, getServletContext().getRealPath(req.getServletPath()));
 		else
 			dispatchPathname(req, res, getServletContext().getRealPath(req.getServletPath() + pathInfo));
 	}
 	
 	private void dispatchPathname(HttpServletRequest req, HttpServletResponse res, String path) throws IOException {
-		if(new File(path).exists())
+		if (new File(path).exists())
 			serveFile(req, res, path);
 		else
 			res.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -111,27 +112,27 @@ public class CgiServlet extends HttpServlet {
 		envVec.addElement(makeEnv("REMOTE_ADDR", req.getRemoteAddr()));
 		envVec.addElement(makeEnv("REMOTE_HOST", req.getRemoteHost()));
 		envVec.addElement(makeEnv("REQUEST_METHOD", req.getMethod()));
-		if(contentLength != -1)
+		if (contentLength != -1)
 			envVec.addElement(makeEnv("CONTENT_LENGTH", Integer.toString(contentLength)));
-		if(req.getContentType() != null)
+		if (req.getContentType() != null)
 			envVec.addElement(makeEnv("CONTENT_TYPE", req.getContentType()));
 		envVec.addElement(makeEnv("SCRIPT_NAME", req.getServletPath()));
-		if(req.getPathInfo() != null)
+		if (req.getPathInfo() != null)
 			envVec.addElement(makeEnv("PATH_INFO", req.getPathInfo()));
-		if(req.getPathTranslated() != null)
+		if (req.getPathTranslated() != null)
 			envVec.addElement(makeEnv("PATH_TRANSLATED", req.getPathTranslated()));
-		if(queryString != null)
+		if (queryString != null)
 			envVec.addElement(makeEnv("QUERY_STRING", queryString));
 		envVec.addElement(makeEnv("SERVER_PROTOCOL", req.getProtocol()));
-		if(req.getRemoteUser() != null)
+		if (req.getRemoteUser() != null)
 			envVec.addElement(makeEnv("REMOTE_USER", req.getRemoteUser()));
-		if(req.getAuthType() != null)
+		if (req.getAuthType() != null)
 			envVec.addElement(makeEnv("AUTH_TYPE", req.getAuthType()));
 		Enumeration hnEnum = req.getHeaderNames();
-		while(hnEnum.hasMoreElements()) {
+		while (hnEnum.hasMoreElements()) {
 			String name = (String) hnEnum.nextElement();
 			String value = req.getHeader(name);
-			if(value == null)
+			if (value == null)
 				value = "";
 			envVec.addElement(makeEnv("HTTP_" + name.toUpperCase().replace('-', '_'), value));
 		}
@@ -144,11 +145,11 @@ public class CgiServlet extends HttpServlet {
 		InputStream procErr = proc.getErrorStream();
 		try {
 			// If it's a POST, copy the request data to the process.
-			if(req.getMethod().equalsIgnoreCase("post")) {
+			if (req.getMethod().equalsIgnoreCase("post")) {
 				InputStream reqIn = req.getInputStream();
-				for(int i = 0; i < contentLength; ++i) {
+				for (int i = 0; i < contentLength; ++i) {
 					c = reqIn.read();
-					if(c == -1)
+					if (c == -1)
 						break;
 					procOut.write(c);
 				}
@@ -159,20 +160,20 @@ public class CgiServlet extends HttpServlet {
 			OutputStream resOut = res.getOutputStream();
 			// Some of the headers have to be intercepted and handled.
 			boolean firstLine = true;
-			while(true) {
+			while (true) {
 				String line = procIn.readLine();
-				if(line == null)
+				if (line == null)
 					break;
 				line = line.trim();
-				if(line.equals(""))
+				if (line.equals(""))
 					break;
 				int colon = line.indexOf(":");
-				if(colon == -1) {
+				if (colon == -1) {
 					// No colon. If it's the first line, parse it for status.
-					if(firstLine) {
+					if (firstLine) {
 						StringTokenizer tok = new StringTokenizer(line, " ");
 						try {
-							switch(tok.countTokens()) {
+							switch (tok.countTokens()) {
 								case 2:
 									tok.nextToken();
 									res.setStatus(Integer.parseInt(tok.nextToken()));
@@ -182,7 +183,7 @@ public class CgiServlet extends HttpServlet {
 									res.setStatus(Integer.parseInt(tok.nextToken()), tok.nextToken());
 									break;
 							}
-						} catch(NumberFormatException ignore) {
+						} catch (NumberFormatException ignore) {
 						}
 					} else {
 						// No colon and it's not the first line? Ignore.
@@ -191,10 +192,10 @@ public class CgiServlet extends HttpServlet {
 					// There's a colon. Check for certain special headers.
 					String name = line.substring(0, colon);
 					String value = line.substring(colon + 1).trim();
-					if(name.equalsIgnoreCase("Status")) {
+					if (name.equalsIgnoreCase("Status")) {
 						StringTokenizer tok = new StringTokenizer(value, " ");
 						try {
-							switch(tok.countTokens()) {
+							switch (tok.countTokens()) {
 								case 1:
 									res.setStatus(Integer.parseInt(tok.nextToken()));
 									break;
@@ -202,21 +203,21 @@ public class CgiServlet extends HttpServlet {
 									res.setStatus(Integer.parseInt(tok.nextToken()), tok.nextToken());
 									break;
 							}
-						} catch(NumberFormatException ignore) {
+						} catch (NumberFormatException ignore) {
 						}
-					} else if(name.equalsIgnoreCase("Content-type")) {
+					} else if (name.equalsIgnoreCase("Content-type")) {
 						res.setContentType(value);
-					} else if(name.equalsIgnoreCase("Content-length")) {
+					} else if (name.equalsIgnoreCase("Content-length")) {
 						try {
 							res.setContentLength(Integer.parseInt(value));
-						} catch(NumberFormatException ignore) {
+						} catch (NumberFormatException ignore) {
 						}
-					} else if(name.equalsIgnoreCase("Location")) {
+					} else if (name.equalsIgnoreCase("Location")) {
 						res.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
 						res.setHeader(name, value);
-					} else if(name.equalsIgnoreCase(Serve.ServeConnection.SETCOOKIE)) {
+					} else if (name.equalsIgnoreCase(Serve.ServeConnection.SETCOOKIE)) {
 						int x = value.indexOf("=");
-						if(x > 0) {
+						if (x > 0) {
 							String n = value.substring(0, x);
 							String v = value.substring(x + 1).trim();
 							res.addCookie(new Cookie(n, v));
@@ -228,23 +229,23 @@ public class CgiServlet extends HttpServlet {
 				}
 			}
 			// Copy the rest of the data uninterpreted.
-			Acme.Utils.copyStream(procIn, resOut, null);
-		} catch(IOException e) {
+			Utils.copyStream(procIn, resOut, null);
+		} catch (IOException e) {
 			// res.sendError( HttpServletResponse.SC_INTERNAL_SERVER_ERROR );
 			// There's some weird bug in Java, when reading from a Process
 			// you get a spurious IOException. We have to ignore it.
 		} finally {
 			try {
 				procOut.close();
-			} catch(IOException e) {
+			} catch (IOException e) {
 			}
 			try {
 				procIn.close();
-			} catch(IOException e) {
+			} catch (IOException e) {
 			}
 			try {
 				procErr.close();
-			} catch(IOException e) {
+			} catch (IOException e) {
 			}
 			// TODO make it configurable
 			// proc.destroy();
@@ -257,7 +258,7 @@ public class CgiServlet extends HttpServlet {
 	
 	private static String[] makeList(Vector vec) {
 		String list[] = new String[vec.size()];
-		for(int i = 0; i < vec.size(); ++i)
+		for (int i = 0; i < vec.size(); ++i)
 			list[i] = (String) vec.elementAt(i);
 		return list;
 	}

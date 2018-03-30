@@ -35,6 +35,8 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import Acme.Utils;
+
 /// Output stream with throttling.
 // <P>
 // Restricts output to a specified rate. Also includes a static utility
@@ -75,25 +77,26 @@ public class ThrottledOutputStream extends FilterOutputStream {
 	public static Acme.WildcardDictionary parseThrottleFile(String filename) throws IOException {
 		Acme.WildcardDictionary wcd = new Acme.WildcardDictionary();
 		File thFile = new File(filename);
-		if(thFile.isAbsolute() == false)
+		if (thFile.isAbsolute() == false)
 			thFile = new File(System.getProperty("user.dir", "."), thFile.getName());
 		BufferedReader br = new BufferedReader(new FileReader(thFile));
-		while(true) {
+		while (true) {
 			String line = br.readLine();
-			if(line == null)
+			if (line == null)
 				break;
 			int i = line.indexOf('#');
-			if(i != -1)
+			if (i != -1)
 				line = line.substring(0, i);
 			line = line.trim();
-			if(line.length() == 0)
+			if (line.length() == 0) {
 				continue;
-			String[] words = Acme.Utils.splitStr(line);
-			if(words.length != 2)
+			}
+			String[] words = Utils.splitStr(line);
+			if (words.length != 2)
 				throw new IOException("malformed throttle line: " + line);
 			try {
 				wcd.put(words[0], new ThrottleItem(Long.parseLong(words[1])));
-			} catch(NumberFormatException e) {
+			} catch (NumberFormatException e) {
 				throw new IOException("malformed number in throttle line: " + line);
 			}
 		}
@@ -102,10 +105,9 @@ public class ThrottledOutputStream extends FilterOutputStream {
 	}
 	
 	private long maxBps;
-	
 	private long bytes;
-	
 	private long start;
+	private byte[] oneByte = new byte[1];
 	
 	// / Constructor.
 	public ThrottledOutputStream(OutputStream out, long maxBps) {
@@ -114,8 +116,6 @@ public class ThrottledOutputStream extends FilterOutputStream {
 		bytes = 0;
 		start = System.currentTimeMillis();
 	}
-	
-	private byte[] oneByte = new byte[1];
 	
 	// / Writes a byte. This method will block until the byte is actually
 	// written.
@@ -137,12 +137,12 @@ public class ThrottledOutputStream extends FilterOutputStream {
 		long elapsed = Math.max(System.currentTimeMillis() - start, 1);
 		
 		long bps = bytes * 1000L / elapsed;
-		if(bps > maxBps) {
+		if (bps > maxBps) {
 			// Oops, sending too fast.
 			long wakeElapsed = bytes * 1000L / maxBps;
 			try {
 				Thread.sleep(wakeElapsed - elapsed);
-			} catch(InterruptedException ignore) {
+			} catch (InterruptedException ignore) {
 			}
 		}
 		

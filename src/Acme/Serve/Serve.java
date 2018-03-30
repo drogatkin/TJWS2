@@ -126,6 +126,7 @@ import javax.servlet.http.Part;
 import Acme.IOHelper;
 import Acme.ThreadPoolFactory;
 import Acme.Utils;
+import rslakra.logger.LogHelper;
 
 /// Minimal Java servlet container class.
 // <P>
@@ -331,8 +332,8 @@ public class Serve implements ServletContext, Serializable {
 		expiredIn = Utils.parseInt(arguments.get(ARG_SESSION_TIMEOUT), DEF_SESSION_TIMEOUT);
 		String seed = (String) arguments.get(ARG_SESSION_SEED);
 		String randomProvider = (String) arguments.get(ARG_SESSION_SEED_ALG); // "SHA1PRNG";
-		int seedLen = Utils.parseInt(seed, 0);
-		if (seed != null && seedLen == 0) {
+		int seedLength = Utils.parseInt(seed, 0);
+		if (seed != null && seedLength == 0) {
 			secureRandom = new SecureRandom(seed.getBytes());
 		} else {
 			if (randomProvider != null) {
@@ -347,9 +348,9 @@ public class Serve implements ServletContext, Serializable {
 				secureRandom = new SecureRandom();
 			}
 			
-			seedLen = seedLen <= 0 ? 100 : seedLen;
+			seedLength = seedLength <= 0 ? 100 : seedLength;
 			byte bseed[] = null;
-			secureRandom.setSeed(bseed = secureRandom.generateSeed(seedLen));
+			secureRandom.setSeed(bseed = secureRandom.generateSeed(seedLength));
 			secureRandom.nextBytes(bseed);
 			secureRandom.setSeed(bseed);
 		}
@@ -1099,17 +1100,21 @@ public class Serve implements ServletContext, Serializable {
 		}
 		// assured defaulting here
 		try {
+			log("Loading Acceptor:" + acceptorClass);
 			acceptor = (Acceptor) Class.forName(acceptorClass).newInstance();
+			log("TJWS: Acceptor:" + acceptor);
 		} catch (InstantiationException ex) {
 			log("TJWS: Couldn't instantiate Acceptor, the Server is inoperable", ex);
-		} catch (IllegalAccessException iEx) {
-			Constructor objectAcceptor;
+		} catch (IllegalAccessException ex) {
+			log("TJWS: Error instantiate Acceptor!", ex);
+			Constructor<?> objectAcceptor;
 			try {
+				log("Retrying to load Acceptor:" + acceptorClass);
 				objectAcceptor = Class.forName(acceptorClass).getDeclaredConstructor(Utils.EMPTY_CLASSES);
 				objectAcceptor.setAccessible(true);
 				acceptor = (Acceptor) objectAcceptor.newInstance(Utils.EMPTY_OBJECTS);
-			} catch (Exception ex) {
-				log("TJWS: Acceptor is not accessable or can't be instantiated, the Server is inoperable", ex);
+			} catch (Throwable th) {
+				log("TJWS: Acceptor is not accessable or can't be instantiated, the Server is inoperable", th);
 			}
 		} catch (ClassNotFoundException ex) {
 			log("TJWS: Acceptor class not found, the Server is inoperable", ex);
@@ -1119,6 +1124,8 @@ public class Serve implements ServletContext, Serializable {
 		Map acceptorProperties = new Properties();
 		acceptor.init(arguments, acceptorProperties);
 		hostName = (String) acceptorProperties.get(ARG_BINDADDRESS);
+		
+		log("TJWS: Loaded Acceptor:" + acceptor);
 		return acceptor;
 	}
 	
@@ -2155,7 +2162,7 @@ public class Serve implements ServletContext, Serializable {
 		protected int timesRequested;
 		protected long lastRun, lastWait;
 		private Vector outCookies;
-		private Vector inCookies;
+		private Vector<Cookie> inCookies;
 		private String sessionCookieValue, sessionUrlValue, sessionValue, reqSessionValue;
 		protected String reqQuery;
 		private PrintWriter pw;
@@ -2746,21 +2753,21 @@ public class Serve implements ServletContext, Serializable {
 		 * @throws IOException
 		 */
 		private boolean authenificate() throws IOException {
-			Object[] o = serve.realms.get(reqUriPath); // by Niel Markwick
+			final Object[] o = serve.realms.get(reqUriPath); // by Niel Markwick
 			BasicAuthRealm realm = null;
 			if (o != null) {
 				realm = (BasicAuthRealm) o[0];
 			}
+			
 			// System.err.println("looking for realm for path "+getPathInfo()+"
-			// in
-			// "+serve.realms+" found "+realm);
-			if (realm == null)
+			// in "+serve.realms+" found "+realm);
+			if (realm == null) {
 				return true;
+			}
 			
 			String credentials = getHeader("Authorization");
-			
 			if (credentials != null) {
-				credentials = Acme.Utils.base64Decode(credentials.substring(credentials.indexOf(' ') + 1), getCharacterEncoding());
+				credentials = Utils.base64Decode(credentials.substring(credentials.indexOf(' ') + 1), getCharacterEncoding());
 				int i = credentials.indexOf(':');
 				String user = credentials.substring(0, i);
 				String password = credentials.substring(i + 1);
@@ -2841,55 +2848,44 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		private static final int MAYBEVERSION = 1;
-		
 		private static final int INVERSION = 2;
-		
 		private static final int OLD_INNAME = 3;
-		
 		private static final int OLD_INVAL = 4;
-		
 		private static final int INVERSIONNUM = 5;
-		
 		private static final int RECOVER = 6;
-		
 		private static final int NEW_INNAME = 7;
-		
 		private static final int NEW_INVAL = 8;
-		
 		private static final int INPATH = 9;
-		
 		private static final int MAYBEINPATH = 10;
-		
 		private static final int INPATHVALUE = 11;
-		
 		private static final int MAYBEPORT = 12;
-		
 		private static final int INDOMAIN = 13;
-		
 		private static final int MAYBEDOMAIN = 14;
-		
 		private static final int INPORT = 15;
-		
 		private static final int INDOMAINVALUE = 16;
-		
 		private static final int INPORTVALUE = 17;
 		
 		// TODO see if it can be simplified
-		// TODO check if HTTPOnly can be transfere back
+		// TODO check if HTTPOnly can be transfered back
 		private void parseCookies() throws IOException {
 			if (inCookies == null) {
-				inCookies = new Vector();
+				inCookies = new Vector<Cookie>();
 			}
+			
 			String cookies = getHeader(COOKIE);
+			if (LogHelper.isLogEnabled()) {
+				serve.log("cookies:" + cookies);
+			}
+			
 			if (cookies == null) {
 				return;
 			}
 			
 			try {
-				String cookie_name = null;
-				String cookie_value = null;
-				String cookie_path = null;
-				String cookie_domain = null;
+				String cookieName = null;
+				String cookieValue = null;
+				String cookiePath = null;
+				String cookieDomain = null;
 				// boolean httpOnly = false;
 				if (cookies.length() > 300 * 4096) {
 					throw new IOException("Cookie string too long:" + cookies.length());
@@ -2902,13 +2898,13 @@ public class Serve implements ServletContext, Serializable {
 				boolean quoted = false;
 				for (int i = 0; i < cookiesChars.length; i++) {
 					char c = cookiesChars[i];
-					
 					switch (state) {
 						case MAYBEVERSION:
 							if (c != ' ') {
 								token.append(c);
 								if (c == '$') {
-									state = INVERSION; // RFC 2965
+									// RFC 2965
+									state = INVERSION;
 								} else {
 									// RFC 2109
 									state = OLD_INNAME;
@@ -2918,7 +2914,7 @@ public class Serve implements ServletContext, Serializable {
 						case OLD_INNAME:
 							if (c == '=') {
 								state = OLD_INVAL;
-								cookie_name = token.toString();
+								cookieName = token.toString();
 								token.setLength(0);
 							} else if (c != ' ' || token.length() > 0) {
 								token.append(c);
@@ -2929,9 +2925,9 @@ public class Serve implements ServletContext, Serializable {
 							if (quoted == false) {
 								if (c == ';') {
 									state = OLD_INNAME;
-									cookie_value = token.toString();
+									cookieValue = token.toString();
 									token.setLength(0);
-									addCookie(cookie_name, cookie_value, null, null);
+									addCookie(cookieName, cookieValue, null, null);
 								} else if (c == '"' && token.length() == 0) {
 									quoted = true;
 								} else {
@@ -2952,7 +2948,7 @@ public class Serve implements ServletContext, Serializable {
 								} else {
 									// consider name starts with $
 									state = OLD_INVAL;
-									cookie_name = token.toString();
+									cookieName = token.toString();
 								}
 								token.setLength(0);
 							} else {
@@ -2972,7 +2968,7 @@ public class Serve implements ServletContext, Serializable {
 						case NEW_INNAME:
 							if (c == '=') {
 								state = NEW_INVAL;
-								cookie_name = token.toString();
+								cookieName = token.toString();
 								token.setLength(0);
 							} else if (c != ' ' || token.length() > 0) {
 								token.append(c);
@@ -2981,14 +2977,14 @@ public class Serve implements ServletContext, Serializable {
 						case NEW_INVAL:
 							if (c == ';') {
 								state = MAYBEINPATH;
-								cookie_value = token.toString();
+								cookieValue = token.toString();
 								token.setLength(0);
-								cookie_path = null;
+								cookiePath = null;
 							} else if (c == ',') {
 								state = NEW_INNAME;
-								cookie_value = token.toString();
+								cookieValue = token.toString();
 								token.setLength(0);
-								addCookie(cookie_name, cookie_value, null, null);
+								addCookie(cookieName, cookieValue, null, null);
 							} else {
 								token.append(c);
 							}
@@ -2999,7 +2995,7 @@ public class Serve implements ServletContext, Serializable {
 								if (c == '$') {
 									state = INPATH;
 								} else {
-									addCookie(cookie_name, cookie_value, null, null);
+									addCookie(cookieName, cookieValue, null, null);
 									state = NEW_INNAME;
 								}
 							}
@@ -3009,10 +3005,10 @@ public class Serve implements ServletContext, Serializable {
 								if ("$Path".equals(token.toString()))
 									state = INPATHVALUE;
 								else {
-									addCookie(cookie_name, cookie_value, null, null);
+									addCookie(cookieName, cookieValue, null, null);
 									// consider name starts with $
 									state = NEW_INVAL;
-									cookie_name = token.toString();
+									cookieName = token.toString();
 								}
 								token.setLength(0);
 							} else {
@@ -3021,13 +3017,13 @@ public class Serve implements ServletContext, Serializable {
 							break;
 						case INPATHVALUE:
 							if (c == ',') {
-								cookie_path = token.toString();
+								cookiePath = token.toString();
 								state = NEW_INNAME;
-								addCookie(cookie_name, cookie_value, cookie_path, null);
+								addCookie(cookieName, cookieValue, cookiePath, null);
 								token.setLength(0);
 							} else if (c == ';') {
 								state = MAYBEDOMAIN;
-								cookie_path = token.toString();
+								cookiePath = token.toString();
 								token.setLength(0);
 							} else {
 								token.append(c);
@@ -3039,7 +3035,7 @@ public class Serve implements ServletContext, Serializable {
 								if (c == '$') {
 									state = INDOMAIN;
 								} else {
-									addCookie(cookie_name, cookie_value, cookie_path, null);
+									addCookie(cookieName, cookieValue, cookiePath, null);
 									state = NEW_INNAME;
 								}
 							}
@@ -3049,10 +3045,10 @@ public class Serve implements ServletContext, Serializable {
 								if ("$Domain".equals(token.toString())) {
 									state = INDOMAINVALUE;
 								} else {
-									addCookie(cookie_name, cookie_value, cookie_path, null);
+									addCookie(cookieName, cookieValue, cookiePath, null);
 									// consider name starts with $
 									state = NEW_INVAL;
-									cookie_name = token.toString();
+									cookieName = token.toString();
 								}
 								token.setLength(0);
 							}
@@ -3060,10 +3056,10 @@ public class Serve implements ServletContext, Serializable {
 						case INDOMAINVALUE:
 							if (c == ',') {
 								state = NEW_INNAME;
-								addCookie(cookie_name, cookie_value, cookie_path, token.toString());
+								addCookie(cookieName, cookieValue, cookiePath, token.toString());
 								token.setLength(0);
 							} else if (c == ';') {
-								cookie_domain = token.toString();
+								cookieDomain = token.toString();
 								state = MAYBEPORT;
 							} else {
 								token.append(c);
@@ -3075,7 +3071,7 @@ public class Serve implements ServletContext, Serializable {
 								if (c == '$') {
 									state = INPORT;
 								} else {
-									addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
+									addCookie(cookieName, cookieValue, cookiePath, cookieDomain);
 									state = NEW_INNAME;
 								}
 							}
@@ -3085,10 +3081,10 @@ public class Serve implements ServletContext, Serializable {
 								if ("$Port".equals(token.toString()))
 									state = INPORTVALUE;
 								else {
-									addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
+									addCookie(cookieName, cookieValue, cookiePath, cookieDomain);
 									// consider name starts with $
 									state = NEW_INVAL;
-									cookie_name = token.toString();
+									cookieName = token.toString();
 								}
 								token.setLength(0);
 							}
@@ -3097,7 +3093,7 @@ public class Serve implements ServletContext, Serializable {
 							if (c == ',' || c == ';') {
 								int port = Integer.parseInt(token.toString());
 								state = NEW_INNAME;
-								addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
+								addCookie(cookieName, cookieValue, cookiePath, cookieDomain);
 								token.setLength(0);
 							} else if (Character.isDigit(c) == false) {
 								state = RECOVER;
@@ -3116,37 +3112,54 @@ public class Serve implements ServletContext, Serializable {
 				}
 				
 				if (state == OLD_INVAL || state == NEW_INVAL) {
-					cookie_value = token.toString();
-					addCookie(cookie_name, cookie_value, null, null);
+					cookieValue = token.toString();
+					addCookie(cookieName, cookieValue, null, null);
 				} else if (state == INPATHVALUE) {
-					addCookie(cookie_name, cookie_value, token.toString(), null);
+					addCookie(cookieName, cookieValue, token.toString(), null);
 				} else if (state == INDOMAINVALUE) {
-					addCookie(cookie_name, cookie_value, cookie_path, token.toString());
-				} else if (state == INPORTVALUE)
-					addCookie(cookie_name, cookie_value, cookie_path, cookie_domain);
-			} catch (Error e) {
-				serve.log("TJWS: Error in parsing cookies: " + cookies, e);
-			} catch (Exception e) {
-				serve.log("TJWS: An exception in parsing cookies: " + cookies, e);
+					addCookie(cookieName, cookieValue, cookiePath, token.toString());
+				} else if (state == INPORTVALUE) {
+					addCookie(cookieName, cookieValue, cookiePath, cookieDomain);
+				}
+			} catch (Error ex) {
+				serve.log("TJWS: Error in parsing cookies: " + cookies, ex);
+			} catch (Exception ex) {
+				serve.log("TJWS: An exception in parsing cookies: " + cookies, ex);
 			}
 		}
 		
+		/**
+		 * 
+		 * @param name
+		 * @param value
+		 * @param path
+		 * @param domain
+		 */
 		private void addCookie(String name, String value, String path, String domain) {
+			if (LogHelper.isLogEnabled()) {
+				serve.log("addCookie(" + name + ", " + value + ", " + path + ", " + domain + ")");
+			}
 			if (SESSION_COOKIE_NAME.equals(name) && sessionCookieValue == null) {
 				sessionCookieValue = value;
 				try {
 					serve.getSession(sessionCookieValue).userTouch();
 					reqSessionValue = sessionCookieValue;
-				} catch (IllegalStateException ise) {
-				} catch (NullPointerException npe) {
+				} catch (IllegalStateException ex) {
+					if (LogHelper.isLogEnabled()) {
+						serve.log(ex);
+					}
+				} catch (NullPointerException ex) {
+					if (LogHelper.isLogEnabled()) {
+						serve.log(ex);
+					}
 				}
 			} else {
-				Cookie c;
-				inCookies.addElement(c = new Cookie(name, value));
+				final Cookie mCookie = new Cookie(name, value);
+				inCookies.addElement(mCookie);
 				if (path != null) {
-					c.setPath(path);
+					mCookie.setPath(path);
 					if (domain != null) {
-						c.setDomain(domain);
+						mCookie.setDomain(domain);
 					}
 				}
 			}
@@ -3238,16 +3251,18 @@ public class Serve implements ServletContext, Serializable {
 		// the <port> part of the request URI.
 		// Same as the CGI variable SERVER_PORT.
 		public int getServerPort() {
-			String serverName = getHeader(HOST);
-			if (serverName != null && serverName.length() > 0) {
+			final String serverName = getHeader(HOST);
+			if (!IOHelper.isNullOrEmpty(serverName)) {
 				int colon = serverName.indexOf(':');
-				if (colon >= 0)
+				if (colon >= 0) {
 					try {
 						return Integer.parseInt(serverName.substring(colon + 1).trim());
-					} catch (NumberFormatException nfe) {
-						
+					} catch (NumberFormatException ex) {
+						if (LogHelper.isLogEnabled()) {
+							serve.log(ex);
+						}
 					}
-				else {
+				} else {
 					if ("https".equals(getScheme())) {
 						return 443;
 					}
@@ -3316,17 +3331,22 @@ public class Serve implements ServletContext, Serializable {
 		// @exception IOException on other I/O-related errors
 		public BufferedReader getReader() {
 			synchronized (in) {
-				if (((ServeInputStream) in).isReturnedAsStream())
+				if (((ServeInputStream) in).isReturnedAsStream()) {
 					throw new IllegalStateException("Already returned as a stream.");
+				}
 				((ServeInputStream) in).setReturnedAsReader(true);
 			}
 			
 			if (charEncoding != null) {
 				try {
 					return new BufferedReader(new InputStreamReader(in, charEncoding));
-				} catch (UnsupportedEncodingException uee) {
+				} catch (UnsupportedEncodingException ex) {
+					if (LogHelper.isLogEnabled()) {
+						serve.log(ex);
+					}
 				}
 			}
+			
 			return new BufferedReader(new InputStreamReader(in));
 		}
 		
@@ -3336,7 +3356,7 @@ public class Serve implements ServletContext, Serializable {
 					if ("GET".equals(reqMethod) || "HEAD".equals(reqMethod)) {
 						if (reqQuery != null) {
 							try {
-								formParameters = Acme.Utils.parseQueryString(reqQuery, charEncoding);
+								formParameters = Utils.parseQueryString(reqQuery, charEncoding);
 							} catch (IllegalArgumentException ex) {
 								serve.log("TJWS: Exception " + ex + " at parsing 'get|head' data " + reqQuery);
 							}
@@ -3346,22 +3366,23 @@ public class Serve implements ServletContext, Serializable {
 						if (contentType != null && WWWFORMURLENCODE.regionMatches(true, 0, contentType, 0, WWWFORMURLENCODE.length())) {
 							if (postCache == null) {
 								postCache = new String[1];
-								InputStream is = null;
 								try {
-									formParameters = Acme.Utils.parsePostData(getContentLength(), is = getInputStream(), charEncoding, postCache);
+									final InputStream is = getInputStream();
+									formParameters = Utils.parsePostData(getContentLength(), is, charEncoding, postCache);
 								} catch (Exception ex) {
 									serve.log("TJWS: Exception " + ex + " at parsing 'POST' data of length " + getContentLength());
 									// TODO propagate the exception ?
 									formParameters = EMPTYHASHTABLE;
 								}
 							} else {
-								formParameters = Acme.Utils.parseQueryString(postCache[0], charEncoding);
+								formParameters = Utils.parseQueryString(postCache[0], charEncoding);
 							}
-							if (reqQuery != null && reqQuery.length() > 0) {
-								formParameters.putAll(Acme.Utils.parseQueryString(reqQuery, charEncoding));
+							
+							if (!IOHelper.isNullOrEmpty(reqQuery)) {
+								formParameters.putAll(Utils.parseQueryString(reqQuery, charEncoding));
 							}
 						} else if (reqQuery != null) {
-							formParameters = Acme.Utils.parseQueryString(reqQuery, charEncoding);
+							formParameters = Utils.parseQueryString(reqQuery, charEncoding);
 						}
 					} else {
 						throw new IllegalArgumentException("Request parameters are not supported for method:" + reqMethod);
@@ -3801,39 +3822,49 @@ public class Serve implements ServletContext, Serializable {
 		// content type, or one which the client understands. If no content
 		// type has yet been assigned, it is implicitly set to text/plain.
 		public String getCharacterEncoding() {
-			String ct = (String) resHeaderNames.get(CONTENTTYPE.toLowerCase());
-			if (ct != null) {
-				String enc = extractEncodingFromContentType(ct);
-				if (enc != null) {
-					return enc;
+			final String contenType = (String) resHeaderNames.get(CONTENTTYPE.toLowerCase());
+			if (contenType != null) {
+				String encoding = extractEncodingFromContentType(contenType);
+				if (encoding != null) {
+					return encoding;
 				}
 			}
 			
 			return charEncoding;
 		}
 		
-		private String extractEncodingFromContentType(String ct) {
-			if (ct == null)
+		/**
+		 * 
+		 * @param contenType
+		 * @return
+		 */
+		private String extractEncodingFromContentType(String contenType) {
+			if (contenType == null) {
 				return null;
-			int scp = ct.indexOf(';');
-			if (scp > 0) {
-				scp = ct.toLowerCase().indexOf("charset=", scp);
-				if (scp >= 0) {
-					ct = ct.substring(scp + "charset=".length()).trim();
-					scp = ct.indexOf(';');
-					if (scp > 0)
-						ct = ct.substring(0, scp);
-					int l = ct.length();
-					if (l > 2 && ct.charAt(0) == '"')
-						return ct.substring(1, l - 1);
-					return ct;
+			}
+			
+			int index = contenType.indexOf(';');
+			if (index > 0) {
+				index = contenType.toLowerCase().indexOf("charset=", index);
+				if (index >= 0) {
+					contenType = contenType.substring(index + "charset=".length()).trim();
+					index = contenType.indexOf(';');
+					if (index > 0) {
+						contenType = contenType.substring(0, index);
+					}
+					
+					int lenContenType = contenType.length();
+					if (lenContenType > 2 && contenType.charAt(0) == '"') {
+						return contenType.substring(1, lenContenType - 1);
+					}
+					return contenType;
 				}
 			}
+			
 			return null;
 		}
 		
-		// 2.2
-		// do not use buffer
+		// 2.2 - do not use buffer
 		public void flushBuffer() throws java.io.IOException {
 			((ServeOutputStream) out).flush();
 		}
@@ -3848,7 +3879,8 @@ public class Serve implements ServletContext, Serializable {
 		public void resetBuffer() {
 			((ServeOutputStream) out).reset();
 			synchronized (this) {
-				headersWritten = false; // TODO check if stream was flushed
+				// TODO check if stream was flushed
+				headersWritten = false;
 			}
 		}
 		
@@ -3894,8 +3926,9 @@ public class Serve implements ServletContext, Serializable {
 				rout = null;
 				((ServeOutputStream) out).reset();
 				assureHeaders();
-			} else
+			} else {
 				throw new IllegalStateException("Header have already been committed.");
+			}
 		}
 		
 		/**
@@ -3924,11 +3957,15 @@ public class Serve implements ServletContext, Serializable {
 		 * specified, the container's default locale is returned.
 		 */
 		public java.util.Locale getLocale() {
-			if (locale != null)
+			if (locale != null) {
 				return locale;
-			Enumeration e = getLocales();
-			if (e.hasMoreElements())
-				return (Locale) e.nextElement();
+			}
+			
+			Enumeration itr = getLocales();
+			if (itr.hasMoreElements()) {
+				return (Locale) itr.nextElement();
+			}
+			
 			return Locale.getDefault();
 		}
 		
@@ -3942,48 +3979,58 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		public Enumeration getLocales() {
 			// TODO: cache result
-			String al = getHeader(ACCEPT_LANGUAGE);
-			TreeSet ts = new TreeSet();
-			if (al != null) {
-				// System.err.println("Accept lang:"+al);
-				StringTokenizer st = new StringTokenizer(al, ";", false);
+			final String acceptLanguage = getHeader(ACCEPT_LANGUAGE);
+			if (LogHelper.isLogEnabled()) {
+				serve.log("acceptLanguage:" + acceptLanguage);
+			}
+			
+			final TreeSet tsLanguages = new TreeSet();
+			if (acceptLanguage != null) {
+				final StringTokenizer sTokenizer = new StringTokenizer(acceptLanguage, ";", false);
 				try {
-					while (st.hasMoreTokens()) {
-						String langs = st.nextToken(";");
+					while (sTokenizer.hasMoreTokens()) {
+						final String languages = sTokenizer.nextToken(";");
 						// System.err.println("Langs:"+langs);
-						String q = st.nextToken(";=");
+						String strEqual = sTokenizer.nextToken(";=");
 						// System.err.println("q:"+q);
-						q = st.nextToken("=,");
+						strEqual = sTokenizer.nextToken("=,");
 						// System.err.println("q:"+q);
-						float w = 0;
+						float weight = 0;
 						try {
-							w = Float.valueOf(q).floatValue();
-						} catch (NumberFormatException nfe) {
+							weight = Float.valueOf(strEqual).floatValue();
+						} catch (NumberFormatException ex) {
+							if (LogHelper.isLogEnabled()) {
+								serve.log(ex);
+							}
 						}
-						if (w > 0) {
-							StringTokenizer lst = new StringTokenizer(langs, ", ", false);
-							while (lst.hasMoreTokens()) {
-								String lan = lst.nextToken();
-								int di = lan.indexOf('-');
-								if (di < 0) {
+						
+						if (weight > 0) {
+							final StringTokenizer langTokenizer = new StringTokenizer(languages, ", ", false);
+							while (langTokenizer.hasMoreTokens()) {
+								final String lan = langTokenizer.nextToken();
+								int dIndex = lan.indexOf('-');
+								if (dIndex < 0) {
 									// 1. 4
-									ts.add(new LocaleWithWeight(new Locale(lan.trim()), w));
+									tsLanguages.add(new LocaleWithWeight(new Locale(lan.trim()), weight));
 								} else {
-									ts.add(new LocaleWithWeight(new Locale(lan.substring(0, di), lan.substring(di + 1).trim().toUpperCase()), w));
+									tsLanguages.add(new LocaleWithWeight(new Locale(lan.substring(0, dIndex), lan.substring(dIndex + 1).trim().toUpperCase()), weight));
 								}
 							}
 						}
 					}
 				} catch (NoSuchElementException ex) {
 					// can't parse
+					if (LogHelper.isLogEnabled()) {
+						serve.log(ex);
+					}
 				}
 			}
 			
-			if (ts.size() == 0) {
-				ts.add(new LocaleWithWeight(Locale.getDefault(), 1));
+			if (tsLanguages.size() == 0) {
+				tsLanguages.add(new LocaleWithWeight(Locale.getDefault(), 1));
 			}
 			
-			return new AcceptLocaleEnumeration(ts);
+			return new AcceptLocaleEnumeration(tsLanguages);
 		}
 		
 		/**
@@ -5257,33 +5304,27 @@ public class Serve implements ServletContext, Serializable {
 	public static class ServeOutputStream extends ServletOutputStream {
 		
 		private static final boolean STREAM_DEBUG = false;
-		
 		private boolean chunked;
-		
 		private boolean closed;
 		
 		// TODO: predefine as static byte[] used by chunked
 		// underneath stream
-		private OutputStream out;
-		
+		private OutputStream outputStream;
 		// private BufferedWriter writer; // for top speed
-		private ServeConnection conn;
-		
+		private ServeConnection serveConnection;
 		private int inInclude;
-		
 		private String encoding;
-		
-		private/* volatile */long lbytes;
-		
+		private long longBytes;
 		private Utils.SimpleBuffer buffer;
 		
-		public ServeOutputStream(OutputStream out, ServeConnection conn) {
-			this.out = out;
-			this.conn = conn;
+		public ServeOutputStream(final OutputStream outputStream, ServeConnection serveConnection) {
+			this.outputStream = outputStream;
+			this.serveConnection = serveConnection;
 			buffer = new Utils.SimpleBuffer();
-			encoding = conn.getCharacterEncoding();
-			if (encoding == null)
+			encoding = serveConnection.getCharacterEncoding();
+			if (encoding == null) {
 				encoding = IOHelper.ISO_8859_1;
+			}
 		}
 		
 		/*
@@ -5293,10 +5334,11 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		
 		protected void reset() {
-			if (lbytes == 0)
+			if (longBytes == 0) {
 				buffer.reset();
-			else
+			} else {
 				throw new IllegalStateException("Result was already committed");
+			}
 		}
 		
 		protected int getBufferSize() {
@@ -5304,8 +5346,9 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		protected void setBufferSize(int size) {
-			if (lbytes > 0)
+			if (longBytes > 0) {
 				throw new IllegalStateException("Bytes already written in response");
+			}
 			buffer.setSize(size);
 		}
 		
@@ -5327,99 +5370,118 @@ public class Serve implements ServletContext, Serializable {
 		
 		public void write(byte[] b, int off, int len) throws IOException {
 			if (closed) {
-				if (STREAM_DEBUG)
+				if (STREAM_DEBUG) {
 					System.err.println((b == null ? "null" : new String(b, off, len)) + "\n won't be written, stream closed.");
+				}
 				throw new IOException("An attempt of writing " + len + " bytes to a closed out.");
 			}
 			
-			if (len == 0)
+			if (len == 0) {
 				return;
-			//
-			conn.writeHeaders();
+			}
+			
+			// write connection headers.
+			serveConnection.writeHeaders();
 			b = buffer.put(b, off, len);
 			len = b.length;
-			if (len == 0)
+			if (len == 0) {
 				return;
+			}
+			
 			off = 0;
 			if (chunked) {
 				String hexl = Integer.toHexString(len);
-				out.write((hexl + "\r\n").getBytes()); // no encoding Ok
-				lbytes += 2 + hexl.length();
-				out.write(b, off, len);
-				lbytes += len;
-				out.write("\r\n".getBytes());
-				lbytes += 2;
+				// no encoding Ok
+				outputStream.write((hexl + "\r\n").getBytes());
+				longBytes += 2 + hexl.length();
+				outputStream.write(b, off, len);
+				longBytes += len;
+				outputStream.write("\r\n".getBytes());
+				longBytes += 2;
 			} else {
-				out.write(b, off, len);
-				lbytes += len;
+				outputStream.write(b, off, len);
+				longBytes += len;
 			}
 			
 			if (STREAM_DEBUG) {
-				if (chunked)
+				if (chunked) {
 					System.err.println(Integer.toHexString(len));
+				}
 				System.err.print(new String(b, off, len));
-				if (chunked)
+				if (chunked) {
 					System.err.println();
+				}
 			}
 		}
 		
 		public void flush() throws IOException {
 			// boolean cl = closed;
-			if (closed)
+			if (closed) {
 				return;
+			}
+			
 			// throw new IOException("An attempt of flushig closed out.");
-			conn.writeHeaders();
-			if (closed)
+			serveConnection.writeHeaders();
+			if (closed) {
 				return;
+			}
+			
 			byte[] b = buffer.get();
 			if (b.length > 0) {
 				if (chunked) {
 					String hexl = Integer.toHexString(b.length);
-					out.write((hexl + "\r\n").getBytes()); // no encoding Ok
-					lbytes += 2 + hexl.length();
-					out.write(b);
-					lbytes += b.length;
-					out.write("\r\n".getBytes());
-					lbytes += 2;
+					// no encoding Ok
+					outputStream.write((hexl + "\r\n").getBytes());
+					longBytes += 2 + hexl.length();
+					outputStream.write(b);
+					longBytes += b.length;
+					outputStream.write("\r\n".getBytes());
+					longBytes += 2;
 					if (STREAM_DEBUG) {
 						System.err.println(hexl);
 						System.err.print(new String(b));
 						System.err.println();
 					}
 				} else {
-					out.write(b);
-					lbytes += b.length;
+					outputStream.write(b);
+					longBytes += b.length;
 					if (STREAM_DEBUG) {
 						System.err.print(new String(b));
 					}
 				}
 			}
+			
 			// System.err.println("Was "+cl+" now "+closed);
-			out.flush();
+			outputStream.flush();
 		}
 		
 		public void close() throws IOException {
-			if (closed)
+			if (closed) {
 				return;
+			}
+			
 			// throw new IOException("Stream is already closed.");
 			// new IOException("Stream closing").printStackTrace();
 			try {
 				flush();
 				if (inInclude == 0) {
 					if (chunked) {
-						out.write("0\r\n\r\n".getBytes());
-						lbytes += 5;
-						if (STREAM_DEBUG)
+						outputStream.write("0\r\n\r\n".getBytes());
+						longBytes += 5;
+						if (STREAM_DEBUG) {
 							System.err.print("0\r\n\r\n");
+						}
+						
 						// TODO: here is possible to write trailer headers
-						out.flush();
+						outputStream.flush();
 					}
-					if (conn.keepAlive == false)
-						out.close();
-					else {
-						out = null;
-						conn = null; // the stream has to be recreated after
-									 // closing
+					
+					if (serveConnection.keepAlive == false) {
+						outputStream.close();
+					} else {
+						outputStream = null;
+						// the stream has to be recreated after closing
+						serveConnection = null;
 					}
 				}
 			} finally {
@@ -5428,7 +5490,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		private long lengthWritten() {
-			return lbytes;
+			return longBytes;
 		}
 		
 		boolean isInInclude() {
@@ -6186,31 +6248,32 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
-	// TODO: reconsider implementation by providing
-	// inner class implementing HttpSessionContext
-	// and returning it on request
-	// to avoid casting this class to Hashtable
+	/**
+	 * TODO: reconsider implementation by providing inner class implementing
+	 * HttpSessionContext and returning it on request to avoid casting this
+	 * class to Hashtable.
+	 */
 	protected static class HttpSessionContextImpl extends Hashtable implements HttpSessionContext {
 		
 		public Enumeration getIds() {
 			return keys();
 		}
 		
-		public HttpSession getSession(String sessionId) {
+		public HttpSession getSession(final String sessionId) {
 			return (HttpSession) get(sessionId);
 		}
 		
-		void save(Writer w) throws IOException {
-			Enumeration e = elements();
-			while (e.hasMoreElements()) {
-				((AcmeSession) e.nextElement()).save(w);
+		void save(final Writer writer) throws IOException {
+			Enumeration itr = elements();
+			while (itr.hasMoreElements()) {
+				((AcmeSession) itr.nextElement()).save(writer);
 			}
 		}
 		
-		static HttpSessionContextImpl restore(BufferedReader br, int inactiveInterval, ServletContext servletContext) throws IOException {
+		static HttpSessionContextImpl restore(final BufferedReader bReader, int inactiveInterval, ServletContext servletContext) throws IOException {
 			HttpSessionContextImpl result = new HttpSessionContextImpl();
 			AcmeSession session;
-			while ((session = AcmeSession.restore(br, inactiveInterval, servletContext, result)) != null) {
+			while ((session = AcmeSession.restore(bReader, inactiveInterval, servletContext, result)) != null) {
 				if (session.checkExpired() == false) {
 					result.put(session.getId(), session);
 				}

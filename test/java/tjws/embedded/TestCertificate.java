@@ -37,8 +37,6 @@ import java.security.KeyStore;
 import java.security.Provider;
 import java.security.Security;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import Acme.IOHelper;
 import rslakra.logger.LogHelper;
 
@@ -55,7 +53,7 @@ public class TestCertificate {
 		// TODO Auto-generated method stub
 		try {
 			// add security provider
-			Security.addProvider(new BouncyCastleProvider());
+			IOHelper.addBouncyCastleProvider();
 			
 			String parentFolderPath = IOHelper.pathString(TestCertificate.class);
 			LogHelper.log("parentFolderPath:" + parentFolderPath);

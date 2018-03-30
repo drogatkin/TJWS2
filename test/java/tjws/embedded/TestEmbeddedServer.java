@@ -170,8 +170,9 @@ public final class TestEmbeddedServer {
 				// } catch (IOException ex) {
 				// LogHelper.log(ex);
 				// }
+//				properties.setProperty(SSLAcceptor.ARG_PROTOCOL, "TLSv1.2");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
-				properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "no");
+				properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "false");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREPASS, "password");
 				// properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "BKS");
 			} else {

@@ -32,19 +32,24 @@
 package tjws.embedded;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
-import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 
 import Acme.IOHelper;
 import rslakra.logger.LogHelper;
@@ -69,29 +74,96 @@ import rslakra.logger.LogHelper;
  */
 public final class TestConnection {
 	
-	public TestConnection() {
-		
+	private final String keyStoreFile = "conf/tjws.jks";
+	private final String PASSWORD = "password";
+	
+	private final boolean sslEnabled;
+	
+	/**
+	 * 
+	 * @param sslEnabled
+	 */
+	public TestConnection(final boolean sslEnabled) {
+		this.sslEnabled = sslEnabled;
 	}
 	
 	/**
-	 * Create a socket factory that trusts all certificates.
-	 * 
-	 * @param trustAllCerts
+	 * @param keyStoreStream
+	 * @param passChars
 	 * @return
 	 */
-	public final SSLSocketFactory createSSLSocketFactory(final boolean trustAllCerts) {
-		SSLSocketFactory sslSocketFactory = null;
+	public static KeyStore initKeyStore(final InputStream keyStoreStream, final char[] passChars) {
+		final String trustStoreType = KeyStore.getDefaultType();
+		KeyStore keyStore = null;
+		if (keyStoreStream == null) {
+			throw new IllegalArgumentException("Invalid keyStoreStream:" + keyStoreStream);
+		}
+		
+		if (passChars == null) {
+			throw new IllegalArgumentException("Invalid passChars:" + passChars);
+		}
+		
 		try {
-			SSLContext sslContext = null;
-			if (trustAllCerts) {
-				X509TrustManager trustManager = new AllCertsTrustManager();
-				sslContext = SSLContext.getInstance("SSL");
-				sslContext.init(null, new TrustManager[] { trustManager }, new SecureRandom());
-				sslSocketFactory = sslContext.getSocketFactory();
-			}
+			keyStore = KeyStore.getInstance(trustStoreType);
+			keyStore.load(keyStoreStream, passChars);
+		} catch (java.security.cert.CertificateException ex) {
+			ex.printStackTrace();
 		} catch (NoSuchAlgorithmException ex) {
 			ex.printStackTrace();
-		} catch (KeyManagementException ex) {
+		} catch (KeyStoreException ex) {
+			ex.printStackTrace();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		
+		return keyStore;
+	}
+	
+	/**
+	 * Create and initialize the SSLContext
+	 *
+	 * @param mContext
+	 * @param keyStoreFile
+	 * @param password
+	 * @return
+	 */
+	public SSLContext createSSLContext(final String keyStoreFile, final String password) {
+		SSLContext sslContext = null;
+		try {
+			final String keyStoreFilePath = IOHelper.pathString(IOHelper.pathString(TestConnection.class), keyStoreFile);
+			final InputStream keyStoreStream = new FileInputStream(keyStoreFilePath);
+			final KeyStore keyStore = initKeyStore(keyStoreStream, password.toCharArray());
+			
+			// Create key manager
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			keyManagerFactory.init(keyStore, password.toCharArray());
+			final KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
+			
+			// Create trust manager
+			TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			trustManagerFactory.init(keyStore);
+			TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+			
+			// Initialize SSLContext
+			sslContext = SSLContext.getInstance("TLSv1");
+			sslContext.init(keyManagers, trustManagers, new SecureRandom());
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return sslContext;
+	}
+	
+	/**
+	 * Create a socket factory with certificate.
+	 *
+	 * @return
+	 */
+	public final SSLSocketFactory newSSLSocketFactory() {
+		SSLSocketFactory sslSocketFactory = null;
+		try {
+			sslSocketFactory = createSSLContext(keyStoreFile, PASSWORD).getSocketFactory();
+		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		
@@ -99,38 +171,65 @@ public final class TestConnection {
 	}
 	
 	/**
-	 * 
-	 * @param trustAllCerts
-	 * @param trustAllHosts
+	 * Create a socket factory that trusts all certificates.
+	 *
+	 * @return
 	 */
-	public void installSSLSocketFactory(final boolean trustAllCerts, final boolean trustAllHosts) {
-		if (trustAllCerts) {
-			// Install the all-trusting trust manager
-			SSLSocketFactory sslSocketFactory = createSSLSocketFactory(trustAllCerts);
-			if (sslSocketFactory != null) {
-				HttpsURLConnection.setDefaultSSLSocketFactory(sslSocketFactory);
-			}
+	public final SSLSocketFactory newSSLSocketFactoryWithTrustAllCerts() {
+		SSLSocketFactory sslSocketFactory = null;
+		try {
+			final String keyStoreFilePath = IOHelper.pathString(IOHelper.pathString(TestConnection.class), keyStoreFile);
+			final InputStream keyStoreStream = new FileInputStream(keyStoreFilePath);
+			final KeyStore keyStore = initKeyStore(keyStoreStream, PASSWORD.toCharArray());
+			// Create key manager
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			keyManagerFactory.init(keyStore, PASSWORD.toCharArray());
+			final KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
+			
+			final SSLContext sslContext = SSLContext.getInstance("TLSv1");
+			sslContext.init(keyManagers, new TrustManager[] { new AllCertsTrustManager() }, new SecureRandom());
+			sslSocketFactory = sslContext.getSocketFactory();
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 		
-		if (trustAllHosts) {
-			// Install the all-trusting host verifier
-			HttpsURLConnection.setDefaultHostnameVerifier(new AllHostNameVerifier());
-		}
+		return sslSocketFactory;
 	}
 	
 	/**
-	 * 
+	 * Test the server connection.
 	 */
-	public void testConnection() throws IOException {
-		URL url = new URL("https://localhost:9161/");
-		URLConnection urlConnection = url.openConnection();
-		
-		BufferedReader bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-		String line;
-		while ((line = bReader.readLine()) != null) {
-			LogHelper.log(line);
+	public void testSSLConnection() {
+		SSLSocketFactory sslSocketFactory = null;
+		BufferedReader bReader = null;
+		try {
+			HttpURLConnection urlConnection = null;
+			if (sslEnabled) {
+				urlConnection = (HttpsURLConnection) new URL("https://localhost:9161/").openConnection();
+			} else {
+				urlConnection = (HttpURLConnection) new URL("http://localhost:5161/").openConnection();
+			}
+			
+			if (sslEnabled && (urlConnection instanceof HttpsURLConnection)) {
+				// Create socket factory
+				if (sslSocketFactory == null) {
+					sslSocketFactory = newSSLSocketFactory();
+				}
+				
+				// Install the SSL socket factory on the connection.
+				((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+			}
+			
+			bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+			String line;
+			while ((line = bReader.readLine()) != null) {
+				LogHelper.log(line);
+			}
+		} catch (Exception ex) {
+			LogHelper.log(ex);
+		} finally {
+			IOHelper.safeClose(bReader);
 		}
-		IOHelper.safeClose(bReader);
 	}
 	
 	/**
@@ -138,13 +237,8 @@ public final class TestConnection {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		TestConnection testConnection = new TestConnection();
-		testConnection.installSSLSocketFactory(true, false);
-		try {
-			testConnection.testConnection();
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
+		TestConnection testConnection = new TestConnection(true);
+		testConnection.testSSLConnection();
 	}
 	
 }

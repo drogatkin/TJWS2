@@ -16,6 +16,6 @@
 	<classpathentry kind="lib" path="libs/class-scanner.jar"/>
 	<classpathentry kind="lib" path="libs/javax.servlet-3.0.jar"/>
 	<classpathentry kind="lib" path="libs/log4j-1.2.17.jar"/>
-	<classpathentry kind="lib" path="libs/bcprov-jdk15-146.jar"/>
+	<classpathentry kind="lib" path="libs/bcprov-jdk15on-159.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

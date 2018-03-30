@@ -95,26 +95,29 @@ public class WildcardDictionary extends Dictionary {
 		int matching_len = 0, found = -1;
 		// to optimize speed, keys should be sorted by length
 		// TODO: above
-		for(int i = keys.size() - 1; i > -1; i--) {
+		for (int i = keys.size() - 1; i > -1; i--) {
 			String thisKey = (String) keys.elementAt(i);
-			int current = Acme.Utils.matchSpan(thisKey, sKey);
-			if(current > matching_len) {
+			int current = Utils.matchSpan(thisKey, sKey);
+			if (current > matching_len) {
 				found = i;
 				matching_len = current;
 			}
 		}
-		if(found > -1)
+		
+		if (found > -1) {
 			return elements.elementAt(found);
+		}
+		
 		return null;
 	}
 	
 	public static String trimPathSeparators(String src) {
 		StringBuffer result = new StringBuffer(src.length());
 		boolean ms = false;
-		for(int i = 0; i < src.length(); i++) {
+		for (int i = 0; i < src.length(); i++) {
 			char c = src.charAt(i);
-			if(c == '/' || c == '\\') {
-				if(!ms) {
+			if (c == '/' || c == '\\') {
+				if (!ms) {
 					result.append(c);
 					ms = true;
 				}
@@ -136,7 +139,7 @@ public class WildcardDictionary extends Dictionary {
 	// element is null.
 	public synchronized Object put(Object key, Object element) {
 		int i = keys.indexOf(key);
-		if(i != -1) {
+		if (i != -1) {
 			Object oldElement = elements.elementAt(i);
 			elements.setElementAt(element, i);
 			return oldElement;
@@ -153,7 +156,7 @@ public class WildcardDictionary extends Dictionary {
 	// @return the value of key, or null if the key was not found.
 	public synchronized Object remove(Object key) {
 		int i = keys.indexOf(key);
-		if(i != -1) {
+		if (i != -1) {
 			Object oldElement = elements.elementAt(i);
 			keys.removeElementAt(i);
 			elements.removeElementAt(i);

@@ -48,9 +48,12 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.security.cert.CertificateException;
 
 import javax.servlet.http.HttpServletResponse;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import rogatkin.web.WebApp;
 import rslakra.logger.LogHelper;
@@ -96,6 +99,27 @@ public final class IOHelper {
 	 */
 	public static final String getLineSeparator() {
 		return LINE_SEPARATOR;
+	}
+	
+	/**
+	 * Installs the bouncy castle provider.
+	 */
+	public static void addBouncyCastleProvider() {
+		boolean isLogEnabled = LogHelper.isLogEnabled();
+		try {
+			if (!isLogEnabled) {
+				LogHelper.setLogEnabled(true);
+			}
+			
+			/* add bouncy castle provider. */
+			Security.addProvider(new BouncyCastleProvider());
+			LogHelper.log("Added BouncyCastleProvider!");
+		} catch (Exception ex) {
+			LogHelper.log(ex);
+			if (!isLogEnabled) {
+				LogHelper.setLogEnabled(false);
+			}
+		}
 	}
 	
 	/**
@@ -688,6 +712,16 @@ public final class IOHelper {
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Returns the new IOException.
+	 * 
+	 * @param throwable
+	 * @return
+	 */
+	public static IOException newIOException(final Throwable throwable) {
+		return new IOException(throwable.toString(), throwable);
 	}
 	
 }

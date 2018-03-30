@@ -290,9 +290,9 @@ public class FileServlet extends HttpServlet {
 		}
 		
 		String dnla = req.getHeader("GetContentFeatures.DLNA.ORG"); // check
-																	// also
-																	// Pragma:
-																	// getIfoFileURI.dlna.org
+																	 // also
+																	 // Pragma:
+																	 // getIfoFileURI.dlna.org
 		if ("1".equals(dnla)) {
 			res.setHeader("transferMode.dlna.org", "Streaming");
 			// res.setHeader("contentFeatures.dlna.org",
@@ -344,7 +344,7 @@ public class FileServlet extends HttpServlet {
 	// / Copy a file from in to out.
 	// Sub-classes can override this in order to do filtering of some sort.
 	public void copyStream(InputStream in, OutputStream out, long len) throws IOException {
-		Acme.Utils.copyStream(in, out, len);
+		Utils.copyStream(in, out, len);
 	}
 	
 	private void serveDirectory(HttpServletRequest req, HttpServletResponse res, boolean headOnly, String path, File file) throws IOException {
@@ -387,32 +387,39 @@ public class FileServlet extends HttpServlet {
 				String aFileRead = (aFile.canRead() ? "r" : "-");
 				String aFileWrite = (aFile.canWrite() ? "w" : "-");
 				String aFileExe = "-";
-				if (canExecute != null)
+				if (canExecute != null) {
 					try {
-						if (((Boolean) canExecute.invoke(aFile, Utils.EMPTY_OBJECTS)).booleanValue())
+						if (((Boolean) canExecute.invoke(aFile, Utils.EMPTY_OBJECTS)).booleanValue()) {
 							aFileExe = "x";
+						}
 					} catch (IllegalArgumentException e) {
 					} catch (IllegalAccessException e) {
 					} catch (InvocationTargetException e) {
 					}
+				}
+				
 				String aFileSize = lengthftm.format(aFileLen = aFile.length());
 				total += (aFileLen + 1023) / 1024; //
-				while (aFileSize.length() < 12)
+				while (aFileSize.length() < 12) {
 					aFileSize = " " + aFileSize;
-				String aFileDate = Acme.Utils.lsDateStr(new Date(aFile.lastModified()));
-				while (aFileDate.length() < 14)
+				}
+				
+				String aFileDate = Utils.lsDateStr(new Date(aFile.lastModified()));
+				while (aFileDate.length() < 14) {
 					aFileDate += " ";
+				}
+				
 				String aFileDirsuf = (aFile.isDirectory() ? "/" : "");
 				String aFileSuf = (aFile.isDirectory() ? "/" : "");
 				// TODO HTML encode file name
-				p.println(aFileType + aFileRead + aFileWrite + aFileExe + "  " + aFileSize + "  " + aFileDate + "  " + "<A HREF=\"" + URLEncoder.encode(names[i], charSet) /*
-																																											 * 1.
-																																											 * 4
-																																											 */
-								+ aFileDirsuf + "\">" + Utils.htmlEncode(names[i], false) + aFileSuf + "</A>");
+				/* 1. 4 */
+				p.println(aFileType + aFileRead + aFileWrite + aFileExe + "  " + aFileSize + "  " + aFileDate + "  " + "<A HREF=\"" + URLEncoder.encode(names[i], charSet) + aFileDirsuf + "\">" + Utils.htmlEncode(names[i], false) + aFileSuf + "</A>");
 			}
-			if (total != 0)
+			
+			if (total != 0) {
 				total += 3;
+			}
+			
 			p.println("total " + total);
 			p.println("</PRE>");
 			p.println("<HR>");
@@ -442,20 +449,23 @@ public class FileServlet extends HttpServlet {
 		if (pl > 0 && path.charAt(pl - 1) != '/') {
 			// relative redirect
 			int sp = path.lastIndexOf('/');
-			if (sp < 0)
+			if (sp < 0) {
 				path += '/';
-			else
+			} else {
 				path = path.substring(sp + 1) + '/';
+			}
 			log("redirecting dir " + path);
 			res.sendRedirect(path);
 			return true;
 		}
+		
 		return false;
 	}
 	
 	// @Override
 	public void log(String msg) {
-		if (logenabled)
+		if (logenabled) {
 			super.log(msg);
+		}
 	}
 }

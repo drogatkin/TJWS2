@@ -2716,8 +2716,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			protected Map<String, String[]> createParameters() {
 				String query = getQueryString();
 				if (query != null) {
-					return Acme.Utils.parseQueryString(query, null);
+					return Utils.parseQueryString(query, null);
 				}
+				
 				return new Hashtable<String, String[]>();
 			}
 			

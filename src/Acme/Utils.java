@@ -124,13 +124,13 @@ public class Utils {
 	 * @param encoding
 	 * @return
 	 */
-	public static Hashtable<String, String[]> parseQueryString(String query, String encoding) {
+	public static Hashtable<String, String[]> parseQueryString(final String query, String encoding) {
 		Hashtable<String, String[]> parsedQueryString = new Hashtable<String, String[]>();
-		if (encoding == null) {
+		if (IOHelper.isNullOrEmpty(encoding)) {
 			encoding = IOHelper.UTF_8;
 		}
 		
-		StringTokenizer stringTokens = new StringTokenizer(query, "&");
+		final StringTokenizer stringTokens = new StringTokenizer(query, "&");
 		while (stringTokens.hasMoreTokens()) {
 			String pair = stringTokens.nextToken();
 			int ep = pair.indexOf('=');
@@ -1394,22 +1394,13 @@ public class Utils {
 		}
 	}
 	
-	// public static class DummyPrintStream extends PrintStream {
-	// public DummyPrintStream() {
-	// super(new OutputStream() {
-	// public void write(int i) {
-	// }
-	// });
-	// }
-	// }
-	
 	public static class SimpleBuffer {
 		byte[] buffer;
-		int fillPos;
+		int fillPosition;
 		byte[] emptyBuffer;
 		
 		public SimpleBuffer() {
-			fillPos = 0;
+			fillPosition = 0;
 			setSize(COPY_BUF_SIZE);
 		}
 		
@@ -1418,7 +1409,7 @@ public class Utils {
 				throw new IllegalArgumentException("Size can't be negative");
 			}
 			
-			if (fillPos <= 0) {
+			if (fillPosition <= 0) {
 				buffer = new byte[size];
 			} else {
 				throw new IllegalStateException("Can't resize buffer containing data");
@@ -1431,33 +1422,33 @@ public class Utils {
 		
 		public synchronized byte[] put(byte[] data, int off, int len) {
 			// System.err.println("put in buff:" + len+", fp:"+fillPos);
-			if (buffer.length > fillPos + len) {
-				System.arraycopy(data, off, buffer, fillPos, len);
-				fillPos += len;
+			if (buffer.length > fillPosition + len) {
+				System.arraycopy(data, off, buffer, fillPosition, len);
+				fillPosition += len;
 				return getEmptyBuffer();
 			}
-			byte[] result = new byte[Math.max(fillPos + len - buffer.length, buffer.length)];
+			byte[] result = new byte[Math.max(fillPosition + len - buffer.length, buffer.length)];
 			// System.err.println("fp:" + fillPos + ",bl:" + buffer.length +
 			// ",rl:" + result.length + ",l:" + len);
 			// fill result
 			int rfilled = 0;
-			if (fillPos < result.length) {
-				System.arraycopy(buffer, 0, result, 0, fillPos);
-				rfilled = result.length - fillPos;
-				System.arraycopy(data, off, result, fillPos, rfilled);
-				fillPos = 0;
+			if (fillPosition < result.length) {
+				System.arraycopy(buffer, 0, result, 0, fillPosition);
+				rfilled = result.length - fillPosition;
+				System.arraycopy(data, off, result, fillPosition, rfilled);
+				fillPosition = 0;
 				// System.err.println("1rf:"+rfilled);
 			} else {
 				System.arraycopy(buffer, 0, result, 0, result.length);
-				System.arraycopy(buffer, result.length, buffer, 0, fillPos - result.length);
-				fillPos -= result.length;
+				System.arraycopy(buffer, result.length, buffer, 0, fillPosition - result.length);
+				fillPosition -= result.length;
 				rfilled = 0;
 				// System.err.println("qrf: 0");
 			}
 			
 			if (rfilled < len) {
-				System.arraycopy(data, off + rfilled, buffer, fillPos, len - rfilled);
-				fillPos += len - rfilled;
+				System.arraycopy(data, off + rfilled, buffer, fillPosition, len - rfilled);
+				fillPosition += len - rfilled;
 				// System.err.println("added to buf:"+(len - rfilled));
 			}
 			
@@ -1466,18 +1457,18 @@ public class Utils {
 		
 		public synchronized byte[] get() {
 			// System.err.println("get fp: "+fillPos);
-			if (fillPos <= 0) {
+			if (fillPosition <= 0) {
 				return getEmptyBuffer();
 			}
-			byte[] result = new byte[fillPos];
-			System.arraycopy(buffer, 0, result, 0, fillPos);
-			fillPos = 0;
+			byte[] result = new byte[fillPosition];
+			System.arraycopy(buffer, 0, result, 0, fillPosition);
+			fillPosition = 0;
 			return result;
 		}
 		
 		public synchronized void reset() {
 			// System.err.println("reset buf");
-			fillPos = 0;
+			fillPosition = 0;
 		}
 		
 		private synchronized byte[] getEmptyBuffer() {
