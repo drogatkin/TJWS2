@@ -40,37 +40,17 @@ public final class SSLHelper {
      */
     private static final String LOG_TAG = "SSLHelper";
     
-    /** SSL_SUPPORTED_PROTOCOLS */
+    /**
+     * SSL_SUPPORTED_PROTOCOLS
+     */
     private static final String[] SSL_SUPPORTED_PROTOCOLS = new String[]{"SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"};
     
     
-    /** Singleton object */
+    /**
+     * Singleton object
+     */
     private SSLHelper() {
         throw new UnsupportedOperationException("Object creation not allowed for this class.");
-    }
-    
-    /**
-     * @param strings
-     * @return
-     */
-    public static String toString(final String[] strings, final boolean newLine) {
-        final StringBuilder sBuilder = new StringBuilder();
-        if(strings != null) {
-            sBuilder.append("\n");
-            for(String string : strings) {
-                sBuilder.append(string).append("\n");
-            }
-        }
-        
-        return sBuilder.toString();
-    }
-    
-    /**
-     * @param strings
-     * @return
-     */
-    public static String toString(final String[] strings) {
-        return toString(strings, false);
     }
     
     /**
@@ -80,15 +60,6 @@ public final class SSLHelper {
      */
     public static String[] getSSLSupportedProtocols() {
         return SSL_SUPPORTED_PROTOCOLS;
-    }
-    
-    /**
-     * @param context
-     * @param fileName
-     * @return
-     */
-    public static InputStream rawResource(final Context context, final String fileName) {
-        return context.getResources().openRawResource(context.getResources().getIdentifier(fileName, "raw", context.getPackageName()));
     }
     
     /**

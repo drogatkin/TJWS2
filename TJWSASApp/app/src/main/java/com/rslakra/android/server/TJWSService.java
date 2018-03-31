@@ -303,7 +303,7 @@ public class TJWSService extends Service {
                 }
                 try {
                     //                    final InputStream keyStoreStream = LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), keyStoreFile);
-                    final InputStream keyStoreStream = SSLHelper.rawResource(TJWSApp.getInstance().getApplicationContext(), "servertruststore");
+                    final InputStream keyStoreStream = LogHelper.readRAWResources(TJWSApp.getInstance().getApplicationContext(), "servertruststore");
                     int keyStoreBytes = IOHelper.copyStream(keyStoreStream, new FileOutputStream(keyStoreFilePath), true);
                     LogHelper.d(LOG_TAG, "keyStoreBytes:" + keyStoreBytes);
                 } catch(IOException ex) {

@@ -142,7 +142,7 @@ public final class TestConnection {
         SSLSocketFactory sslSocketFactory = null;
         try {
             //            final InputStream keyStoreStream = LogHelper.readAssets(mContext, keyStoreFile);
-            final InputStream keyStoreStream = SSLHelper.rawResource(mContext, "tjws");
+            final InputStream keyStoreStream = LogHelper.readRAWResources(mContext, "tjws");
             final KeyStore keyStore = SSLHelper.initKeyStore(keyStoreStream, PASSWORD);
             // Create key manager
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -251,7 +251,9 @@ public final class TestConnection {
      */
     private final class SSLSocketThread extends Thread {
         
-        /** mSSLSocket */
+        /**
+         * mSSLSocket
+         */
         private SSLSocket mSSLSocket = null;
         
         SSLSocketThread(final SSLSocket sslSocket) {
@@ -263,8 +265,8 @@ public final class TestConnection {
                 LogHelper.d(LOG_TAG, "isBound:" + mSSLSocket.isBound());
                 LogHelper.d(LOG_TAG, "isClosed:" + mSSLSocket.isClosed());
                 LogHelper.d(LOG_TAG, "isConnected:" + mSSLSocket.isConnected());
-                LogHelper.d(LOG_TAG, "supportedCipherSuites:" + SSLHelper.toString(mSSLSocket.getSupportedCipherSuites(), true));
-                LogHelper.d(LOG_TAG, "supportedProtocols:" + SSLHelper.toString(mSSLSocket.getSupportedProtocols(), true));
+                LogHelper.d(LOG_TAG, "supportedCipherSuites:" + LogHelper.toString(mSSLSocket.getSupportedCipherSuites(), true));
+                LogHelper.d(LOG_TAG, "supportedProtocols:" + LogHelper.toString(mSSLSocket.getSupportedProtocols(), true));
                 mSSLSocket.setEnabledCipherSuites(mSSLSocket.getSupportedCipherSuites());
                 
                 // Start handshake
