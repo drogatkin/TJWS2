@@ -1,7 +1,34 @@
-/**
- * Copyright 2011 Dmitriy Rogatkin, All rights reserved.
- * $Id: TJWSService.java,v 1.15 2012/09/15 17:47:27 dmitriy Exp $
- */
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
+
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// https://github.com/rslakra/TJWS2
 package com.rslakra.android.server;
 
 import android.app.Service;
@@ -14,9 +41,9 @@ import com.rslakra.android.AndroidClassLoader;
 import com.rslakra.android.framework.events.EventManager;
 import com.rslakra.android.framework.events.EventType;
 import com.rslakra.android.logger.LogHelper;
-import com.rslakra.android.tjwsasapp.TJWSApp;
-import com.rslakra.android.utils.NetHelper;
-import com.rslakra.android.utils.SSLHelper;
+import com.rslakra.android.atjwsapp.TJWSApp;
+import com.rslakra.android.framework.NetHelper;
+import com.rslakra.android.framework.SSLHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -273,8 +300,8 @@ public class TJWSService extends Service {
         // log properties
         properties.setProperty(Serve.ARG_ACCESS_LOG_FMT, "{0} {2} [{3,date,yyyy/MM/dd HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#}");
         properties.setProperty(Serve.ARG_LOG_DIR, TJWSApp.getInstance().getLogsFolder());
-            
-            /* JSP */
+        
+        /* JSP */
         //            properties.setProperty(Serve.ARG_JSP, "org.apache.jasper.servlet.JspServlet");
         //            properties.setProperty("org.apache.jasper.servlet.JspServlet.classpath", "%classpath%");
         //            properties.setProperty("org.apache.jasper.servlet.JspServlet.scratchdir", "%deploydir%/META-INF/jsp-classes");
@@ -283,10 +310,9 @@ public class TJWSService extends Service {
             final boolean useAssetsPath = false;
             // SSL configurations.
             properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "Acme.Serve.SSLAcceptor");
-            // properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
-            // "rogatkin.wskt.SSLSelectorAcceptor");
+            //            properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "rogatkin.wskt.SSLSelectorAcceptor");
             
-            final String keyStoreFile = "servertruststore.bks";
+            final String keyStoreFile = SSLHelper.SERVER_KEY_STORE_FILE;
             String keyStoreFilePath = null;
             if(useAssetsPath) {
                 String parentFolderPath = IOHelper.pathString(TJWSService.class);
@@ -302,8 +328,9 @@ public class TJWSService extends Service {
                     }
                 }
                 try {
-                    //                    final InputStream keyStoreStream = LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), keyStoreFile);
-                    final InputStream keyStoreStream = LogHelper.readRAWResources(TJWSApp.getInstance().getApplicationContext(), "servertruststore");
+//                    final InputStream keyStoreStream = LogHelper.readAssets(TJWSApp.getInstance().getApplicationContext(), keyStoreFile);
+                    final InputStream keyStoreStream = LogHelper.readRAWResources(TJWSApp.getInstance().getApplicationContext(), "client");
+//                    SSLHelper.setSSLTrustStore(keyStoreFilePath);
                     int keyStoreBytes = IOHelper.copyStream(keyStoreStream, new FileOutputStream(keyStoreFilePath), true);
                     LogHelper.d(LOG_TAG, "keyStoreBytes:" + keyStoreBytes);
                 } catch(IOException ex) {
@@ -448,7 +475,7 @@ public class TJWSService extends Service {
                     } catch(InterruptedException ex) {
                         // ignore me!
                     } finally {
-                        LogHelper.i(LOG_TAG, "Serve running:" + webServer.isRunning());
+                        LogHelper.i(LOG_TAG, "Serve Running:" + webServer.isRunning());
                         if(isWebServerRunning()) {
                             LogHelper.i(LOG_TAG, "TJWSServer has started!!!");
                             EventManager.sendEvent(EventType.SERVER_STARTED);

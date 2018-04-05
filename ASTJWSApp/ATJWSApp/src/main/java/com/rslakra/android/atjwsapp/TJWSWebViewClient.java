@@ -1,4 +1,35 @@
-package com.rslakra.android.tjwsasapp;
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
+
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// https://github.com/rslakra/TJWS2
+package com.rslakra.android.atjwsapp;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -9,7 +40,6 @@ import android.webkit.HttpAuthHandler;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
 
 import com.rslakra.android.logger.LogHelper;
 
@@ -71,8 +101,7 @@ public class TJWSWebViewClient extends WebViewClient {
      * means that onPageStarted will not be called when the contents of an
      * embedded frame changes, i.e. clicking a link whose target is an iframe.
      *
-     * @see android.webkit.WebViewClient#onPageStarted(android.webkit.WebView, * java.lang.String,
-     * android.graphics.Bitmap)
+     * @see android.webkit.WebViewClient#onPageStarted(android.webkit.WebView, java.lang.String, * android.graphics.Bitmap)
      */
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -82,8 +111,7 @@ public class TJWSWebViewClient extends WebViewClient {
     }
     
     /**
-     * @see android.webkit.WebViewClient#shouldOverrideUrlLoading(android.webkit.WebView, *
-     * java.lang.String)
+     * @see android.webkit.WebViewClient#shouldOverrideUrlLoading(android.webkit.WebView, java.lang.String)
      */
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -112,13 +140,18 @@ public class TJWSWebViewClient extends WebViewClient {
     @Override
     public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
         LogHelper.d(LOG_TAG, "onReceivedError(" + view + ", " + errorCode + ", " + description + ", " + failingUrl + ")");
-        Toast.makeText(view.getContext(), description, Toast.LENGTH_LONG).show();
+        LogHelper.showToastMessage(view.getContext(), description);
     }
     
     @Override
     public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
         LogHelper.d(LOG_TAG, "onReceivedSslError(" + view + ", " + handler + ", " + error + ")");
-        handler.proceed(); // Ignore SSL certificate errors
+        if(error != null && error.getUrl() != null && error.getUrl().contains("localhost:9161") && error.getCertificate() != null && "RSLakra Inc.".equals(error.getCertificate().getIssuedBy().getOName())) {
+            // Ignore SSL certificate errors (if this is only for self-signed certificate)
+            handler.proceed();
+        } else {
+            handler.cancel();
+        }
     }
     
     @Override

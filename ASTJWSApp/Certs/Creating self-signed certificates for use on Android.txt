@@ -44,7 +44,7 @@ keytool –importkeystore –srckeystore server.p12 –srcstoretype pkcs12 –de
 keytool -import -alias tjws -file tjws.cer -keystore tjws.bks -storetype BKS -providerClass org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath ./BouncyCastle/bcprov-jdk15on-159.jar
 
 
-
+---------------------------------------------------------------------------------------------------
 getSupportedProtocols
 0 = "SSLv3"
 1 = "TLSv1"
@@ -52,8 +52,7 @@ getSupportedProtocols
 3 = "TLSv1.2"
 
 
-
-
+---------------------------------------------------------------------------------------------------
 adb shell su -c "chmod 777 /data"
 adb shell su -c "chmod 777 /data/data"
 adb shell su -c "chmod 777 /data/user/0/com.rslakra.android.tjwsasapp/files"
@@ -62,3 +61,10 @@ adb shell su -c "chmod 777 /data/user/0/com.rslakra.android.tjwsasapp/files"
 Pull Command: Copies the file from android device to local machine
 Convention: adb pull <remote path> <local path>
 adb pull "/data/user/0/com.rslakra.android.tjwsasapp/files/logs/android.log" android.log
+
+---------------------------------------------------------------------------------------------------
+Instructions on generating the pin for the end-entity certificate of localhost:
+openssl x509 -in tjws.crt -pubkey -noout | openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+OR
+(this will only works when the server is already running).
+openssl s_client -servername localhost -connect localhost:9161 | openssl x509 -pubkey -noout | openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64

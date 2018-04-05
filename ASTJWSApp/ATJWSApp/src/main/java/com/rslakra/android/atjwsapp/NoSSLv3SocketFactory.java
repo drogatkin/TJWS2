@@ -1,5 +1,35 @@
-package com.rslakra.android.tjwsasapp;
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
 
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// https://github.com/rslakra/TJWS2
+package com.rslakra.android.atjwsapp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,9 +39,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.HttpsURLConnection;
@@ -87,18 +114,20 @@ public class NoSSLv3SocketFactory extends SSLSocketFactory {
 
         @Override
         public void setEnabledProtocols(String[] protocols) {
-            if(protocols != null && protocols.length == 1 && "SSLv3".equals(protocols[0])) {
-
-                List<String> enabledProtocols = new ArrayList<String>(Arrays.asList(delegate.getEnabledProtocols()));
-                if(enabledProtocols.size() > 1) {
-                    enabledProtocols.remove("SSLv3");
-                    System.out.println("Removed SSLv3 from enabled protocols");
-                } else {
-                    System.out.println("SSL stuck with protocol available for " + String.valueOf(enabledProtocols));
-                }
-                protocols = enabledProtocols.toArray(new String[enabledProtocols.size()]);
-            }
-
+//            if(protocols != null && protocols.length == 1 && "SSLv3".equals(protocols[0])) {
+//
+//                List<String> enabledProtocols = new ArrayList<String>(Arrays.asList(delegate.getEnabledProtocols()));
+//                if(enabledProtocols.size() > 1) {
+//                    enabledProtocols.remove("SSLv3");
+//                    System.out.println("Removed SSLv3 from enabled protocols");
+//                } else {
+//                    System.out.println("SSL stuck with protocol available for " + String.valueOf(enabledProtocols));
+//                }
+//                protocols = enabledProtocols.toArray(new String[enabledProtocols.size()]);
+//            }
+    
+            protocols = new String[]{"SSLv3"};
+            
             super.setEnabledProtocols(protocols);
         }
     }

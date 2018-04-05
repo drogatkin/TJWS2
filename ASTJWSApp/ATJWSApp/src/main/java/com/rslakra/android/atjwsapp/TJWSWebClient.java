@@ -28,51 +28,38 @@
 
 // All enhancements Copyright (C)2018 by Rohtash Singh Lakra
 // This version is compatible with JSDK 2.5
-// http://tjws.sourceforge.net
-package com.rslakra.android.tjwsasapp;
+// https://github.com/rslakra/TJWS2
+package com.rslakra.android.atjwsapp;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import android.app.AlertDialog;
+import android.webkit.JsResult;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
 
-import javax.net.ssl.X509TrustManager;
+import com.rslakra.android.logger.LogHelper;
 
 /**
- * Create a trust manager that does not validate certificate chains.
- * 
- * @author Rohtash Singh Lakra
- * @date 03/22/2018 03:58:24 PM
+ * @author Rohtash Singh
+ * @version 1.0.0
+ * @since Jun 15, 2015 1:04:16 PM
  */
-public class AllCertsTrustManager implements X509TrustManager {
-	
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see X509TrustManager#checkClientTrusted(X509Certificate[],
-	 *      String)
-	 */
-	@Override
-	public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-		// TODO Auto-generated method stub
-	}
-	
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see X509TrustManager#checkServerTrusted(X509Certificate[],
-	 *      String)
-	 */
-	@Override
-	public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-		// TODO Auto-generated method stub
-	}
-	
-	/**
-	 * (non-Javadoc)
-	 * 
-	 * @see X509TrustManager#getAcceptedIssuers()
-	 */
-	@Override
-	public X509Certificate[] getAcceptedIssuers() {
-		return null;
-	}
+public class TJWSWebClient extends WebChromeClient {
+    
+    /** LOG_TAG */
+    private static final String LOG_TAG = "TJWSWebClient";
+    
+    /**
+     * Displays alert message in Web View.
+     *
+     * @param webView
+     * @param url
+     * @param message
+     */
+    @Override
+    public boolean onJsAlert(WebView webView, String url, String message, JsResult jsResult) {
+        LogHelper.d(LOG_TAG, "onJsAlert(" + webView + ", " + url + ", " + message + ", " + jsResult + ")");
+        new AlertDialog.Builder(webView.getContext()).setMessage(message).setCancelable(true).show();
+        jsResult.confirm();
+        return true;
+    }
 }

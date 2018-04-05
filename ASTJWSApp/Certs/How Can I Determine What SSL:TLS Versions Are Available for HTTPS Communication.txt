@@ -6,3 +6,9 @@ TJWS: IO error: javax.net.ssl.SSLHandshakeException: Client requested protocol S
 openssl s_client -connect localhost:9161 -ssl3
 openssl s_client -connect localhost:9161 -ssl2
 openssl s_client -connect localhost:9161 -tls1
+
+
+openssl s_client -connect localhost:9161  -fallback_scsv -no_tls1
+
+
+openssl s_client -connect localhost:9161  -serverpref

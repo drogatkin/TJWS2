@@ -1,10 +1,39 @@
-/**
- *
- */
+// Copyright (C)2018 by Rohtash Singh Lakra <rohtash.singh@gmail.com>.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+//
+// Visit the ACME Labs Java page for up-to-date versions of this and other
+// fine Java utilities: http://www.acme.com/java/
+//
+
+// All enhancements Copyright (C)2018 by Rohtash Singh Lakra
+// This version is compatible with JSDK 2.5
+// https://github.com/rslakra/TJWS2
 package com.rslakra.android.server;
 
 import com.rslakra.android.logger.LogHelper;
-import com.rslakra.android.tjwsasapp.TJWSApp;
+import com.rslakra.android.atjwsapp.TJWSApp;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Properties;
@@ -30,9 +59,9 @@ public final class TJWSServer extends Acme.Serve.Serve {
     public static final String[] PROTOCOLS = new String[]{"SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"};
     
     /**
-     * warDeployer
+     * mWarRoller
      */
-    private WarRoller warDeployer;
+    private WarRoller mWarRoller;
     
     /**
      * deployed
@@ -81,7 +110,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
      * @return
      */
     public WarRoller getDeployer() {
-        return warDeployer;
+        return mWarRoller;
     }
     
     /**
@@ -185,10 +214,10 @@ public final class TJWSServer extends Acme.Serve.Serve {
         
         if(!isDeployed()) {
             try {
-                if(warDeployer == null) {
-                    warDeployer = new WarRoller();
+                if(getDeployer() == null) {
+                    mWarRoller = new WarRoller();
                 }
-                warDeployer.deploy(this);
+                getDeployer().deploy(this);
                 setDeployed(true);
             } catch(Throwable ex) {
                 LogHelper.e(LOG_TAG, "Unexpected problem in deployment!", ex);

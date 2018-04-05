@@ -8,6 +8,7 @@ android {
         applicationId "com.rslakra.android.tjwsasapp"
         minSdkVersion 22
         targetSdkVersion 22
+        
  //       testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
