@@ -35,7 +35,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
-import rslakra.logger.LogHelper;
+import com.rslakra.logger.LogManager;
 
 public class SimpleAcceptor implements Serve.Acceptor {
 	
@@ -56,7 +56,7 @@ public class SimpleAcceptor implements Serve.Acceptor {
 	public void init(Map inProperties, Map outProperties) throws IOException {
 		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue() : Serve.DEF_PORT;
 		String bindAddrStr = (String) inProperties.get(Serve.ARG_BINDADDRESS);
-		LogHelper.log("bindAddrStr:" + bindAddrStr);
+		LogManager.debug("bindAddrStr:" + bindAddrStr);
 		InetSocketAddress bindAddr = bindAddrStr != null ? new InetSocketAddress(InetAddress.getByName(bindAddrStr), port) : null;
 		String backlogStr = (String) inProperties.get(Serve.ARG_BACKLOG);
 		int backlog = backlogStr != null ? Integer.parseInt(backlogStr) : -1;

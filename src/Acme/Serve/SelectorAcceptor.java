@@ -39,8 +39,9 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.Serve.Serve.Acceptor;
-import rslakra.logger.LogHelper;
 
 public class SelectorAcceptor implements Acceptor {
 	
@@ -113,7 +114,7 @@ public class SelectorAcceptor implements Acceptor {
 			try {
 				socketAddress = new InetSocketAddress((String) inProperties.get(Serve.ARG_BINDADDRESS), port);
 			} catch (Exception ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 			}
 		}
 		

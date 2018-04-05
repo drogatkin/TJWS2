@@ -48,10 +48,11 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
 import Acme.Utils;
 import Acme.Serve.Serve.Acceptor;
-import rslakra.logger.LogHelper;
 
 public class SSLAcceptor implements Acceptor {
 	// SUNX509
@@ -194,7 +195,7 @@ public class SSLAcceptor implements Acceptor {
 			socket = sslSocketFactory.createServerSocket(port, Utils.parseInt(inProperties.get(ARG_BACKLOG), BACKLOG), InetAddress.getByName((String) inProperties.get(ARG_IFADDRESS)));
 		}
 		
-		LogHelper.log("socket:" + socket);
+		LogManager.debug("socket:" + socket);
 		initServerSocket(socket, "true".equals(inProperties.get(ARG_CLIENTAUTH)));
 		if (outProperties != null) {
 			outProperties.put(Serve.ARG_BINDADDRESS, socket.getInetAddress().getHostName());
@@ -219,19 +220,19 @@ public class SSLAcceptor implements Acceptor {
 		KeyStore keyStore = null;
 		InputStream keyStoreStream = null;
 		String keystorePass = null;
-		LogHelper.log("isAndroid:" + IOHelper.isAndroid());
+		LogManager.debug("isAndroid:" + IOHelper.isAndroid());
 		try {
 			String keystoreType = getWithDefault(inProperties, ARG_KEYSTORETYPE, KEYSTORETYPE);
-			LogHelper.log("keystoreType:" + keystoreType);
+			LogManager.debug("keystoreType:" + keystoreType);
 			keyStore = KeyStore.getInstance(keystoreType);
 			String keystoreFile = (String) inProperties.get(ARG_KEYSTOREFILE);
 			if (keystoreFile == null) {
 				keystoreFile = getKeystoreFile();
 			}
-			LogHelper.log("keystoreFile:" + keystoreFile);
+			LogManager.debug("keystoreFile:" + keystoreFile);
 			// if (IOHelper.toBoolean(inProperties.get(ARG_USE_KEYSTORE_BYTES)))
 			// {
-			// LogHelper.log("using keystore bytes.");
+			// LogManager.debug("using keystore bytes.");
 			// final byte[] keyStoreBytes = (byte[])
 			// inProperties.get(ARG_KEYSTORE_BYTES);
 			// keyStoreStream = IOHelper.toInputStream(keyStoreBytes);
@@ -242,7 +243,7 @@ public class SSLAcceptor implements Acceptor {
 			keystorePass = getWithDefault(inProperties, ARG_KEYSTOREPASS, KEYSTOREPASS);
 			keyStore.load(keyStoreStream, keystorePass.toCharArray());
 		} catch (Exception ex) {
-			LogHelper.log("Error initializing SSLAcceptor!", ex);
+			LogManager.error("Error initializing SSLAcceptor!", ex);
 			throw IOHelper.newIOException(ex);
 		} finally {
 			IOHelper.safeClose(keyStoreStream);
@@ -254,7 +255,7 @@ public class SSLAcceptor implements Acceptor {
 				try {
 					Security.addProvider((Provider) Class.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
 				} catch (Throwable th) {
-					LogHelper.log("Error adding SSL provider!", th);
+					LogManager.error("Error adding SSL provider!", th);
 					if (th instanceof ThreadDeath) {
 						throw (ThreadDeath) th;
 					}
@@ -266,30 +267,30 @@ public class SSLAcceptor implements Acceptor {
 			
 			// Create an SSL context used to create an SSL socket factory
 			String protocol = getWithDefault(inProperties, ARG_PROTOCOL, TLS);
-			LogHelper.log("protocol:" + protocol);
+			LogManager.debug("protocol:" + protocol);
 			final SSLContext sslContext = SSLContext.getInstance(protocol);
-			LogHelper.log("sslContext:" + sslContext);
+			LogManager.debug("sslContext:" + sslContext);
 			
 			// Create the key manager factory used to extract the server key
 			String algorithm = getWithDefault(inProperties, ARG_ALGORITHM, KeyManagerFactory.getDefaultAlgorithm());
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
-			LogHelper.log("keyManagerType:" + keyManagerFactory.getAlgorithm());
+			LogManager.debug("keyManagerType:" + keyManagerFactory.getAlgorithm());
 			
 			String keyPass = getWithDefault(inProperties, ARG_KEYPASS, keystorePass);
 			keyManagerFactory.init(keyStore, keyPass.toCharArray());
 			
 			// Create trust manager
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-			LogHelper.log("trustManagerType:" + trustManagerFactory.getAlgorithm() + ", Provider:" + trustManagerFactory.getProvider());
+			LogManager.debug("trustManagerType:" + trustManagerFactory.getAlgorithm() + ", Provider:" + trustManagerFactory.getProvider());
 			trustManagerFactory.init(keyStore);
 			TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 			
 			// Initialize the context with the key managers
 			sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers, new SecureRandom());
-			LogHelper.log("sslContext - Protocol:" + sslContext.getProtocol() + ", Provider:" + sslContext.getProvider());
+			LogManager.debug("sslContext - Protocol:" + sslContext.getProtocol() + ", Provider:" + sslContext.getProvider());
 			return sslContext;
 		} catch (Exception ex) {
-			LogHelper.log("Error while creating SSLSocket!", ex);
+			LogManager.error("Error while creating SSLSocket!", ex);
 			throw IOHelper.newIOException(ex);
 		}
 	}
@@ -304,7 +305,7 @@ public class SSLAcceptor implements Acceptor {
 		} else if (packages.indexOf(PROTOCOL_HANDLER) < 0) {
 			packages += "|" + PROTOCOL_HANDLER;
 		}
-		LogHelper.log("packages:" + packages);
+		LogManager.debug("packages:" + packages);
 		System.setProperty(PROTOCOL_PACKAGES, packages);
 	}
 	
@@ -328,18 +329,18 @@ public class SSLAcceptor implements Acceptor {
 	 * @param needClientAuth
 	 */
 	protected void initServerSocket(final ServerSocket serverSocket, final boolean needClientAuth) {
-		LogHelper.log("+initServerSocket(" + serverSocket + "" + needClientAuth + ")");
+		LogManager.debug("+initServerSocket(" + serverSocket + "" + needClientAuth + ")");
 		final SSLServerSocket sslServerSocket = (SSLServerSocket) serverSocket;
 		// Enable all available cipher suites when the socket is connected
-		LogHelper.log("SupportedCipherSuites:" + IOHelper.toString(sslServerSocket.getSupportedCipherSuites()));
-		LogHelper.log("SupportedProtocols:" + IOHelper.toString(sslServerSocket.getSupportedProtocols()));
-		LogHelper.log("setNeedClientAuth:" + needClientAuth);
+		LogManager.debug("SupportedCipherSuites:" + IOHelper.toString(sslServerSocket.getSupportedCipherSuites()));
+		LogManager.debug("SupportedProtocols:" + IOHelper.toString(sslServerSocket.getSupportedProtocols()));
+		LogManager.debug("setNeedClientAuth:" + needClientAuth);
 		
 		sslServerSocket.setEnabledCipherSuites(sslServerSocket.getSupportedCipherSuites());
 		sslServerSocket.setEnabledProtocols(sslServerSocket.getSupportedProtocols());
 		// Set client authentication if necessary
 		sslServerSocket.setNeedClientAuth(needClientAuth);
-		LogHelper.log("-initServerSocket()");
+		LogManager.debug("-initServerSocket()");
 	}
 	
 	/**

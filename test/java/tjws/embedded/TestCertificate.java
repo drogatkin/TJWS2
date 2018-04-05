@@ -37,8 +37,9 @@ import java.security.KeyStore;
 import java.security.Provider;
 import java.security.Security;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
-import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra (Rohtash.Lakra@nasdaq.com)
@@ -56,22 +57,22 @@ public class TestCertificate {
 			IOHelper.addBouncyCastleProvider();
 			
 			String parentFolderPath = IOHelper.pathString(TestCertificate.class);
-			LogHelper.log("parentFolderPath:" + parentFolderPath);
+			LogManager.debug("parentFolderPath:" + parentFolderPath);
 			final String keStoreFile = "newConf/tjws.bks";
 			final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, keStoreFile);
-			LogHelper.log("keyStoreFilePath:" + keyStoreFilePath);
+			LogManager.debug("keyStoreFilePath:" + keyStoreFilePath);
 			final String KEY_TRUST_STORE = "javax.net.ssl.trustStore";
 			System.setProperty(KEY_TRUST_STORE, keyStoreFilePath);
-			System.out.println("truststore" + System.getProperty(KEY_TRUST_STORE));
+			LogManager.debug("truststore" + System.getProperty(KEY_TRUST_STORE));
 			final Provider provide = Security.getProvider("BC");
-			System.out.println(provide.getInfo() + " version:" + provide.getVersion());
+			LogManager.debug(provide.getInfo() + " version:" + provide.getVersion());
 			final String trustStoreType = KeyStore.getDefaultType();
-			System.out.println("trustStoreType:" + trustStoreType);
+			LogManager.debug("trustStoreType:" + trustStoreType);
 			final KeyStore keyStore = KeyStore.getInstance("BKS");
-			System.out.println("keyStore:" + keyStore);
+			LogManager.debug("keyStore:" + keyStore);
 			final InputStream keyStoreStream = new FileInputStream(keyStoreFilePath);
 			keyStore.load(keyStoreStream, "password".toCharArray());
-			System.out.println("Loaded!");
+			LogManager.debug("Loaded!");
 			
 			// final String algorithm =
 			// TrustManagerFactory.getDefaultAlgorithm();

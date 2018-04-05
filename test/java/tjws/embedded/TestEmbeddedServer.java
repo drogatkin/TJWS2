@@ -35,13 +35,16 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import org.apache.log4j.Level;
+
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
 import Acme.Serve.SSLAcceptor;
 import Acme.Serve.Serve;
 import Acme.Serve.Serve.Status;
 import rogatkin.web.WebApp;
 import rogatkin.web.WebAppServlet;
-import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra
@@ -109,7 +112,7 @@ public final class TestEmbeddedServer {
 	private void initLogging() {
 		File logDir = new File(IOHelper.getLogsDir());
 		if (!logDir.exists()) {
-			LogHelper.log("Creating [" + logDir.getAbsolutePath() + "] folder ...");
+			LogManager.debug("Creating [" + logDir.getAbsolutePath() + "] folder ...");
 			logDir.mkdirs();
 		}
 		
@@ -117,7 +120,7 @@ public final class TestEmbeddedServer {
 			try {
 				logStream = new PrintStream(new File(logDir, "tjws.logs"), "UTF-8");
 			} catch (Exception ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 			}
 			
 			if (logStream == null) {
@@ -153,11 +156,12 @@ public final class TestEmbeddedServer {
 				// properties.setProperty(SSLAcceptor.ARG_PORT,
 				// String.valueOf(getPort()));
 				properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "Acme.Serve.SSLAcceptor");
-//				properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "rogatkin.wskt.SSLSelectorAcceptor");
+				// properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
+				// "rogatkin.wskt.SSLSelectorAcceptor");
 				String parentFolderPath = IOHelper.pathString(TestEmbeddedServer.class);
-				LogHelper.log("parentFolderPath:" + parentFolderPath);
+				LogManager.debug("parentFolderPath:" + parentFolderPath);
 				final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, "conf/tjws.jks");
-				LogHelper.log("keyStoreFilePath:" + keyStoreFilePath);
+				LogManager.debug("keyStoreFilePath:" + keyStoreFilePath);
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE, keyStoreFilePath);
 				// properties.setProperty(SSLAcceptor.ARG_USE_KEYSTORE_BYTES,
 				// String.valueOf(true));
@@ -167,7 +171,7 @@ public final class TestEmbeddedServer {
 				// properties.setProperty(SSLAcceptor.ARG_KEYSTOREFILE,
 				// keyStoreBytes);
 				// } catch (IOException ex) {
-				// LogHelper.log(ex);
+				// LogManager.debug(ex);
 				// }
 				// properties.setProperty(SSLAcceptor.ARG_PROTOCOL, "TLSv1.2");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
@@ -199,11 +203,11 @@ public final class TestEmbeddedServer {
 			// System.setProperty(WebApp.DEF_WEBAPP_CLASSLOADER,
 			// AndroidClassLoader.class.getName());
 			System.setProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR, IOHelper.getLogsDir());
-			LogHelper.log("webappdir:" + System.getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR) + ", for app:" + IOHelper.getLogsDir());
+			LogManager.debug("webappdir:" + System.getProperty(WebApp.DEF_WEBAPP_AUTODEPLOY_DIR) + ", for app:" + IOHelper.getLogsDir());
 			webServer.deployWebServer();
 			
 		} else {
-			LogHelper.log("webServer is already initialized!");
+			LogManager.debug("webServer is already initialized!");
 		}
 	}
 	
@@ -233,7 +237,7 @@ public final class TestEmbeddedServer {
 			logStream = null;
 		}
 		
-		LogHelper.log("Web Server is stopped successfully!");
+		LogManager.debug("Web Server is stopped successfully!");
 	}
 	
 	/**
@@ -255,7 +259,7 @@ public final class TestEmbeddedServer {
 					} catch (InterruptedException ex) {
 						// ignore me!
 					} finally {
-						LogHelper.log("Serve Running:" + webServer.isRunning());
+						LogManager.debug("Serve Running:" + webServer.isRunning());
 					}
 				}
 			}.start();
@@ -271,7 +275,7 @@ public final class TestEmbeddedServer {
 						Status result = webServer.serve();
 						webServer.log("Error running server! Error code:" + result);
 					} finally {
-						LogHelper.log("Serve Running:" + webServer.isRunning());
+						LogManager.debug("Serve Running:" + webServer.isRunning());
 					}
 				}
 			}.start();
@@ -305,8 +309,8 @@ public final class TestEmbeddedServer {
 	 * @param args
 	 */
 	public static void main(String... args) {
-		LogHelper.setLogEnabled(true);
-		// LogHelper.log("TempDir:" + IOHelper.getTempDir());
+//		LogManager.setLogLevel(Level.DEBUG);
+		// LogManager.debug("TempDir:" + IOHelper.getTempDir());
 		TestEmbeddedServer server = new TestEmbeddedServer();
 		server.initServer(true);
 		server.startServer();

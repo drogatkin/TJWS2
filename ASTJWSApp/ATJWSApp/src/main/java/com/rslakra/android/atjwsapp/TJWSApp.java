@@ -22,10 +22,9 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 //
-// Visit the ACME Labs Java page for up-to-date versions of this and other
-// fine Java utilities: http://www.acme.com/java/
+// Visit the https://github.com/rslakra/TJWS2 page for up-to-date versions of
+// this and other fine Java utilities.
 //
-
 // All enhancements Copyright (C)2018 by Rohtash Singh Lakra
 // This version is compatible with JSDK 2.5
 // https://github.com/rslakra/TJWS2
@@ -46,6 +45,9 @@ import com.rslakra.android.framework.events.EventType;
 import com.rslakra.android.logger.LogHelper;
 import com.rslakra.android.logger.LogType;
 import com.rslakra.android.server.TJWSService;
+import com.rslakra.logger.LogManager;
+
+import org.apache.log4j.Level;
 
 import java.io.File;
 
@@ -197,7 +199,7 @@ public class TJWSApp extends Application {
         // initialize logger
         LogHelper.log4jConfigure(getInstance().getLogsFolder(), LogType.DEBUG);
         LogHelper.i(LOG_TAG, "onCreate()");
-        rslakra.logger.LogHelper.setLogEnabled(true);
+        LogManager.setLogLevel(Level.DEBUG);
         
         // initialize service
         initService();
@@ -236,11 +238,8 @@ public class TJWSApp extends Application {
             // LocalService instance
             TJWSService.LocalBinder binder = (TJWSService.LocalBinder) service;
             sTJWSService = (TJWSService) binder.getService();
-            //            sTJWSService.onServiceConnected();
             // can send notification to activities here serviceControl = service;
             broadcastAppServiceConnectedEvent(SPLASH_WAIT_TIME);
-            //            sTJWSService.startLocalServer(false);
-            //            MainActivity.startMainActivity(TJWSApp.getInstance().getParentActivity(), true);
         }
         
         /**
@@ -306,7 +305,7 @@ public class TJWSApp extends Application {
      * about an actual network-reachability change.
      *
      * @param mContext The context passed to the broadcast receiver. No idea what it is, but I
-     * don't care, because it lets me send myself a message.
+     *                 don't care, because it lets me send myself a message.
      */
     public static void checkReachability(final Context mContext) {
         // only the key matters to me, not the payload. See onStartCommand().

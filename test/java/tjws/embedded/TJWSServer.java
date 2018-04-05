@@ -34,9 +34,10 @@ package tjws.embedded;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import com.rslakra.logger.LogManager;
+
 import rogatkin.web.WarRoller;
 import rogatkin.web.WebAppServlet;
-import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra (Rohtash.Lakra@nasdaq.com)
@@ -73,10 +74,10 @@ public final class TJWSServer extends Acme.Serve.Serve {
 		try {
 			WebAppServlet.setRuntimeEnv(runtime);
 		} catch (Exception ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		}
 		
-		LogHelper.log("TJWSServer(" + arguments + ", " + logStream + ", " + runtime + ")");
+		LogManager.debug("TJWSServer(" + arguments + ", " + logStream + ", " + runtime + ")");
 	}
 	
 	/**
@@ -92,7 +93,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * @param deployed
 	 */
 	public void setDeployed(boolean deployed) {
-		LogHelper.log("setDeployed(" + deployed + ")");
+		LogManager.debug("setDeployed(" + deployed + ")");
 		this.deployed = deployed;
 	}
 	
@@ -104,7 +105,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@Override
 	public void setMappingTable(PathTreeDictionary mappingTable) {
-		LogHelper.log("setMappingTable(" + mappingTable + ")");
+		LogManager.debug("setMappingTable(" + mappingTable + ")");
 		super.setMappingTable(mappingTable);
 	}
 	
@@ -115,7 +116,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@Override
 	protected void setRealms(PathTreeDictionary realms) {
-		LogHelper.log("setRealms(" + realms + ")");
+		LogManager.debug("setRealms(" + realms + ")");
 		super.setRealms(realms);
 	}
 	
@@ -125,7 +126,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void setProperty(Object key, Object value) {
-		LogHelper.log("setProperty(" + key + ", " + value + ")");
+		LogManager.debug("setProperty(" + key + ", " + value + ")");
 		if (super.arguments == null) {
 			super.arguments = new Properties();
 		}
@@ -139,7 +140,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * @param key
 	 */
 	public synchronized void removeProperty(Object key) {
-		LogHelper.log("removeProperty(" + key + ")");
+		LogManager.debug("removeProperty(" + key + ")");
 		if (super.arguments != null) {
 			super.arguments.remove(key);
 		}
@@ -149,7 +150,7 @@ public final class TJWSServer extends Acme.Serve.Serve {
 	 * Deploy the local web server into the warDeployer.
 	 */
 	public synchronized void deployWebServer() {
-		LogHelper.log("+deployWebServer(), deployed:" + isDeployed());
+		LogManager.debug("+deployWebServer(), deployed:" + isDeployed());
 		try {
 			if (!isDeployed()) {
 				if (warDeployer == null) {
@@ -160,13 +161,13 @@ public final class TJWSServer extends Acme.Serve.Serve {
 				setDeployed(true);
 			}
 		} catch (Throwable ex) {
-			LogHelper.log("Unexpected problem in deployment, ex:", ex);
+			LogManager.error("Unexpected problem in deployment, ex:", ex);
 			if (ex instanceof ThreadDeath) {
 				throw (ThreadDeath) ex;
 			}
 		}
 		
-		LogHelper.log("-deployWebServer(), deployed:" + isDeployed());
+		LogManager.debug("-deployWebServer(), deployed:" + isDeployed());
 	}
 	
 	/**

@@ -33,9 +33,10 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.Map;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.Serve.SSLAcceptor;
 import Acme.Serve.Serve;
-import rslakra.logger.LogHelper;
 
 public class DualSocketAcceptor extends SSLAcceptor {
 	
@@ -53,7 +54,7 @@ public class DualSocketAcceptor extends SSLAcceptor {
 				bl = 2;
 			}
 		} catch (Exception ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		}
 		
 		InetAddress ia = null;
@@ -61,7 +62,7 @@ public class DualSocketAcceptor extends SSLAcceptor {
 			try {
 				ia = InetAddress.getByName((String) inProperties.get(Serve.ARG_BINDADDRESS));
 			} catch (Exception ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 			}
 		}
 		

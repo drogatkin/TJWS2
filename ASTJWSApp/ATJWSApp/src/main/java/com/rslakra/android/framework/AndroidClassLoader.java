@@ -22,14 +22,13 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 //
-// Visit the ACME Labs Java page for up-to-date versions of this and other
-// fine Java utilities: http://www.acme.com/java/
+// Visit the https://github.com/rslakra/TJWS2 page for up-to-date versions of
+// this and other fine Java utilities.
 //
-
 // All enhancements Copyright (C)2018 by Rohtash Singh Lakra
 // This version is compatible with JSDK 2.5
 // https://github.com/rslakra/TJWS2
-package com.rslakra.android;
+package com.rslakra.android.framework;
 
 import com.rslakra.android.logger.LogHelper;
 

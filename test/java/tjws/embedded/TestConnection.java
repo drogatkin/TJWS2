@@ -51,8 +51,9 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
-import rslakra.logger.LogHelper;
 
 /**
  * How to Turn Off Certificate Validation in Java HTTPS Connections?
@@ -223,10 +224,10 @@ public final class TestConnection {
 			bReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
 			String line;
 			while ((line = bReader.readLine()) != null) {
-				LogHelper.log(line);
+				LogManager.debug(line);
 			}
 		} catch (Exception ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		} finally {
 			IOHelper.safeClose(bReader);
 		}

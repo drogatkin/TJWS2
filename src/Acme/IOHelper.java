@@ -22,13 +22,12 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 //
-// Visit the ACME Labs Java page for up-to-date versions of this and other
-// fine Java utilities: http://www.acme.com/java/
+// Visit the https://github.com/rslakra/TJWS2 page for up-to-date versions of
+// this and other fine Java utilities.
 //
-
 // All enhancements Copyright (C)2018 by Rohtash Singh Lakra
 // This version is compatible with JSDK 2.5
-// http://tjws.sourceforge.net
+// https://github.com/rslakra/TJWS2
 package Acme;
 
 import java.io.BufferedInputStream;
@@ -55,8 +54,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.rslakra.logger.LogManager;
+
 import rogatkin.web.WebApp;
-import rslakra.logger.LogHelper;
 
 /**
  * @author Rohtash Singh Lakra
@@ -105,20 +105,12 @@ public final class IOHelper {
 	 * Installs the bouncy castle provider.
 	 */
 	public static void addBouncyCastleProvider() {
-		boolean isLogEnabled = LogHelper.isLogEnabled();
 		try {
-			if (!isLogEnabled) {
-				LogHelper.setLogEnabled(true);
-			}
-			
 			/* add bouncy castle provider. */
 			Security.addProvider(new BouncyCastleProvider());
-			LogHelper.log("Added BouncyCastleProvider!");
+			LogManager.debug("Added BouncyCastleProvider!");
 		} catch (Exception ex) {
-			LogHelper.log(ex);
-			if (!isLogEnabled) {
-				LogHelper.setLogEnabled(false);
-			}
+			LogManager.error(ex);
 		}
 	}
 	
@@ -270,7 +262,7 @@ public final class IOHelper {
 				}
 			}
 		} catch (IOException ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		} finally {
 			if (nulify) {
 				mCloseable = null;
@@ -294,7 +286,7 @@ public final class IOHelper {
 	 * @throws IOException
 	 */
 	public static byte[] readBytes(final InputStream inputStream, final boolean closeStream) throws IOException {
-		LogHelper.log("+readBytes(inputStream, " + closeStream + ")");
+		LogManager.debug("+readBytes(inputStream, " + closeStream + ")");
 		byte[] resultBytes = null;
 		if (inputStream != null) {
 			ByteArrayOutputStream outputStream = null;
@@ -311,7 +303,7 @@ public final class IOHelper {
 				outputStream.flush();
 				resultBytes = outputStream.toByteArray();
 			} catch (IOException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				throw ex;
 			} finally {
 				/* close streams. */
@@ -322,7 +314,7 @@ public final class IOHelper {
 			}
 		}
 		
-		LogHelper.log("-readBytes(), resultBytes:" + resultBytes);
+		LogManager.debug("-readBytes(), resultBytes:" + resultBytes);
 		return resultBytes;
 	}
 	
@@ -355,7 +347,7 @@ public final class IOHelper {
 				outputStream.flush();
 				result = true;
 			} catch (IOException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				throw ex;
 			} finally {
 				/* close streams. */
@@ -379,7 +371,7 @@ public final class IOHelper {
 	 * @throws IOException
 	 */
 	public static int copyStream(final InputStream sourceStream, final OutputStream targetStream, boolean closeStreams) throws IOException {
-		LogHelper.log("+copyStream(" + sourceStream + ", " + targetStream + ", " + closeStreams + ")");
+		LogManager.debug("+copyStream(" + sourceStream + ", " + targetStream + ", " + closeStreams + ")");
 		int fileSize = 0;
 		if (sourceStream != null && targetStream != null) {
 			try {
@@ -394,7 +386,7 @@ public final class IOHelper {
 				/* flush output streams. */
 				targetStream.flush();
 			} catch (IOException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				throw ex;
 			} finally {
 				/* close streams. */
@@ -405,7 +397,7 @@ public final class IOHelper {
 			}
 		}
 		
-		LogHelper.log("-copyStream(), fileSize:" + fileSize);
+		LogManager.debug("-copyStream(), fileSize:" + fileSize);
 		return fileSize;
 	}
 	
@@ -427,7 +419,7 @@ public final class IOHelper {
 					bytesAsString = new String(bytes, charsetName);
 				}
 			} catch (Exception ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				bytesAsString = (IOHelper.isNull(bytes) ? null : bytes.toString());
 			}
 		}
@@ -507,7 +499,7 @@ public final class IOHelper {
 			try {
 				stringAsBytes = IOHelper.isNullOrEmpty(charsetName) ? string.getBytes() : string.getBytes(charsetName);
 			} catch (Exception ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 			}
 		}
 		
@@ -559,7 +551,7 @@ public final class IOHelper {
 			setDefaultHeaders(servletResponse);
 			writeBytes(responseBytes, servletResponse.getOutputStream(), true);
 		} catch (IOException ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		}
 	}
 	
@@ -573,7 +565,7 @@ public final class IOHelper {
 			final String iconPath = IOHelper.pathString(IOHelper.pathString(WebApp.class), "../resource/tjws.gif");
 			return readBytes(new FileInputStream(iconPath), true);
 		} catch (IOException ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 			return null;
 		}
 	}
@@ -713,20 +705,20 @@ public final class IOHelper {
 			try {
 				keyStore.load(keyStoreStream, keyStorePassword.toCharArray());
 			} catch (NoSuchAlgorithmException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				return false;
 			} catch (CertificateException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				return false;
 			} catch (IOException ex) {
-				LogHelper.log(ex);
+				LogManager.error(ex);
 				return false;
 			}
 		} catch (KeyStoreException ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 			return false;
 		} catch (Exception ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 			return false;
 		}
 		

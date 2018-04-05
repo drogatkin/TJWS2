@@ -123,10 +123,11 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 import javax.servlet.http.Part;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
 import Acme.ThreadPoolFactory;
 import Acme.Utils;
-import rslakra.logger.LogHelper;
 
 /// Minimal Java servlet container class.
 // <P>
@@ -2157,7 +2158,8 @@ public class Serve implements ServletContext, Serializable {
 		protected long lastRun, lastWait;
 		private Vector outCookies;
 		private Vector<Cookie> inCookies;
-		private String sessionCookieValue, sessionUrlValue, sessionValue, reqSessionValue;
+		private String sessionCookieValue, sessionUrlValue, sessionValue,
+						reqSessionValue;
 		protected String reqQuery;
 		private PrintWriter pw;
 		private ServletOutputStream rout;
@@ -2193,7 +2195,7 @@ public class Serve implements ServletContext, Serializable {
 		
 		// / Constructor.
 		public ServeConnection(Socket socket, Serve serve) {
-			LogHelper.log("ServeConnection(" + socket + ", " + serve + ")");
+			LogManager.debug("ServeConnection(" + socket + ", " + serve + ")");
 			// serve.log("+++++++"+this);
 			// Save arguments.
 			this.socket = socket;
@@ -2211,11 +2213,11 @@ public class Serve implements ServletContext, Serializable {
 				// start handshake
 				if (this.socket instanceof SSLSocket) {
 					final SSLSocket sslSocket = ((SSLSocket) this.socket);
-					LogHelper.log("EnabledCipherSuites:" + IOHelper.toString(sslSocket.getEnabledCipherSuites()));
+					LogManager.debug("EnabledCipherSuites:" + IOHelper.toString(sslSocket.getEnabledCipherSuites()));
 					sslSocket.setEnabledCipherSuites(sslSocket.getEnabledCipherSuites());
-					LogHelper.log("EnabledProtocols:" + IOHelper.toString(sslSocket.getEnabledProtocols()));
+					LogManager.debug("EnabledProtocols:" + IOHelper.toString(sslSocket.getEnabledProtocols()));
 					sslSocket.setEnabledProtocols(sslSocket.getEnabledProtocols());
-					LogHelper.log("startHandshake() ...");
+					LogManager.debug("startHandshake() ...");
 					sslSocket.startHandshake();
 				}
 				
@@ -2883,7 +2885,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			String cookies = getHeader(COOKIE);
-			if (LogHelper.isLogEnabled()) {
+			if (LogManager.isDebugEnabled()) {
 				serve.log("cookies:" + cookies);
 			}
 			
@@ -3146,7 +3148,7 @@ public class Serve implements ServletContext, Serializable {
 		 * @param domain
 		 */
 		private void addCookie(String name, String value, String path, String domain) {
-			if (LogHelper.isLogEnabled()) {
+			if (LogManager.isDebugEnabled()) {
 				serve.log("addCookie(" + name + ", " + value + ", " + path + ", " + domain + ")");
 			}
 			if (SESSION_COOKIE_NAME.equals(name) && sessionCookieValue == null) {
@@ -3155,11 +3157,11 @@ public class Serve implements ServletContext, Serializable {
 					serve.getSession(sessionCookieValue).userTouch();
 					reqSessionValue = sessionCookieValue;
 				} catch (IllegalStateException ex) {
-					if (LogHelper.isLogEnabled()) {
+					if (LogManager.isDebugEnabled()) {
 						serve.log(ex);
 					}
 				} catch (NullPointerException ex) {
-					if (LogHelper.isLogEnabled()) {
+					if (LogManager.isDebugEnabled()) {
 						serve.log(ex);
 					}
 				}
@@ -3268,7 +3270,7 @@ public class Serve implements ServletContext, Serializable {
 					try {
 						return Integer.parseInt(serverName.substring(colon + 1).trim());
 					} catch (NumberFormatException ex) {
-						if (LogHelper.isLogEnabled()) {
+						if (LogManager.isDebugEnabled()) {
 							serve.log(ex);
 						}
 					}
@@ -3351,7 +3353,7 @@ public class Serve implements ServletContext, Serializable {
 				try {
 					return new BufferedReader(new InputStreamReader(inputStream, charEncoding));
 				} catch (UnsupportedEncodingException ex) {
-					if (LogHelper.isLogEnabled()) {
+					if (LogManager.isDebugEnabled()) {
 						serve.log(ex);
 					}
 				}
@@ -3990,7 +3992,7 @@ public class Serve implements ServletContext, Serializable {
 		public Enumeration getLocales() {
 			// TODO: cache result
 			final String acceptLanguage = getHeader(ACCEPT_LANGUAGE);
-			if (LogHelper.isLogEnabled()) {
+			if (LogManager.isDebugEnabled()) {
 				serve.log("acceptLanguage:" + acceptLanguage);
 			}
 			
@@ -4009,7 +4011,7 @@ public class Serve implements ServletContext, Serializable {
 						try {
 							weight = Float.valueOf(strEqual).floatValue();
 						} catch (NumberFormatException ex) {
-							if (LogHelper.isLogEnabled()) {
+							if (LogManager.isDebugEnabled()) {
 								serve.log(ex);
 							}
 						}
@@ -4030,7 +4032,7 @@ public class Serve implements ServletContext, Serializable {
 					}
 				} catch (NoSuchElementException ex) {
 					// can't parse
-					if (LogHelper.isLogEnabled()) {
+					if (LogManager.isDebugEnabled()) {
 						serve.log(ex);
 					}
 				}

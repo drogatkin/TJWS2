@@ -39,8 +39,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.rslakra.logger.LogManager;
+
 import Acme.IOHelper;
-import rslakra.logger.LogHelper;
 
 /**
  * The <code>EmbeddedServlet</code> handles all local requests.
@@ -104,7 +105,7 @@ public class EmbeddedServlet extends HttpServlet {
 			String pathSegment = servletRequest.getRequestURI();
 			if (pathSegment.endsWith("/") || pathSegment.endsWith("html")) {
 				byte[] dataBytes = IOHelper.readBytes(EmbeddedServlet.class.getResourceAsStream("web/index.html"), true);
-				LogHelper.log("dataBytes:\n" + IOHelper.toUTF8String(dataBytes) + "\n");
+				LogManager.info("dataBytes:\n" + IOHelper.toUTF8String(dataBytes) + "\n");
 				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_HTML, dataBytes, servletResponse);
 			} else if (pathSegment.endsWith("favicon.ico")) {
 				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_ICON, IOHelper.readFavIconBytes(), servletResponse);
@@ -118,7 +119,7 @@ public class EmbeddedServlet extends HttpServlet {
 				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_HTML, "Invalid Request".getBytes(), servletResponse);
 			}
 		} catch (Exception ex) {
-			LogHelper.log(ex);
+			LogManager.error(ex);
 		}
 	}
 }
