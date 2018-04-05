@@ -1,15 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 26
+    buildToolsVersion '27.0.3'
     
     defaultConfig {
         applicationId "com.rslakra.android.tjwsasapp"
         minSdkVersion 22
-        targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        targetSdkVersion 22
  //       testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
