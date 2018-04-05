@@ -250,9 +250,7 @@ public class SSLAcceptor implements Acceptor {
 		
 		try {
 			// Register the JSSE security Provider (if it is not already there)
-			if (IOHelper.isAndroid()) {
-				IOHelper.addBouncyCastleProvider();
-			} else {
+			if (!IOHelper.isAndroid()) {
 				try {
 					Security.addProvider((Provider) Class.forName("com.sun.net.ssl.internal.ssl.Provider").newInstance());
 				} catch (Throwable th) {
@@ -269,24 +267,27 @@ public class SSLAcceptor implements Acceptor {
 			// Create an SSL context used to create an SSL socket factory
 			String protocol = getWithDefault(inProperties, ARG_PROTOCOL, TLS);
 			LogHelper.log("protocol:" + protocol);
-			SSLContext context = SSLContext.getInstance(protocol);
+			final SSLContext sslContext = SSLContext.getInstance(protocol);
+			LogHelper.log("sslContext:" + sslContext);
 			
 			// Create the key manager factory used to extract the server key
 			String algorithm = getWithDefault(inProperties, ARG_ALGORITHM, KeyManagerFactory.getDefaultAlgorithm());
-			LogHelper.log("algorithm:" + algorithm);
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
+			LogHelper.log("keyManagerType:" + keyManagerFactory.getAlgorithm());
 			
 			String keyPass = getWithDefault(inProperties, ARG_KEYPASS, keystorePass);
 			keyManagerFactory.init(keyStore, keyPass.toCharArray());
 			
 			// Create trust manager
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			LogHelper.log("trustManagerType:" + trustManagerFactory.getAlgorithm() + ", Provider:" + trustManagerFactory.getProvider());
 			trustManagerFactory.init(keyStore);
 			TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 			
 			// Initialize the context with the key managers
-			context.init(keyManagerFactory.getKeyManagers(), trustManagers, new SecureRandom());
-			return context;
+			sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers, new SecureRandom());
+			LogHelper.log("sslContext - Protocol:" + sslContext.getProtocol() + ", Provider:" + sslContext.getProvider());
+			return sslContext;
 		} catch (Exception ex) {
 			LogHelper.log("Error while creating SSLSocket!", ex);
 			throw IOHelper.newIOException(ex);
@@ -313,7 +314,7 @@ public class SSLAcceptor implements Acceptor {
 	 * @see java.lang.Object#toString()
 	 */
 	public String toString() {
-		return (socket != null ? socket.toString() : "SSLAcceptor Uninitialized!");
+		return "SSLAcceptor - " + (socket != null ? socket.toString() : "Uninitialized!");
 	}
 	
 	static {
@@ -327,11 +328,18 @@ public class SSLAcceptor implements Acceptor {
 	 * @param needClientAuth
 	 */
 	protected void initServerSocket(final ServerSocket serverSocket, final boolean needClientAuth) {
-		final SSLServerSocket sslSocket = (SSLServerSocket) serverSocket;
+		LogHelper.log("+initServerSocket(" + serverSocket + "" + needClientAuth + ")");
+		final SSLServerSocket sslServerSocket = (SSLServerSocket) serverSocket;
 		// Enable all available cipher suites when the socket is connected
-		sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
+		LogHelper.log("SupportedCipherSuites:" + IOHelper.toString(sslServerSocket.getSupportedCipherSuites()));
+		LogHelper.log("SupportedProtocols:" + IOHelper.toString(sslServerSocket.getSupportedProtocols()));
+		LogHelper.log("setNeedClientAuth:" + needClientAuth);
+		
+		sslServerSocket.setEnabledCipherSuites(sslServerSocket.getSupportedCipherSuites());
+		sslServerSocket.setEnabledProtocols(sslServerSocket.getSupportedProtocols());
 		// Set client authentication if necessary
-		sslSocket.setNeedClientAuth(needClientAuth);
+		sslServerSocket.setNeedClientAuth(needClientAuth);
+		LogHelper.log("-initServerSocket()");
 	}
 	
 	/**

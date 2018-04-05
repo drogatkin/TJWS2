@@ -46,6 +46,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.Provider;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
+import javax.net.ssl.SSLParameters;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -1533,6 +1535,26 @@ public class Utils {
 		}
 		
 		return responseHeaders;
+	}
+	
+	/**
+	 * Logs the provider information.
+	 *
+	 * @param provider
+	 */
+	public static String toString(final Provider provider) {
+		return (provider == null ? "" : new StringBuilder("Provider - Info:").append(provider.getInfo()).append(", Name:").append(provider.getName()).append(", Services:").append(provider.getServices()).append(", Version:").append(provider.getVersion()).toString());
+	}
+	
+	/**
+	 * Logs the provider information.
+	 *
+	 * @param sslParameters
+	 */
+	public static String toString(final SSLParameters sslParameters) {
+		return (sslParameters == null ? ""
+				: new StringBuilder("SSLParameters - CipherSuites:").append(IOHelper.toString(sslParameters.getCipherSuites())).append(", Protocols:").append(IOHelper.toString(sslParameters.getProtocols())).append(", WantClientAuth:").append(sslParameters.getWantClientAuth())
+						.append(", NeedClientAuth:").append(sslParameters.getNeedClientAuth()).toString());
 	}
 	
 	public static void main(String[] args) {

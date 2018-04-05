@@ -645,11 +645,16 @@ public final class IOHelper {
 	 * Returns the string representation of the given objects.
 	 * 
 	 * @param objects
+	 * @param addNewLine
 	 * @return
 	 */
-	public static final String toString(final Object[] objects) {
+	public static final String toString(final Object[] objects, final boolean addNewLine) {
 		final StringBuffer strBuilder = new StringBuffer();
 		if (isNotNull(objects)) {
+			if (addNewLine) {
+				strBuilder.append("\n");
+			}
+			
 			for (int i = 0; i < objects.length; i++) {
 				if (isNotNull(objects[i])) {
 					if (objects[i] instanceof String) {
@@ -661,12 +666,26 @@ public final class IOHelper {
 				
 				// append new line character.
 				if (i < objects.length - 1) {
-					strBuilder.append("\n");
+					if (addNewLine) {
+						strBuilder.append("\n");
+					} else {
+						strBuilder.append(" ");
+					}
 				}
 			}
 		}
 		
 		return strBuilder.toString();
+	}
+	
+	/**
+	 * Returns the string representation of the given objects.
+	 * 
+	 * @param objects
+	 * @return
+	 */
+	public static final String toString(final Object[] objects) {
+		return toString(objects, false);
 	}
 	
 	/**

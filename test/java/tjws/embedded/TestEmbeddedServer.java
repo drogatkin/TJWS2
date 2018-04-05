@@ -153,8 +153,7 @@ public final class TestEmbeddedServer {
 				// properties.setProperty(SSLAcceptor.ARG_PORT,
 				// String.valueOf(getPort()));
 				properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "Acme.Serve.SSLAcceptor");
-				// properties.setProperty(Serve.ARG_ACCEPTOR_CLASS,
-				// "rogatkin.wskt.SSLSelectorAcceptor");
+//				properties.setProperty(Serve.ARG_ACCEPTOR_CLASS, "rogatkin.wskt.SSLSelectorAcceptor");
 				String parentFolderPath = IOHelper.pathString(TestEmbeddedServer.class);
 				LogHelper.log("parentFolderPath:" + parentFolderPath);
 				final String keyStoreFilePath = IOHelper.pathString(parentFolderPath, "conf/tjws.jks");
@@ -170,7 +169,7 @@ public final class TestEmbeddedServer {
 				// } catch (IOException ex) {
 				// LogHelper.log(ex);
 				// }
-//				properties.setProperty(SSLAcceptor.ARG_PROTOCOL, "TLSv1.2");
+				// properties.setProperty(SSLAcceptor.ARG_PROTOCOL, "TLSv1.2");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTORETYPE, "JKS");
 				properties.setProperty(SSLAcceptor.ARG_CLIENTAUTH, "false");
 				properties.setProperty(SSLAcceptor.ARG_KEYSTOREPASS, "password");
@@ -256,7 +255,7 @@ public final class TestEmbeddedServer {
 					} catch (InterruptedException ex) {
 						// ignore me!
 					} finally {
-						LogHelper.log("Serve running:" + webServer.isRunning());
+						LogHelper.log("Serve Running:" + webServer.isRunning());
 					}
 				}
 			}.start();
@@ -272,7 +271,7 @@ public final class TestEmbeddedServer {
 						Status result = webServer.serve();
 						webServer.log("Error running server! Error code:" + result);
 					} finally {
-						LogHelper.log("Serve running:" + webServer.isRunning());
+						LogHelper.log("Serve Running:" + webServer.isRunning());
 					}
 				}
 			}.start();

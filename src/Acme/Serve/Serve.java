@@ -980,15 +980,9 @@ public class Serve implements ServletContext, Serializable {
 		try {
 			while (isRunning()) {
 				try {
-					Socket socket = acceptor.accept();
+					final Socket socket = acceptor.accept();
 					// TODO consider to use ServeConnection object pool
 					// TODO consider req/resp objects pooling
-					if (socket instanceof SSLSocket) {
-						String[] enabledCipherSuites = ((SSLSocket) socket).getEnabledCipherSuites();
-						log("enabledCipherSuites:" + IOHelper.toString(enabledCipherSuites));
-						String[] enabledProtocols = ((SSLSocket) socket).getEnabledProtocols();
-						log("enabledProtocols:" + IOHelper.toString(enabledProtocols));
-					}
 					keepAliveCleaner.addConnection(new ServeConnection(socket, this));
 				} catch (IOException ex) {
 					log("TJWS: Accept: " + ex);
@@ -2136,8 +2130,8 @@ public class Serve implements ServletContext, Serializable {
 		private Socket socket;
 		private Hashtable sslAttributes;
 		private Serve serve;
-		private ServletInputStream in;
-		private ServletOutputStream out;
+		private ServletInputStream inputStream;
+		private ServletOutputStream outputStream;
 		private String scheme;
 		private AsyncCallback asyncMode;
 		private Thread requestThread;
@@ -2175,8 +2169,8 @@ public class Serve implements ServletContext, Serializable {
 		private Hashtable resHeaderNames = new Hashtable();
 		private String[] postCache;
 		private boolean headersWritten;
-		private MessageFormat accessFmt;
-		private Object[] logPlaceholders;
+		private MessageFormat accessLogFormat;
+		private Object[] logPlaceHolders;
 		
 		// TODO consider creation an instance per thread in a pool, thread
 		// memory can be used
@@ -2199,6 +2193,7 @@ public class Serve implements ServletContext, Serializable {
 		
 		// / Constructor.
 		public ServeConnection(Socket socket, Serve serve) {
+			LogHelper.log("ServeConnection(" + socket + ", " + serve + ")");
 			// serve.log("+++++++"+this);
 			// Save arguments.
 			this.socket = socket;
@@ -2209,12 +2204,24 @@ public class Serve implements ServletContext, Serializable {
 			asciiDateFmt.setTimeZone(tz);
 			if (serve.isAccessLogged()) {
 				// note format string must be not null
-				accessFmt = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
-				logPlaceholders = new Object[12];
+				accessLogFormat = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
+				logPlaceHolders = new Object[12];
 			}
 			try {
-				in = new ServeInputStream(socket.getInputStream(), this);
-				out = new ServeOutputStream(socket.getOutputStream(), this);
+				// start handshake
+				if (this.socket instanceof SSLSocket) {
+					final SSLSocket sslSocket = ((SSLSocket) this.socket);
+					LogHelper.log("EnabledCipherSuites:" + IOHelper.toString(sslSocket.getEnabledCipherSuites()));
+					sslSocket.setEnabledCipherSuites(sslSocket.getEnabledCipherSuites());
+					LogHelper.log("EnabledProtocols:" + IOHelper.toString(sslSocket.getEnabledProtocols()));
+					sslSocket.setEnabledProtocols(sslSocket.getEnabledProtocols());
+					LogHelper.log("startHandshake() ...");
+					sslSocket.startHandshake();
+				}
+				
+				// initialize streams
+				inputStream = new ServeInputStream(socket.getInputStream(), this);
+				outputStream = new ServeOutputStream(socket.getOutputStream(), this);
 			} catch (IOException ex) {
 				serve.log(ex);
 				close();
@@ -2269,14 +2276,14 @@ public class Serve implements ServletContext, Serializable {
 				if (pw != null) {
 					pw.flush();
 				} else {
-					out.flush();
+					outputStream.flush();
 				}
 			} catch (IOException io1) {
 				ioe = io1;
 			}
 			
 			try {
-				out.close();
+				outputStream.close();
 			} catch (IOException io1) {
 				if (ioe != null) {
 					ioe = (IOException) ioe.initCause(io1);
@@ -2285,7 +2292,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 			try {
-				in.close();
+				inputStream.close();
 			} catch (IOException io1) {
 				if (ioe != null) {
 					ioe = (IOException) ioe.initCause(io1);
@@ -2371,8 +2378,8 @@ public class Serve implements ServletContext, Serializable {
 				asyncMode = null;
 			}
 			requestThread = Thread.currentThread();
-			((ServeInputStream) in).refresh();
-			out = new ServeOutputStream(socket.getOutputStream(), this);
+			((ServeInputStream) inputStream).refresh();
+			outputStream = new ServeOutputStream(socket.getOutputStream(), this);
 			// stream can be still used asyncronously, so
 			// ((ServeOutputStream) out).refresh();
 		}
@@ -2397,9 +2404,9 @@ public class Serve implements ServletContext, Serializable {
 						return;
 					}
 					
-					finalizerequest();
+					finalizeRequest();
 					if (websocketUpgrade) {
-						out.flush();
+						outputStream.flush();
 						try {
 							serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 							return;
@@ -2409,25 +2416,25 @@ public class Serve implements ServletContext, Serializable {
 						}
 					}
 				} while (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse());
-			} catch (IOException ioe) {
-				serve.log(ioe);
-				// System.err.println("Drop "+ioe);
-				if (ioe instanceof SocketTimeoutException) {
-					// serve.log("Keepalive timeout, async " + asyncMode, null);
+			} catch (IOException ex) {
+				/* TODO - Print if required in future. */
+				// serve.log(ioe);
+				if (ex instanceof SocketTimeoutException) {
+					serve.log("Keepalive timeout, asyncMode:" + asyncMode, ex);
 				} else {
-					String errMsg = ioe.getMessage();
-					if ((errMsg == null || errMsg.indexOf("ocket closed") < 0) && ioe instanceof java.nio.channels.AsynchronousCloseException == false) {
+					String errMsg = ex.getMessage();
+					if ((errMsg == null || errMsg.indexOf("ocket closed") < 0) && ex instanceof java.nio.channels.AsynchronousCloseException == false) {
 						if (socket != null) {
-							serve.log("TJWS: IO error: " + ioe + " in processing a request " + (reqUriPathUn == null ? "(NULL)" : reqUriPathUn) + " from " + socket.getInetAddress() + ":" + socket.getLocalPort() + " / " + socket.getClass().getName());
+							serve.log("TJWS: IO error: " + ex + " in processing a request " + (reqUriPathUn == null ? "(NULL)" : reqUriPathUn) + " from " + socket.getInetAddress() + ":" + socket.getLocalPort() + " / " + socket.getClass().getName());
 						} else {
-							serve.log("TJWS: IO error: " + ioe + "(socket NULL)");
+							serve.log("TJWS: IO error: " + ex + "(socket NULL)");
 						}
 					} else {
 						synchronized (this) {
 							socket = null;
 						}
 					}
-				} // ioe.printStackTrace();
+				}
 			} finally {
 				if (asyncMode == null && !websocketUpgrade) {
 					close();
@@ -2448,7 +2455,7 @@ public class Serve implements ServletContext, Serializable {
 			lastWait = System.currentTimeMillis();
 			// Read the first line of the request.
 			socket.setSoTimeout(serve.timeoutKeepAlive);
-			len = in.readLine(lineBytes, 0, lineBytes.length);
+			len = inputStream.readLine(lineBytes, 0, lineBytes.length);
 			if (len <= 0) {
 				if (keepAlive) {
 					keepAlive = false;
@@ -2490,7 +2497,7 @@ public class Serve implements ServletContext, Serializable {
 						
 						// Read the rest of the lines.
 						String lineSegment;
-						while ((lineSegment = ((ServeInputStream) in).readLine(HTTP_MAX_HDR_LEN)) != null) {
+						while ((lineSegment = ((ServeInputStream) inputStream).readLine(HTTP_MAX_HDR_LEN)) != null) {
 							// serve.log("H>"+s);
 							if (lineSegment.length() == 0) {
 								break;
@@ -2558,7 +2565,7 @@ public class Serve implements ServletContext, Serializable {
 			// TDOD check if reqUriPathUn starts with http://host:port
 			if (CHUNKED.equalsIgnoreCase(getHeader(TRANSFERENCODING))) {
 				setHeader(CONTENTLENGTH, null);
-				((ServeInputStream) in).chunking(true);
+				((ServeInputStream) inputStream).chunking(true);
 			}
 			String contentEncoding = extractEncodingFromContentType(getHeader(CONTENTTYPE));
 			// TODO: encoding in request can be invalid, then do default
@@ -2566,7 +2573,7 @@ public class Serve implements ServletContext, Serializable {
 			String contentLength = getHeader(CONTENTLENGTH);
 			if (contentLength != null) {
 				try {
-					((ServeInputStream) in).setContentLength(Long.parseLong(contentLength));
+					((ServeInputStream) inputStream).setContentLength(Long.parseLong(contentLength));
 				} catch (NumberFormatException nfe) {
 					serve.log("TJWS: Invalid value of input content-length: " + contentLength);
 				}
@@ -2576,7 +2583,7 @@ public class Serve implements ServletContext, Serializable {
 			// been moved here
 			String encoding = getHeader(CONTENT_ENCODING);
 			if (encoding != null) {
-				if ((encoding.equalsIgnoreCase("gzip") || encoding.equalsIgnoreCase("compressed")) && null != serve.gzipInStreamConstr && ((ServeInputStream) in).compressed(true)) {
+				if ((encoding.equalsIgnoreCase("gzip") || encoding.equalsIgnoreCase("compressed")) && null != serve.gzipInStreamConstr && ((ServeInputStream) inputStream).compressed(true)) {
 				} else {
 					problem("Status-Code 415: Unsupported media type:" + encoding, SC_UNSUPPORTED_MEDIA_TYPE);
 					return;
@@ -2627,7 +2634,11 @@ public class Serve implements ServletContext, Serializable {
 			}
 		}
 		
-		private void finalizerequest() throws IOException {
+		/**
+		 * 
+		 * @throws IOException
+		 */
+		private void finalizeRequest() throws IOException {
 			if (reqMethod != null && serve.isAccessLogged()) {
 				// TODO avoid hardcoded indecies, give them name as LOG_IP = 0,
 				// LOG_IDENT = 1, LOG_REMOTE_USER = 2
@@ -2635,25 +2646,24 @@ public class Serve implements ServletContext, Serializable {
 				// {0} {1} {2} [{3,date,dd/MMM/yyyy:HH:mm:ss Z}] \"{4} {5} {6}\"
 				// {7,number,#} {8,number} {9} {10}
 				// ARG_ACCESS_LOG_FMT
-				logPlaceholders[0] = socket.getInetAddress(); // IP
-				logPlaceholders[1] = "-"; // the RFC 1413 identity of the
-				// client, TODO get it from BASIC
-				// auth
-				logPlaceholders[2] = remoteUser == null ? "-" : remoteUser; // remote
+				logPlaceHolders[0] = socket.getInetAddress(); // IP
+				logPlaceHolders[1] = "-"; // the RFC 1413 identity of the
+				// client, TODO get it from BASIC auth
+				logPlaceHolders[2] = remoteUser == null ? "-" : remoteUser; // remote
 				// user
-				logPlaceholders[3] = new Date(lastRun); // time stamp
-				// {3,date,dd/MMM/yyyy:HH:mm:ss
-				// Z} {3,time,}
-				logPlaceholders[4] = reqMethod; // method
-				logPlaceholders[5] = reqUriPathUn; // resource
-				logPlaceholders[6] = reqProtocol; // protocol
-				logPlaceholders[7] = new Integer(resCode); // res code
-				logPlaceholders[8] = new Long(((ServeOutputStream) out).lengthWritten());
-				logPlaceholders[9] = new Integer(socket.getLocalPort());
-				logPlaceholders[10] = serve.isShowReferer() ? getHeader("Referer") : "-";
-				logPlaceholders[11] = serve.isShowUserAgent() ? getHeader("User-Agent") : "-";
-				serve.logStream.println(accessFmt.format(logPlaceholders));
+				logPlaceHolders[3] = new Date(lastRun); // time stamp
+				// {3,date,dd/MMM/yyyy:HH:mm:ss Z} {3,time,}
+				logPlaceHolders[4] = reqMethod; // method
+				logPlaceHolders[5] = reqUriPathUn; // resource
+				logPlaceHolders[6] = reqProtocol; // protocol
+				logPlaceHolders[7] = new Integer(resCode); // res code
+				logPlaceHolders[8] = new Long(((ServeOutputStream) outputStream).lengthWritten());
+				logPlaceHolders[9] = new Integer(socket.getLocalPort());
+				logPlaceHolders[10] = serve.isShowReferer() ? getHeader("Referer") : "-";
+				logPlaceHolders[11] = serve.isShowUserAgent() ? getHeader("User-Agent") : "-";
+				serve.logStream.println(accessLogFormat.format(logPlaceHolders));
 			}
+			
 			if (!websocketUpgrade) {
 				lastRun = 0;
 				timesRequested++;
@@ -2803,7 +2813,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public void setInInclude(boolean set) {
-			((ServeOutputStream) out).setInInclude(set);
+			((ServeOutputStream) outputStream).setInInclude(set);
 		}
 		
 		public void spawnAsync(AsyncCallback setAsync) {
@@ -2828,7 +2838,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			try {
-				finalizerequest();
+				finalizeRequest();
 				if (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse()) {
 					serve.threadPool.executeThread(this);
 				} else {
@@ -3313,14 +3323,14 @@ public class Serve implements ServletContext, Serializable {
 		// @exception IllegalStateException if getReader has already been called
 		// @exception IOException on other I/O-related errors
 		public ServletInputStream getInputStream() throws IOException {
-			synchronized (in) {
-				if (((ServeInputStream) in).isReturnedAsReader()) {
+			synchronized (inputStream) {
+				if (((ServeInputStream) inputStream).isReturnedAsReader()) {
 					throw new IllegalStateException("Already returned as a reader.");
 				}
-				((ServeInputStream) in).setReturnedAsStream(true);
+				((ServeInputStream) inputStream).setReturnedAsStream(true);
 			}
 			
-			return in;
+			return inputStream;
 		}
 		
 		// / Returns a buffered reader for reading request data.
@@ -3330,16 +3340,16 @@ public class Serve implements ServletContext, Serializable {
 		// called
 		// @exception IOException on other I/O-related errors
 		public BufferedReader getReader() {
-			synchronized (in) {
-				if (((ServeInputStream) in).isReturnedAsStream()) {
+			synchronized (inputStream) {
+				if (((ServeInputStream) inputStream).isReturnedAsStream()) {
 					throw new IllegalStateException("Already returned as a stream.");
 				}
-				((ServeInputStream) in).setReturnedAsReader(true);
+				((ServeInputStream) inputStream).setReturnedAsReader(true);
 			}
 			
 			if (charEncoding != null) {
 				try {
-					return new BufferedReader(new InputStreamReader(in, charEncoding));
+					return new BufferedReader(new InputStreamReader(inputStream, charEncoding));
 				} catch (UnsupportedEncodingException ex) {
 					if (LogHelper.isLogEnabled()) {
 						serve.log(ex);
@@ -3347,7 +3357,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 			
-			return new BufferedReader(new InputStreamReader(in));
+			return new BufferedReader(new InputStreamReader(inputStream));
 		}
 		
 		private Map assureParametersFromRequest() {
@@ -3784,11 +3794,11 @@ public class Serve implements ServletContext, Serializable {
 		
 		// / Returns an output stream for writing response data.
 		public ServletOutputStream getOutputStream() {
-			synchronized (out) {
+			synchronized (outputStream) {
 				if (rout == null) {
 					if (pw != null)
 						throw new IllegalStateException("Already returned as a writer");
-					rout = out;
+					rout = outputStream;
 				}
 			}
 			return rout;
@@ -3803,15 +3813,15 @@ public class Serve implements ServletContext, Serializable {
 		// @exception IllegalStateException if getOutputStream has been called
 		// @exception IOException on other I/O errors
 		public PrintWriter getWriter() throws IOException {
-			synchronized (out) {
+			synchronized (outputStream) {
 				if (pw == null) {
 					if (rout != null)
 						throw new IllegalStateException("Already was returned as servlet output stream");
 					String encoding = getCharacterEncoding();
 					if (encoding != null)
-						pw = new PrintWriter(new OutputStreamWriter(out, encoding));
+						pw = new PrintWriter(new OutputStreamWriter(outputStream, encoding));
 					else
-						pw = new PrintWriter(out);
+						pw = new PrintWriter(outputStream);
 				}
 			}
 			return pw;
@@ -3866,7 +3876,7 @@ public class Serve implements ServletContext, Serializable {
 		
 		// 2.2 - do not use buffer
 		public void flushBuffer() throws java.io.IOException {
-			((ServeOutputStream) out).flush();
+			((ServeOutputStream) outputStream).flush();
 		}
 		
 		/**
@@ -3877,7 +3887,7 @@ public class Serve implements ServletContext, Serializable {
 		 * @since 2.3
 		 */
 		public void resetBuffer() {
-			((ServeOutputStream) out).reset();
+			((ServeOutputStream) outputStream).reset();
 			synchronized (this) {
 				// TODO check if stream was flushed
 				headersWritten = false;
@@ -3885,11 +3895,11 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public int getBufferSize() {
-			return ((ServeOutputStream) out).getBufferSize();
+			return ((ServeOutputStream) outputStream).getBufferSize();
 		}
 		
 		public void setBufferSize(int size) {
-			((ServeOutputStream) out).setBufferSize(size);
+			((ServeOutputStream) outputStream).setBufferSize(size);
 		}
 		
 		/**
@@ -3902,7 +3912,7 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		// a caller should think about syncronization
 		public boolean isCommitted() {
-			return headersWritten && ((ServeOutputStream) out).lengthWritten() > 0;
+			return headersWritten && ((ServeOutputStream) outputStream).lengthWritten() > 0;
 		}
 		
 		/**
@@ -3924,7 +3934,7 @@ public class Serve implements ServletContext, Serializable {
 				resHeaderNames.clear();
 				pw = null;
 				rout = null;
-				((ServeOutputStream) out).reset();
+				((ServeOutputStream) outputStream).reset();
 				assureHeaders();
 			} else {
 				throw new IllegalStateException("Header have already been committed.");
@@ -4430,19 +4440,19 @@ public class Serve implements ServletContext, Serializable {
 			if (reqMime) {
 				boolean chunked_out = false;
 				long contentLen = -1;
-				if (resMessage.length() < 256)
-					out.println(reqProtocol + " " + resCode + " " + resMessage.replace('\r', '/').replace('\n', '/'));
-				else
-					out.println(reqProtocol + " " + resCode + " " + resMessage.substring(0, 255).replace('\r', '/').replace('\n', '/'));
+				if (resMessage.length() < 256) {
+					outputStream.println(reqProtocol + " " + resCode + " " + resMessage.replace('\r', '/').replace('\n', '/'));
+				} else {
+					outputStream.println(reqProtocol + " " + resCode + " " + resMessage.substring(0, 255).replace('\r', '/').replace('\n', '/'));
+				}
 				Enumeration he = resHeaderNames.keys();
 				while (he.hasMoreElements()) {
 					String name = (String) he.nextElement();
-					if (CONNECTION.equals(name) || KEEPALIVE.equals(name)) // skip
-																			 // header
-																			 // until
-																			 // make
-																			 // decision
+					// skip header until make decision
+					if (CONNECTION.equals(name) || KEEPALIVE.equals(name)) {
 						continue;
+					}
+					
 					Object o = resHeaderNames.get(name);
 					if (o instanceof String) {
 						String value = (String) o;
@@ -4466,7 +4476,7 @@ public class Serve implements ServletContext, Serializable {
 									} catch (NumberFormatException nfe) {
 									}
 							} else
-								out.println(name + ": " + value);
+								outputStream.println(name + ": " + value);
 							if (chunked_out == false)
 								if (TRANSFERENCODING.equals(name) && CHUNKED.equals(value))
 									chunked_out = true;
@@ -4475,15 +4485,16 @@ public class Serve implements ServletContext, Serializable {
 						String[] values = (String[]) o;
 						if ("set-cookie".equals(name)) {
 							for (int i = 0; i < values.length; i++) {
-								out.print(name);
-								out.print(": ");
-								out.println(values[i]);
+								outputStream.print(name);
+								outputStream.print(": ");
+								outputStream.println(values[i]);
 							}
 						} else {
-							out.print(name + ": " + values[0]);
-							for (int i = 1; i < values.length; i++)
-								out.print("," + values[i]);
-							out.println();
+							outputStream.print(name + ": " + values[0]);
+							for (int i = 1; i < values.length; i++) {
+								outputStream.print("," + values[i]);
+							}
+							outputStream.println();
 						}
 					}
 				}
@@ -4591,11 +4602,11 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 				if (sb != null) {
-					out.println(sb.toString());
+					outputStream.println(sb.toString());
 					// System.err.println("We sent cookies: " + sb);
 				}
 				if (sb2 != null) {
-					out.println(sb2.toString());
+					outputStream.println(sb2.toString());
 					// System.err.println("We sent cookies 2: " + sb2);
 				}
 				if (!websocketUpgrade)
@@ -4604,7 +4615,7 @@ public class Serve implements ServletContext, Serializable {
 						if (contentLen < 0)
 							if (serve.isKeepAlive() && oneOne) {
 								if ((resCode != SC_NO_CONTENT && !"HEAD".equals(reqMethod)) || resCode != SC_NOT_MODIFIED) {
-									out.println(TRANSFERENCODING + ": " + CHUNKED);
+									outputStream.println(TRANSFERENCODING + ": " + CHUNKED);
 									chunked_out = true;
 								}
 							} else {
@@ -4613,26 +4624,27 @@ public class Serve implements ServletContext, Serializable {
 								setHeader(KEEPALIVE, null);
 							}
 						else {
-							out.print(CONTENTLENGTH);
-							out.print(": ");
-							out.println(String.valueOf(contentLen));
+							outputStream.print(CONTENTLENGTH);
+							outputStream.print(": ");
+							outputStream.println(String.valueOf(contentLen));
 						}
 					}
 				// process keep alive headers
 				Object o = resHeaderNames.get(CONNECTION);
 				if (o instanceof String) {
-					out.println(CONNECTION + ": " + o);
+					outputStream.println(CONNECTION + ": " + o);
 				}
 				o = resHeaderNames.get(KEEPALIVE);
 				if (o instanceof String) {
-					out.println(KEEPALIVE + ": " + o);
+					outputStream.println(KEEPALIVE + ": " + o);
 				}
-				out.println();
-				out.flush();
-				if (resCode == SC_NO_CONTENT || resCode == SC_NOT_MODIFIED || "HEAD".equals(reqMethod))
-					out.close();
-				else
-					((ServeOutputStream) out).setChunked(chunked_out);
+				outputStream.println();
+				outputStream.flush();
+				if (resCode == SC_NO_CONTENT || resCode == SC_NOT_MODIFIED || "HEAD".equals(reqMethod)) {
+					outputStream.close();
+				} else {
+					((ServeOutputStream) outputStream).setChunked(chunked_out);
+				}
 			}
 		}
 		
@@ -4720,8 +4732,8 @@ public class Serve implements ServletContext, Serializable {
 				setHeader(CONNECTION, "close");
 				setHeader(KEEPALIVE, null);
 			}
-			out.print(sendContent.toString());
-			out.close();
+			outputStream.print(sendContent.toString());
+			outputStream.close();
 		}
 		
 		// URL rewriting
@@ -4894,23 +4906,23 @@ public class Serve implements ServletContext, Serializable {
 		/**
 		 * The actual input stream (buffered).
 		 */
-		private InputStream in, origIn;
+		private InputStream inStream, origInStream;
 		private ServeConnection serveConnection;
 		private int chunksize = 0;
 		private boolean chunking = false, compressed;
 		private boolean returnedAsReader, returnedAsStream;
 		private long contentLength = -1;
 		private long readCount;
-		private byte[] oneReadBuf = new byte[1];
+		private byte[] oneReadBuffer = new byte[1];
 		private boolean closed;
 		
 		/* ------------------------------------------------------------ */
 		/**
 		 * Constructor
 		 */
-		public ServeInputStream(InputStream in, ServeConnection serveConnection) {
+		public ServeInputStream(InputStream inStream, final ServeConnection serveConnection) {
 			this.serveConnection = serveConnection;
-			this.in = in;
+			this.inStream = inStream;
 		}
 		
 		void refresh() {
@@ -4936,14 +4948,14 @@ public class Serve implements ServletContext, Serializable {
 		boolean compressed(boolean on) {
 			if (on) {
 				if (compressed == false) {
-					origIn = in;
+					origInStream = inStream;
 					try {
-						ServeInputStream sis = new ServeInputStream(in, serveConnection);
+						ServeInputStream serveInputStream = new ServeInputStream(inStream, serveConnection);
 						if (chunking) {
-							sis.chunking(true);
+							serveInputStream.chunking(true);
 							chunking(false);
 						}
-						in = (InputStream) serveConnection.serve.gzipInStreamConstr.newInstance(new Object[] { sis });
+						inStream = (InputStream) serveConnection.serve.gzipInStreamConstr.newInstance(new Object[] { serveInputStream });
 						compressed = true;
 						// conn.serve.log("Compressed stream was created with
 						// success",
@@ -4958,7 +4970,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 			} else if (compressed) {
 				compressed = false;
-				in = origIn;
+				inStream = origInStream;
 			}
 			
 			return compressed;
@@ -4998,7 +5010,7 @@ public class Serve implements ServletContext, Serializable {
 			int c;
 			boolean newLine = false;
 			int i = 0;
-			while ((c = in.read()) != -1) {
+			while ((c = inStream.read()) != -1) {
 				if (c == 10) { // LF
 					if (newLine) {
 						break;
@@ -5038,9 +5050,9 @@ public class Serve implements ServletContext, Serializable {
 		 * @see java.io.InputStream#read()
 		 */
 		public int read() throws IOException {
-			int result = read(oneReadBuf, 0, 1);
+			int result = read(oneReadBuffer, 0, 1);
 			if (result == 1) {
-				return 255 & oneReadBuf[0];
+				return 255 & oneReadBuffer[0];
 			}
 			
 			return -1;
@@ -5060,7 +5072,7 @@ public class Serve implements ServletContext, Serializable {
 		 * 
 		 * @see java.io.InputStream#read(byte[], int, int)
 		 */
-		public synchronized int read(byte b[], int off, int len) throws IOException {
+		public synchronized int read(byte[] dataBytes, int offset, int length) throws IOException {
 			if (closed) {
 				throw new IOException("The stream is already closed");
 			}
@@ -5069,11 +5081,11 @@ public class Serve implements ServletContext, Serializable {
 				if (chunksize <= 0 && getChunkSize() <= 0) {
 					return -1;
 				}
-				if (len > chunksize) {
-					len = chunksize;
+				if (length > chunksize) {
+					length = chunksize;
 				}
-				len = in.read(b, off, len);
-				chunksize = (len < 0) ? -1 : (chunksize - len);
+				length = inStream.read(dataBytes, offset, length);
+				chunksize = (length < 0) ? -1 : (chunksize - length);
 			} else {
 				if (contentLength >= 0) {
 					if (readCount >= contentLength) {
@@ -5083,25 +5095,25 @@ public class Serve implements ServletContext, Serializable {
 						return -1;
 					}
 					
-					if (contentLength - len < readCount) {
-						len = (int) (contentLength - readCount);
+					if (contentLength - length < readCount) {
+						length = (int) (contentLength - readCount);
 					}
 					
-					len = in.read(b, off, len);
-					if (len > 0) {
-						readCount += len;
+					length = inStream.read(dataBytes, offset, length);
+					if (length > 0) {
+						readCount += length;
 					}
 				} else {
 					// to avoid extra if
-					len = in.read(b, off, len);
+					length = inStream.read(dataBytes, offset, length);
 				}
 			}
 			
-			if (STREAM_DEBUG && len > 0) {
-				System.err.print(new String(b, off, len));
+			if (STREAM_DEBUG && length > 0) {
+				System.err.print(new String(dataBytes, offset, length));
 			}
 			
-			return len;
+			return length;
 		}
 		
 		/* ------------------------------------------------------------ */
@@ -5121,7 +5133,7 @@ public class Serve implements ServletContext, Serializable {
 				if (length > chunksize) {
 					length = chunksize;
 				}
-				length = in.skip(length);
+				length = inStream.skip(length);
 				chunksize = (length < 0) ? -1 : (chunksize - (int) length);
 			} else {
 				if (contentLength >= 0) {
@@ -5129,10 +5141,10 @@ public class Serve implements ServletContext, Serializable {
 					if (length <= 0) {
 						return -1;
 					}
-					length = in.skip(length);
+					length = inStream.skip(length);
 					readCount += length;
 				} else {
-					length = in.skip(length);
+					length = inStream.skip(length);
 				}
 			}
 			
@@ -5155,7 +5167,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			if (chunking) {
-				int len = in.available();
+				int len = inStream.available();
 				if (len <= chunksize) {
 					return len;
 				}
@@ -5163,14 +5175,14 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			if (contentLength >= 0) {
-				int len = in.available();
+				int len = inStream.available();
 				if (contentLength - readCount < Integer.MAX_VALUE) {
 					return Math.min(len, (int) (contentLength - readCount));
 				}
 				
 				return len;
 			} else {
-				return in.available();
+				return inStream.available();
 			}
 		}
 		
@@ -5206,7 +5218,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			if (serveConnection.keepAlive == false) {
-				in.close();
+				inStream.close();
 			}
 			closed = true;
 		}
@@ -5227,11 +5239,13 @@ public class Serve implements ServletContext, Serializable {
 			 */
 		public void reset() throws IOException {
 			// no buffering, so not possible
-			if (closed)
+			if (closed) {
 				throw new IOException("The stream is already closed");
-			if (STREAM_DEBUG)
+			}
+			if (STREAM_DEBUG) {
 				System.err.println("instream.reset()");
-			in.reset();
+			}
+			inStream.reset();
 		}
 		
 		/* ------------------------------------------------------------ */
