@@ -164,21 +164,11 @@ public class SSLAcceptor implements Acceptor {
 	}
 	
 	/**
-	 * 
-	 * @param mapProperties
-	 * @param key
-	 * @return
-	 */
-	private String getPropertyString(Map mapProperties, final String key) {
-		return (String) mapProperties.get(key);
-	}
-	
-	/**
 	 * Initialize the SSL server socket.
 	 * 
 	 * @see Acme.Serve.Serve.Acceptor#init(java.util.Map, java.util.Map)
 	 */
-	public void init(Map inProperties, Map outProperties) throws IOException {
+	public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		// Create the proxy and return
 		SSLServerSocketFactory sslSocketFactory = initSSLContext(inProperties, outProperties).getServerSocketFactory();
 		int port = Utils.parseInt(inProperties.get(ARG_PORT), Utils.parseInt(inProperties.get(Serve.ARG_PORT), PORT));
@@ -215,7 +205,7 @@ public class SSLAcceptor implements Acceptor {
 	 * @return
 	 * @throws IOException
 	 */
-	protected SSLContext initSSLContext(Map inProperties, Map outProperties) throws IOException {
+	protected SSLContext initSSLContext(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		// init keystore
 		KeyStore keyStore = null;
 		InputStream keyStoreStream = null;

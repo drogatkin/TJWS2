@@ -34,7 +34,6 @@
 
 package javax.servlet;
 
-import java.util.*;
 import javax.servlet.annotation.HttpConstraint;
 import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
@@ -60,7 +59,8 @@ public class HttpConstraintElement {
 	/**
 	 * Convenience constructor to establish <tt>EmptyRoleSemantic.DENY</tt>
 	 *
-	 * @param semantic should be EmptyRoleSemantic.DENY
+	 * @param semantic
+	 *            should be EmptyRoleSemantic.DENY
 	 */
 	public HttpConstraintElement(EmptyRoleSemantic semantic) {
 		this(semantic, TransportGuarantee.NONE, new String[0]);
@@ -70,9 +70,11 @@ public class HttpConstraintElement {
 	 * Constructor to establish non-empty getRolesAllowed and/or
 	 * <tt>TransportGuarantee.CONFIDENTIAL</tt>.
 	 *
-	 * @param guarantee <tt>TransportGuarantee.NONE</tt> or
+	 * @param guarantee
+	 *            <tt>TransportGuarantee.NONE</tt> or
 	 *            <tt>TransportGuarantee.CONFIDENTIAL</tt>
-	 * @param roleNames the names of the roles that are to be
+	 * @param roleNames
+	 *            the names of the roles that are to be
 	 *            allowed access
 	 */
 	public HttpConstraintElement(TransportGuarantee guarantee, String... roleNames) {
@@ -83,15 +85,17 @@ public class HttpConstraintElement {
 	 * Constructor to establish all of getEmptyRoleSemantic,
 	 * getRolesAllowed, and getTransportGuarantee.
 	 *
-	 * @param semantic <tt>EmptyRoleSemantic.DENY</tt> or
+	 * @param semantic
+	 *            <tt>EmptyRoleSemantic.DENY</tt> or
 	 *            <tt>EmptyRoleSemantic.PERMIT</tt>
-	 * @param guarantee <tt>TransportGuarantee.NONE</tt> or
+	 * @param guarantee
+	 *            <tt>TransportGuarantee.NONE</tt> or
 	 *            <tt>TransportGuarantee.CONFIDENTIAL<tt>
 	 * &#64;param roleNames the names of the roles that are to be allowed
 	 * access, or missing if the semantic is <tt>EmptyRoleSemantic.DENY</tt>
 	 */
 	public HttpConstraintElement(EmptyRoleSemantic semantic, TransportGuarantee guarantee, String... roleNames) {
-		if(semantic == EmptyRoleSemantic.DENY && roleNames.length > 0) {
+		if (semantic == EmptyRoleSemantic.DENY && roleNames.length > 0) {
 			throw new IllegalArgumentException("Deny semantic with rolesAllowed");
 		}
 		this.emptyRoleSemantic = semantic;

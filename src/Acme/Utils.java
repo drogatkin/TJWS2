@@ -97,7 +97,7 @@ public class Utils {
 	/**
 	 * EMPTY_ENUMERATION
 	 */
-	public static final Enumeration EMPTY_ENUMERATION = new Enumeration() {
+	public static final Enumeration<Object> EMPTY_ENUMERATION = new Enumeration<Object>() {
 		public boolean hasMoreElements() {
 			return false;
 		}
@@ -172,7 +172,7 @@ public class Utils {
 	 * @return
 	 * @throws IOException
 	 */
-	public static Map parsePostData(long length, InputStream inputStream, String encoding, String[] cachedStream) throws IOException {
+	public static Map<?, ?> parsePostData(long length, InputStream inputStream, String encoding, String[] cachedStream) throws IOException {
 		// TODO: handle parsing data over 2 GB
 		if (length > Integer.MAX_VALUE) {
 			throw new RuntimeException("Can't process POST data over " + Integer.MAX_VALUE + ", requested: " + length);
@@ -489,8 +489,8 @@ public class Utils {
 					++p;
 					for (i = string.length(); i >= s; --i)
 						if (match(pattern.substring(p), string.substring(i))) // not
-																				 // quite
-																				 // right
+																				// quite
+																				// right
 							return true;
 					break;
 				}
@@ -503,29 +503,37 @@ public class Utils {
 		}
 	}
 	
-	// / Finds the maximum length of a string that matches a given wildcard
-	// pattern. Only does ? and *, and multiple patterns separated by |.
+	/*
+	 * Finds the maximum length of a string that matches a given wildcard
+	 * pattern. Only does ? and *, and multiple patterns separated by |.
+	 */
 	public static int matchSpan(String pattern, String string) {
 		int result = 0;
-		StringTokenizer st = new StringTokenizer(pattern, "|");
-		
-		while (st.hasMoreTokens()) {
-			int len = matchSpan1(st.nextToken(), string);
-			if (len > result)
-				result = len;
+		final StringTokenizer stringTokenizer = new StringTokenizer(pattern, "|");
+		while (stringTokenizer.hasMoreTokens()) {
+			final int length = matchSpan1(stringTokenizer.nextToken(), string);
+			if (length > result) {
+				result = length;
+			}
 		}
+		
 		return result;
 	}
 	
 	static int matchSpan1(String pattern, String string) {
 		int p = 0;
 		for (; p < string.length() && p < pattern.length(); p++) {
-			if (pattern.charAt(p) == string.charAt(p))
+			if (pattern.charAt(p) == string.charAt(p)) {
 				continue;
-			if (pattern.charAt(p) == '*')
+			}
+			
+			if (pattern.charAt(p) == '*') {
 				return p - 1;
+			}
+			
 			return 0;
 		}
+		
 		return p < (pattern.length() - 1) ? -1 : p;
 	}
 	
@@ -535,8 +543,10 @@ public class Utils {
 		StringTokenizer st = new StringTokenizer(str);
 		int n = st.countTokens();
 		String[] strs = new String[n];
-		for (int i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i) {
 			strs[i] = st.nextToken();
+		}
+		
 		return strs;
 	}
 	
@@ -548,8 +558,9 @@ public class Utils {
 		int index = -1;
 		while (true) {
 			index = str.indexOf(delim, index + 1);
-			if (index == -1)
+			if (index == -1) {
 				break;
+			}
 			++n;
 		}
 		String[] strs = new String[n];
@@ -600,6 +611,7 @@ public class Utils {
 				}
 			}
 		}
+		
 		if (argStart > 0) {
 			result = copyOf(result, result.length + 1);
 			result[result.length - 1] = new String(ca, argStart, ca.length - argStart);
@@ -710,49 +722,54 @@ public class Utils {
 	public static long copyStream(InputStream in, OutputStream out, long maxLen) throws IOException {
 		byte[] buf = new byte[COPY_BUF_SIZE];
 		int len;
-		long tot = 0;
-		if (maxLen <= 0)
+		long total = 0;
+		if (maxLen <= 0) {
 			while ((len = in.read(buf)) > 0) {
 				out.write(buf, 0, len);
-				tot += len;
+				total += len;
 			}
-		else
-			while ((len = in.read(buf)) > 0)
+		} else {
+			while ((len = in.read(buf)) > 0) {
 				if (len <= maxLen) {
 					out.write(buf, 0, len);
 					maxLen -= len;
-					tot += len;
+					total += len;
 				} else {
 					out.write(buf, 0, (int) maxLen);
-					tot += maxLen;
+					total += maxLen;
 					break;
 				}
-		return tot;
+			}
+		}
+		
+		return total;
 	}
 	
 	// / Copy the input to the output until EOF.
 	public static void copyStream(Reader in, Writer out) throws IOException {
 		char[] buf = new char[COPY_BUF_SIZE];
 		int len;
-		while ((len = in.read(buf)) != -1)
+		while ((len = in.read(buf)) != -1) {
 			out.write(buf, 0, len);
+		}
 	}
 	
 	// / Copy the input to the output until EOF.
 	public static void copyStream(Reader in, OutputStream out, String charSet) throws IOException {
 		char[] buf = new char[4096];
 		int len;
-		if (charSet == null)
+		if (charSet == null) {
 			while ((len = in.read(buf)) != -1) {
 				out.write(new String(buf, 0, len).getBytes());
 			}
-		else
-			while ((len = in.read(buf)) != -1)
+		} else {
+			while ((len = in.read(buf)) != -1) {
 				out.write(new String(buf, 0, len).getBytes(charSet));
+			}
+		}
 	}
 	
-	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-			'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+	protected final static char BASE64ARRAY[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
 	
 	/**
 	 * base 64 encoding, string converted to bytes using specified encoding
@@ -777,8 +794,8 @@ public class Utils {
 		
 		try {
 			return base64Encode(_s.getBytes(_enc));
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 		
 		return null;
@@ -814,8 +831,9 @@ public class Utils {
 				if (i >= _bytes.length) {
 					b3 = 0;
 					pad = 1;
-				} else
+				} else {
 					b3 = (0xFF & _bytes[i++]);
+				}
 			}
 			byte c1 = (byte) (b1 >> 2);
 			byte c2 = (byte) (((b1 & 0x3) << 4) | (b2 >> 4));
@@ -834,6 +852,7 @@ public class Utils {
 					break;
 			}
 		}
+		
 		return encodedBuffer.toString();
 	}
 	
@@ -842,39 +861,39 @@ public class Utils {
 	 * negative number indicating some other meaning.
 	 */
 	protected final static byte[] DECODABET = { -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
-																					 // 0
-																					 // -
-																					 // 8
-			-5, -5, // Whitespace: Tab and Linefeed
-			-9, -9, // Decimal 11 - 12
-			-5, // Whitespace: Carriage Return
-			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
-																 // 14 -
-			// 26
-			-9, -9, -9, -9, -9, // Decimal 27 - 31
-			-5, // Whitespace: Space
-			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
-			62, // Plus sign at decimal 43
-			-9, -9, -9, // Decimal 44 - 46
-			63, // Slash at decimal 47
-			52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero
-													 // through nine
-			-9, -9, -9, // Decimal 58 - 60
-			-1, // Equals sign at decimal 61
-			-9, -9, -9, // Decimal 62 - 64
-			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
-			// through 'N'
-			14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters
-															 // 'O'
-			// through 'Z'
-			-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
-			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters
-																 // 'a'
-			// through 'm'
-			39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters
-																 // 'n'
-			// through 'z'
-			-9, -9, -9, -9 // Decimal 123 - 126
+																					// 0
+																					// -
+																					// 8
+					-5, -5, // Whitespace: Tab and Linefeed
+					-9, -9, // Decimal 11 - 12
+					-5, // Whitespace: Carriage Return
+					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal
+																		// 14 -
+					// 26
+					-9, -9, -9, -9, -9, // Decimal 27 - 31
+					-5, // Whitespace: Space
+					-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
+					62, // Plus sign at decimal 43
+					-9, -9, -9, // Decimal 44 - 46
+					63, // Slash at decimal 47
+					52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero
+															// through nine
+					-9, -9, -9, // Decimal 58 - 60
+					-1, // Equals sign at decimal 61
+					-9, -9, -9, // Decimal 62 - 64
+					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A'
+					// through 'N'
+					14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters
+																	// 'O'
+					// through 'Z'
+					-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
+					26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters
+																		// 'a'
+					// through 'm'
+					39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters
+																		// 'n'
+					// through 'z'
+					-9, -9, -9, -9 // Decimal 123 - 126
 	};
 	
 	// Indicates white space in encoding
@@ -1029,8 +1048,9 @@ public class Utils {
 						b4Posn = 0;
 						
 						// If that was the equals sign, break out of 'for' loop
-						if (sbiCrop == EQUALS_SIGN)
+						if (sbiCrop == EQUALS_SIGN) {
 							break;
+						}
 					} // end if: quartet built
 					
 				} // end if: equals sign or better
@@ -1114,38 +1134,43 @@ public class Utils {
 	 *            class loader
 	 * @return class path in string
 	 */
-	static public String calculateClassPath(ClassLoader cl) {
+	static public String calculateClassPath(ClassLoader classLoader) {
 		// scan cl chain to find
 		StringBuffer classPath = new StringBuffer();
 		boolean jspFound = false, servletFound = false;
-		while (cl != null) {
-			if (cl instanceof URLClassLoader) {
+		while (classLoader != null) {
+			if (classLoader instanceof URLClassLoader) {
 				boolean addClasses = false;
 				if (jspFound == false) {
-					jspFound = ((URLClassLoader) cl).findResource("javax/servlet/jsp/JspPage.class") != null;
+					jspFound = ((URLClassLoader) classLoader).findResource("javax/servlet/jsp/JspPage.class") != null;
 					addClasses |= jspFound;
 				}
 				if (servletFound == false) {
-					servletFound = ((URLClassLoader) cl).findResource("javax/servlet/http/HttpServlet.class") != null;
+					servletFound = ((URLClassLoader) classLoader).findResource("javax/servlet/http/HttpServlet.class") != null;
 					addClasses |= servletFound;
 				}
 				if (addClasses) {
-					URL[] urls = ((URLClassLoader) cl).getURLs();
+					URL[] urls = ((URLClassLoader) classLoader).getURLs();
 					for (int i = 0; i < urls.length; i++) {
 						String classFile = toFile(urls[i]);
-						if (classFile == null)
+						if (classFile == null) {
 							continue;
-						if (classPath.length() > 0)
+						}
+						if (classPath.length() > 0) {
 							classPath.append(File.pathSeparatorChar).append(classFile);
-						else
+						} else {
 							classPath.append(classFile);
+						}
 					}
 				}
-				if (jspFound && servletFound)
+				
+				if (jspFound && servletFound) {
 					return classPath.toString();
+				}
 			}
-			cl = cl.getParent();
+			classLoader = classLoader.getParent();
 		}
+		
 		return System.getProperty("java.class.path");
 	}
 	
@@ -1552,9 +1577,7 @@ public class Utils {
 	 * @param sslParameters
 	 */
 	public static String toString(final SSLParameters sslParameters) {
-		return (sslParameters == null ? ""
-				: new StringBuilder("SSLParameters - CipherSuites:").append(IOHelper.toString(sslParameters.getCipherSuites())).append(", Protocols:").append(IOHelper.toString(sslParameters.getProtocols())).append(", WantClientAuth:").append(sslParameters.getWantClientAuth())
-						.append(", NeedClientAuth:").append(sslParameters.getNeedClientAuth()).toString());
+		return (sslParameters == null ? "" : new StringBuilder("SSLParameters - CipherSuites:").append(IOHelper.toString(sslParameters.getCipherSuites())).append(", Protocols:").append(IOHelper.toString(sslParameters.getProtocols())).append(", WantClientAuth:").append(sslParameters.getWantClientAuth()).append(", NeedClientAuth:").append(sslParameters.getNeedClientAuth()).toString());
 	}
 	
 	public static void main(String[] args) {

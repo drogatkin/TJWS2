@@ -25,6 +25,7 @@
  * $Id: SimpleAcceptor.java,v 1.9 2012/08/16 02:50:15 dmitriy Exp $
  * Created on Jun 12, 2007
  * @author dmitriy
+ * @author Rohtash Singh Lakra
  */
 package Acme.Serve;
 
@@ -37,23 +38,38 @@ import java.util.Map;
 
 import com.rslakra.logger.LogManager;
 
+import Acme.IOHelper;
+
+/**
+ * SimpleAcceptor.java
+ */
 public class SimpleAcceptor implements Serve.Acceptor {
 	
+	/** socket */
+	private ServerSocket socket;
+	
+	/**
+	 * @see Acme.Serve.Serve.Acceptor#accept()
+	 */
 	public Socket accept() throws IOException {
 		return socket.accept();
 	}
 	
+	/**
+	 * @see Acme.Serve.Serve.Acceptor#destroy()
+	 */
 	public void destroy() throws IOException {
-		if (socket == null)
-			throw new IOException("Socket already destroyed");
-		try {
-			socket.close();
-		} finally {
-			socket = null;
+		if (socket == null) {
+			throw new IOException("Socket already destroyed!");
 		}
+		
+		IOHelper.safeClose(socket, true);
 	}
 	
-	public void init(Map inProperties, Map outProperties) throws IOException {
+	/**
+	 * @see Acme.Serve.Serve.Acceptor#init(java.util.Map, java.util.Map)
+	 */
+	public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue() : Serve.DEF_PORT;
 		String bindAddrStr = (String) inProperties.get(Serve.ARG_BINDADDRESS);
 		LogManager.debug("bindAddrStr:" + bindAddrStr);
@@ -84,9 +100,10 @@ public class SimpleAcceptor implements Serve.Acceptor {
 		}
 	}
 	
+	/**
+	 * @see java.lang.Object#toString()
+	 */
 	public String toString() {
-		return "SimpleAcceptor " + socket;
+		return "SimpleAcceptor - " + (socket != null ? socket.toString() : "Uninitialized!");
 	}
-	
-	private ServerSocket socket;
 }

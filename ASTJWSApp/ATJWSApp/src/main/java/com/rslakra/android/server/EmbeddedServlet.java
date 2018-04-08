@@ -32,8 +32,8 @@ package com.rslakra.android.server;
 
 import android.content.Context;
 
-import com.rslakra.android.logger.LogHelper;
 import com.rslakra.android.atjwsapp.TJWSApp;
+import com.rslakra.android.logger.LogHelper;
 
 import java.io.IOException;
 
@@ -120,7 +120,8 @@ public final class EmbeddedServlet extends HttpServlet {
                 LogHelper.d(LOG_TAG, "dataBytes:\n" + IOHelper.toUTF8String(dataBytes) + "\n");
                 IOHelper.sendResponse(IOHelper.CONTENT_TYPE_HTML, dataBytes, servletResponse);
             } else if(pathSegment.endsWith("favicon.ico")) {
-                IOHelper.sendResponse(IOHelper.CONTENT_TYPE_ICON, IOHelper.readFavIconBytes(), servletResponse);
+                dataBytes = IOHelper.readIconBytes(LogHelper.readAssets(mContext, "icon.png"));
+                IOHelper.sendResponse(IOHelper.CONTENT_TYPE_ICON, dataBytes, servletResponse);
             } else if(pathSegment.endsWith(".js")) {
                 if(pathSegment.startsWith("/")) {
                     pathSegment = pathSegment.substring(1);

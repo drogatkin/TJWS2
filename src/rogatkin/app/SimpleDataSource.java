@@ -106,47 +106,44 @@ import org.xml.sax.InputSource;
  * 
  */
 public class SimpleDataSource extends ObjectPool<Connection> implements DataSource {
+	
 	public final static String RW_ISVALID = "isValid";
-	
 	public final static String RW_ISCLOSED = "isClosed";
-	
 	public final static String CP_DEFAULT = "application";
-	
 	protected final static int DEFAULT_CAPACITY = 20;
-	
 	protected Properties dataSourceProperties, conectionProperties;
-	
 	protected Driver driver;
-	
 	private int capacity;
-	
 	private PrintWriter logWriter;
-	
 	private Method connectionValidateMethod;
-	
 	private String validateQuery;
+	private boolean appClassPath;
 	
-	private boolean appCP;
-	
-	public SimpleDataSource(String definitionPropertiesLocation, ClassLoader appCL) {
+	/**
+	 * 
+	 * @param definitionPropertiesLocation
+	 * @param classLoader
+	 */
+	public SimpleDataSource(String definitionPropertiesLocation, ClassLoader classLoader) {
 		super(new ArrayBlockingQueue<Connection>(DEFAULT_CAPACITY));
 		logWriter = new PrintWriter(System.out);
 		InputStream propertiesStream = null;
-		File f = new File(definitionPropertiesLocation);
+		File file = new File(definitionPropertiesLocation);
 		try {
-			if (f.exists())
-				propertiesStream = new FileInputStream(f);
-			else {
+			if (file.exists()) {
+				propertiesStream = new FileInputStream(file);
+			} else {
 				propertiesStream = new URL(definitionPropertiesLocation).openStream();
 			}
 			dataSourceProperties = new Properties();
-			if (definitionPropertiesLocation.toLowerCase().endsWith("context.xml"))
+			if (definitionPropertiesLocation.toLowerCase().endsWith("context.xml")) {
 				contextToProperties(propertiesStream);
-			else if (definitionPropertiesLocation.toLowerCase().endsWith(".xml"))
+			} else if (definitionPropertiesLocation.toLowerCase().endsWith(".xml")) {
 				dataSourceProperties.loadFromXML(propertiesStream);
-			else
+			} else {
 				dataSourceProperties.load(propertiesStream);
-			init(appCL);
+			}
+			init(classLoader);
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException(e);
 		} catch (MalformedURLException e) {
@@ -156,14 +153,20 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 		} catch (Exception e) {
 			throw new IllegalArgumentException(e);
 		} finally {
-			if (propertiesStream != null)
+			if (propertiesStream != null) {
 				try {
 					propertiesStream.close();
 				} catch (IOException e) {
 				}
+			}
 		}
 	}
 	
+	/**
+	 * 
+	 * @param classLoader
+	 * @throws Exception
+	 */
 	protected void init(ClassLoader classLoader) throws Exception {
 		String classPath = dataSourceProperties.getProperty("driver-class-path");
 		if (classPath == null) {
@@ -172,31 +175,36 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 			// true, classLoader);
 			// else
 			String driverClass = dataSourceProperties.getProperty("driver-class");
-			if (driverClass == null)
+			if (driverClass == null) {
 				return; // no data source
+			}
 			Class.forName(driverClass);
 			driver = DriverManager.getDriver(dataSourceProperties.getProperty("url"));
 		} else {
 			String[] classPaths = classPath.split(File.pathSeparator);
 			URL[] urls = new URL[classPaths.length];
-			for (int i = 0; i < urls.length; i++)
+			for (int i = 0; i < urls.length; i++) {
 				urls[i] = new URL("file:" + classPaths[i]);
+			}
 			if (CP_DEFAULT.equalsIgnoreCase(classPath)) {
 				driver = (Driver) Class.forName(dataSourceProperties.getProperty("driver-class"), true, classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader).newInstance();
-				appCP = true;
-			} else
+				appClassPath = true;
+			} else {
 				driver = (Driver) Class.forName(dataSourceProperties.getProperty("driver-class"), true, classLoader = new URLClassLoader(urls, DriverManager.class.getClassLoader())).newInstance();
+			}
 		}
 		conectionProperties = new Properties();
 		if (dataSourceProperties.getProperty("user") != null) {
 			conectionProperties.setProperty("user", dataSourceProperties.getProperty("user"));
-			if (dataSourceProperties.getProperty("password") != null)
+			if (dataSourceProperties.getProperty("password") != null) {
 				conectionProperties.setProperty("password", dataSourceProperties.getProperty("password"));
+			}
 		}
 		try {
 			setTimeout(Integer.parseInt(dataSourceProperties.getProperty("access-timeout")));
 		} catch (Exception e) {
 		}
+		
 		try {
 			capacity = Integer.parseInt(dataSourceProperties.getProperty("pool-size"));
 			this.pool = new ArrayBlockingQueue<Connection>(capacity, true);
@@ -206,12 +214,16 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 		}
 		validateQuery = dataSourceProperties.getProperty("prob-query");
 		String conValClass = dataSourceProperties.getProperty("exception-handler");
-		if (conValClass != null)
+		if (conValClass != null) {
 			connectionValidateMethod = (classLoader == null ? Class.forName(conValClass) : Class.forName(conValClass, true, classLoader)).getMethod("validate", SQLException.class, Connection.class);
+		}
+		
 		String jndiName = dataSourceProperties.getProperty("jndi-name");
 		if (jndiName != null) {
-			if (jndiName.startsWith("jdbc/"))
+			if (jndiName.startsWith("jdbc/")) {
 				jndiName = "java:comp/env/" + jndiName;
+			}
+			
 			InitialContext ic = new InitialContext();
 			try {
 				ic.lookup(jndiName);
@@ -237,7 +249,7 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 	}
 	
 	public boolean isScopeApp() {
-		return appCP;
+		return appClassPath;
 	}
 	
 	private Connection getValidated() {
@@ -248,35 +260,39 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 			try {
 				if (validateQuery.equals(RW_ISVALID))
 					try {
-						if ((Boolean) result.getClass().getMethod("isValid", int.class).invoke(10))
+						if ((Boolean) result.getClass().getMethod("isValid", int.class).invoke(10)) {
 							return result;
-						else
-							;
-					} catch (Exception e) {
-						e.printStackTrace();
+						}
+					} catch (Exception ex) {
+						ex.printStackTrace();
 					}
 				else if (validateQuery.equals(RW_ISCLOSED)) {
-					if (result.isClosed() == false)
+					if (result.isClosed() == false) {
 						return result;
+					}
 				} else {
-					// TODO it can be reasonable to execute the query in a
-					// thread and join in millis
-					// because dropped connection can hung a query
+					/*
+					 * TODO it can be reasonable to execute the query in a
+					 * thread and join in millis
+					 * because dropped connection can hung a query
+					 */
 					statement = result.createStatement();
 					statement.execute(validateQuery);
 					return result;
 				}
-			} catch (SQLException e) {
-				log("Discarding connection %s because %s%n", null, result, e);
+			} catch (SQLException ex) {
+				log("Discarding connection %s because %s%n", null, result, ex);
 			} finally {
-				if (statement != null)
+				if (statement != null) {
 					try {
 						statement.close();
 					} catch (SQLException e) {
 					}
+				}
 			}
 			remove(result);
 		} while (bad);
+		
 		throw new IllegalStateException();
 	}
 	
@@ -303,23 +319,34 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 		setTimeout(timeout);
 	}
 	
-	public boolean isWrapperFor(Class<?> cl) throws SQLException {
-		return DataSource.class.equals(cl) || ObjectPool.class.equals(cl);
+	public boolean isWrapperFor(Class<?> _class) throws SQLException {
+		return DataSource.class.equals(_class) || ObjectPool.class.equals(_class);
 	}
 	
-	public <T> T unwrap(Class<T> arg0) throws SQLException {
-		if (isWrapperFor(arg0))
+	public <T> T unwrap(Class<T> _class) throws SQLException {
+		if (isWrapperFor(_class)) {
 			return (T) this;
+		}
+		
 		return null;
 	}
 	
+	/**
+	 * 
+	 * @param message
+	 * @param ex
+	 * @param args
+	 */
 	protected void log(String message, Throwable ex, Object... args) {
-		if (args == null || args.length == 0)
+		if (args == null || args.length == 0) {
 			logWriter.write(message + "\n"); // ?? lineSeparator?
-		else
+		} else {
 			logWriter.write(String.format(message, args));
-		if (ex != null)
+		}
+		if (ex != null) {
 			ex.printStackTrace(logWriter);
+		}
+		
 		logWriter.flush();
 	}
 	
@@ -330,12 +357,13 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 			unwrapped = (Connection) obj.getClass().getMethod("unwrap", Class.class).invoke(obj, Connection.class);
 			unwrapped.close();
 		} catch (Exception e) {// e.printStackTrace();
-			if (unwrapped == null)
+			if (unwrapped == null) {
 				try {
 					obj.close();
 				} catch (SQLException e1) {
 					// e1.printStackTrace();
 				}
+			}
 		}
 	}
 	
@@ -355,11 +383,12 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 			// System.err.println("Cause*********"+se+" instance sql:"+(se
 			// instanceof SQLException));
 			try {
-				if (se instanceof SQLException && connectionValidateMethod.invoke(null, se, conn).equals(Boolean.FALSE))
+				if (se instanceof SQLException && connectionValidateMethod.invoke(null, se, conn).equals(Boolean.FALSE)) {
 					remove(conn);
+				}
 			} catch (InvocationTargetException e) {
-				
 			}
+			
 			return se;
 		}
 		return ite.getCause();
@@ -380,114 +409,146 @@ public class SimpleDataSource extends ObjectPool<Connection> implements DataSour
 		Node document = (Node) xp.evaluate("/Context", new InputSource(contextXmlStream), XPathConstants.NODE);
 		NodeList nodes = (NodeList) xp.evaluate("Resource", document, XPathConstants.NODESET);
 		int nodesLen = nodes.getLength();
-		if (nodesLen > 1)
+		if (nodesLen > 1) {
 			throw new IllegalArgumentException("Only one resource is supported");
+		}
+		
 		for (int p = 0; p < nodesLen; p++) {
 			NamedNodeMap attrs = nodes.item(p).getAttributes();
 			Node metadataAttr = attrs.getNamedItem("name");
 			dataSourceProperties.setProperty("jndi-name", "java:comp/env/" + metadataAttr.getTextContent());
 			metadataAttr = attrs.getNamedItem("type");
-			if ("javax.sql.DataSource".equals(metadataAttr.getTextContent()) == false)
+			if ("javax.sql.DataSource".equals(metadataAttr.getTextContent()) == false) {
 				throw new IllegalArgumentException("Only SQL data sources are supported");
+			}
+			
 			metadataAttr = attrs.getNamedItem("auth");
 			metadataAttr = attrs.getNamedItem("username");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("user", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("password");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("password", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("driverClassName");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("driver-class", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("url");
-			if (metadataAttr == null)
+			if (metadataAttr == null) {
 				throw new IllegalArgumentException("Data source URL is required");
+			}
+			
 			dataSourceProperties.setProperty("url", metadataAttr.getTextContent());
 			metadataAttr = attrs.getNamedItem("driverClassPath");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("driver-class-path", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("validationQuery");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("prob-query", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("maxActive");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("pool-size", metadataAttr.getTextContent());
+			}
+			
 			metadataAttr = attrs.getNamedItem("maxIdle");
-			if (metadataAttr != null)
+			if (metadataAttr != null) {
 				dataSourceProperties.setProperty("pool-shrink-size", metadataAttr.getTextContent());
+			}
 		}
 	}
 	
 	class ConnectionWrapperHandler implements InvocationHandler {
 		
-		private Connection realConn;
+		/* realConnection */
+		private Connection realConnection;
 		
-		ConnectionWrapperHandler(Connection conn) {
-			realConn = conn;
+		ConnectionWrapperHandler(Connection realConnection) {
+			this.realConnection = realConnection;
 		}
 		
 		public Object invoke(final Object proxyConn, Method methd, Object[] params) throws Throwable {
-			if (realConn == null)
+			if (realConnection == null) {
 				throw new SQLException("The connection is closed");
+			}
+			
 			if (methd.getName().equals("close")) {
 				// log("Closing %s%n", null, proxyConn);
-				if (realConn.getAutoCommit() == false)
+				if (realConnection.getAutoCommit() == false) {
 					try {
-						realConn.rollback();
+						realConnection.rollback();
 					} catch (SQLException se) {
 						
 					}
-				put(realConn);
-				realConn = null;
-			} else if (methd.getName().equals("unwrap")) // &&
-				return realConn;
-			else if (methd.getName().equals("isWrapperFor"))
-				return ((Class) params[0]).isInstance(realConn);
-			else if (methd.getName().equals("equals"))
+				}
+				
+				put(realConnection);
+				realConnection = null;
+			} else if (methd.getName().equals("unwrap")) { // &&
+				return realConnection;
+			} else if (methd.getName().equals("isWrapperFor")) {
+				return ((Class<?>) params[0]).isInstance(realConnection);
+			} else if (methd.getName().equals("equals")) {
 				return proxyConn == params[0];
-			else {
+			} else {
 				try {
-					final Object realStmt = methd.invoke(realConn, params);
-					if (realStmt instanceof Statement == false)
+					final Object realStmt = methd.invoke(realConnection, params);
+					if (realStmt instanceof Statement == false) {
 						return realStmt;
+					}
+					
 					// wrap statement
-					return Proxy.newProxyInstance(realStmt.getClass().getClassLoader(), Wrapper != null ? new Class[] { CallableStatement.class, PreparedStatement.class, Statement.class, Wrapper } : new Class[] { CallableStatement.class, PreparedStatement.class, Statement.class },
-							new InvocationHandler() {
-								public Object invoke(final Object proxyStmt, Method methd, Object[] params) throws Throwable {
-									if (methd.getName().equals("getConnection")) {
-										return proxyConn;
-									} else if (methd.getName().equals("unwrap"))
-										return realStmt; // real statement
-									else if (methd.getName().equals("isWrapperFor"))
-										return ((Class) params[0]).isInstance(realStmt);
-									try {
-										final Object realRS = methd.invoke(realStmt, params);
-										if (realRS instanceof ResultSet == false)
-											return realRS;
-										return Proxy.newProxyInstance(realRS.getClass().getClassLoader(), Wrapper != null ? new Class[] { RowSet.class, ResultSet.class, Wrapper } : new Class[] { RowSet.class, ResultSet.class }, new InvocationHandler() {
-											public Object invoke(final Object proxyRS, Method methd, Object[] params) throws Throwable {
-												if (methd.getName().equals("getStatement")) {
-													return proxyStmt;
-												} else if (methd.getName().equals("unwrap"))
-													return realRS; // resultset
-												else if (methd.getName().equals("isWrapperFor"))
-													return ((Class) params[0]).isInstance(realRS);
-												try {
-													return methd.invoke(realRS, params);
-												} catch (InvocationTargetException ite) {
-													throw processException(ite, realConn, (Connection) proxyConn);
-												}
-											}
-										});
-									} catch (InvocationTargetException ite) {
-										throw processException(ite, realConn, (Connection) proxyConn);
-									}
+					return Proxy.newProxyInstance(realStmt.getClass().getClassLoader(), Wrapper != null ? new Class[] { CallableStatement.class, PreparedStatement.class, Statement.class, Wrapper } : new Class[] { CallableStatement.class, PreparedStatement.class, Statement.class }, new InvocationHandler() {
+						public Object invoke(final Object proxyStmt, Method methd, Object[] params) throws Throwable {
+							if (methd.getName().equals("getConnection")) {
+								return proxyConn;
+							} else if (methd.getName().equals("unwrap")) {
+								return realStmt; // real statement
+							} else if (methd.getName().equals("isWrapperFor")) {
+								return ((Class<?>) params[0]).isInstance(realStmt);
+							}
+							
+							try {
+								final Object realRS = methd.invoke(realStmt, params);
+								if (realRS instanceof ResultSet == false) {
+									return realRS;
 								}
-							});
+								
+								return Proxy.newProxyInstance(realRS.getClass().getClassLoader(), Wrapper != null ? new Class[] { RowSet.class, ResultSet.class, Wrapper } : new Class[] { RowSet.class, ResultSet.class }, new InvocationHandler() {
+									public Object invoke(final Object proxyRS, Method methd, Object[] params) throws Throwable {
+										if (methd.getName().equals("getStatement")) {
+											return proxyStmt;
+										} else if (methd.getName().equals("unwrap")) {
+											return realRS; // resultset
+										} else if (methd.getName().equals("isWrapperFor")) {
+											return ((Class<?>) params[0]).isInstance(realRS);
+										}
+										
+										try {
+											return methd.invoke(realRS, params);
+										} catch (InvocationTargetException ite) {
+											throw processException(ite, realConnection, (Connection) proxyConn);
+										}
+									}
+								});
+							} catch (InvocationTargetException ite) {
+								throw processException(ite, realConnection, (Connection) proxyConn);
+							}
+						}
+					});
 				} catch (InvocationTargetException ite) {
-					throw processException(ite, realConn, (Connection) proxyConn);
+					throw processException(ite, realConnection, (Connection) proxyConn);
 				}
 			}
+			
 			return null;
 		}
 	}

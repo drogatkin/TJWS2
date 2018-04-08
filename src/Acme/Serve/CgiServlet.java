@@ -91,7 +91,7 @@ public class CgiServlet extends HttpServlet {
 			res.sendError(HttpServletResponse.SC_NOT_FOUND);
 	}
 	
-	private void serveFile(HttpServletRequest req, HttpServletResponse res, String path) throws IOException {
+	private void serveFile(HttpServletRequest req, HttpServletResponse response, String path) throws IOException {
 		String queryString = req.getQueryString();
 		int contentLength = req.getContentLength();
 		int c;
@@ -99,11 +99,13 @@ public class CgiServlet extends HttpServlet {
 		log("running " + path + "?" + queryString);
 		
 		// Make argument list.
-		String argList[] = (path + (queryString != null && queryString.indexOf("=") == -1 ? "+" + queryString : ""))
-				.split("\\+"); /* 1.4 */
+		String argList[] = (path + (queryString != null && queryString.indexOf("=") == -1 ? "+" + queryString : "")).split("\\+"); /*
+																																	 * 1.
+																																	 * 4
+																																	 */
 		
 		// Make environment list.
-		Vector envVec = new Vector();
+		Vector<String> envVec = new Vector<String>();
 		envVec.addElement(makeEnv("PATH", "/usr/local/bin:/usr/ucb:/bin:/usr/bin"));
 		envVec.addElement(makeEnv("GATEWAY_INTERFACE", "CGI/1.1"));
 		envVec.addElement(makeEnv("SERVER_SOFTWARE", getServletContext().getServerInfo()));
@@ -112,28 +114,38 @@ public class CgiServlet extends HttpServlet {
 		envVec.addElement(makeEnv("REMOTE_ADDR", req.getRemoteAddr()));
 		envVec.addElement(makeEnv("REMOTE_HOST", req.getRemoteHost()));
 		envVec.addElement(makeEnv("REQUEST_METHOD", req.getMethod()));
-		if (contentLength != -1)
+		if (contentLength != -1) {
 			envVec.addElement(makeEnv("CONTENT_LENGTH", Integer.toString(contentLength)));
-		if (req.getContentType() != null)
+		}
+		
+		if (req.getContentType() != null) {
 			envVec.addElement(makeEnv("CONTENT_TYPE", req.getContentType()));
+		}
 		envVec.addElement(makeEnv("SCRIPT_NAME", req.getServletPath()));
-		if (req.getPathInfo() != null)
+		if (req.getPathInfo() != null) {
 			envVec.addElement(makeEnv("PATH_INFO", req.getPathInfo()));
-		if (req.getPathTranslated() != null)
+		}
+		if (req.getPathTranslated() != null) {
 			envVec.addElement(makeEnv("PATH_TRANSLATED", req.getPathTranslated()));
-		if (queryString != null)
+		}
+		if (queryString != null) {
 			envVec.addElement(makeEnv("QUERY_STRING", queryString));
+		}
 		envVec.addElement(makeEnv("SERVER_PROTOCOL", req.getProtocol()));
-		if (req.getRemoteUser() != null)
+		if (req.getRemoteUser() != null) {
 			envVec.addElement(makeEnv("REMOTE_USER", req.getRemoteUser()));
-		if (req.getAuthType() != null)
+		}
+		if (req.getAuthType() != null) {
 			envVec.addElement(makeEnv("AUTH_TYPE", req.getAuthType()));
-		Enumeration hnEnum = req.getHeaderNames();
-		while (hnEnum.hasMoreElements()) {
-			String name = (String) hnEnum.nextElement();
+		}
+		
+		Enumeration<String> enumHeaders = req.getHeaderNames();
+		while (enumHeaders.hasMoreElements()) {
+			String name = (String) enumHeaders.nextElement();
 			String value = req.getHeader(name);
-			if (value == null)
+			if (value == null) {
 				value = "";
+			}
 			envVec.addElement(makeEnv("HTTP_" + name.toUpperCase().replace('-', '_'), value));
 		}
 		String envList[] = makeList(envVec);
@@ -149,24 +161,27 @@ public class CgiServlet extends HttpServlet {
 				InputStream reqIn = req.getInputStream();
 				for (int i = 0; i < contentLength; ++i) {
 					c = reqIn.read();
-					if (c == -1)
+					if (c == -1) {
 						break;
+					}
 					procOut.write(c);
 				}
 				procOut.close();
 			}
 			
 			// Now read the response from the process.
-			OutputStream resOut = res.getOutputStream();
+			OutputStream resOut = response.getOutputStream();
 			// Some of the headers have to be intercepted and handled.
 			boolean firstLine = true;
 			while (true) {
 				String line = procIn.readLine();
-				if (line == null)
+				if (line == null) {
 					break;
+				}
 				line = line.trim();
-				if (line.equals(""))
+				if (line.equals("")) {
 					break;
+				}
 				int colon = line.indexOf(":");
 				if (colon == -1) {
 					// No colon. If it's the first line, parse it for status.
@@ -176,11 +191,11 @@ public class CgiServlet extends HttpServlet {
 							switch (tok.countTokens()) {
 								case 2:
 									tok.nextToken();
-									res.setStatus(Integer.parseInt(tok.nextToken()));
+									response.setStatus(Integer.parseInt(tok.nextToken()));
 									break;
 								case 3:
 									tok.nextToken();
-									res.setStatus(Integer.parseInt(tok.nextToken()), tok.nextToken());
+									response.setStatus(Integer.valueOf(tok.nextToken()), tok.nextToken());
 									break;
 							}
 						} catch (NumberFormatException ignore) {
@@ -197,34 +212,34 @@ public class CgiServlet extends HttpServlet {
 						try {
 							switch (tok.countTokens()) {
 								case 1:
-									res.setStatus(Integer.parseInt(tok.nextToken()));
+									response.setStatus(Integer.parseInt(tok.nextToken()));
 									break;
 								case 2:
-									res.setStatus(Integer.parseInt(tok.nextToken()), tok.nextToken());
+									response.setStatus(Integer.parseInt(tok.nextToken()), tok.nextToken());
 									break;
 							}
 						} catch (NumberFormatException ignore) {
 						}
 					} else if (name.equalsIgnoreCase("Content-type")) {
-						res.setContentType(value);
+						response.setContentType(value);
 					} else if (name.equalsIgnoreCase("Content-length")) {
 						try {
-							res.setContentLength(Integer.parseInt(value));
+							response.setContentLength(Integer.parseInt(value));
 						} catch (NumberFormatException ignore) {
 						}
 					} else if (name.equalsIgnoreCase("Location")) {
-						res.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
-						res.setHeader(name, value);
+						response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+						response.setHeader(name, value);
 					} else if (name.equalsIgnoreCase(Serve.ServeConnection.SETCOOKIE)) {
 						int x = value.indexOf("=");
 						if (x > 0) {
 							String n = value.substring(0, x);
 							String v = value.substring(x + 1).trim();
-							res.addCookie(new Cookie(n, v));
+							response.addCookie(new Cookie(n, v));
 						}
 					} else {
 						// Not a special header. Just set it.
-						res.setHeader(name, value);
+						response.setHeader(name, value);
 					}
 				}
 			}
@@ -256,10 +271,12 @@ public class CgiServlet extends HttpServlet {
 		return name + "=" + value;
 	}
 	
-	private static String[] makeList(Vector vec) {
-		String list[] = new String[vec.size()];
-		for (int i = 0; i < vec.size(); ++i)
-			list[i] = (String) vec.elementAt(i);
+	private static String[] makeList(Vector<String> strVector) {
+		String list[] = new String[strVector.size()];
+		for (int i = 0; i < strVector.size(); ++i) {
+			list[i] = (String) strVector.elementAt(i);
+		}
+		
 		return list;
 	}
 	

@@ -40,7 +40,11 @@ import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.rslakra.android.framework.SSLHelper;
 import com.rslakra.android.logger.LogHelper;
+
+import java.io.InputStream;
+import java.security.cert.Certificate;
 
 /**
  * Provides an opportunity to intercept the WebView calls.
@@ -100,7 +104,7 @@ public class TJWSWebViewClient extends WebViewClient {
      * means that onPageStarted will not be called when the contents of an
      * embedded frame changes, i.e. clicking a link whose target is an iframe.
      *
-     * @see android.webkit.WebViewClient#onPageStarted(android.webkit.WebView, java.lang.String, * android.graphics.Bitmap)
+     * @see android.webkit.WebViewClient#onPageStarted(android.webkit.WebView, java.lang.String, android.graphics.Bitmap)
      */
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -143,13 +147,42 @@ public class TJWSWebViewClient extends WebViewClient {
     }
     
     @Override
-    public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-        LogHelper.d(LOG_TAG, "onReceivedSslError(" + view + ", " + handler + ", " + error + ")");
-        if(error != null && error.getUrl() != null && error.getUrl().contains("localhost:9161") && error.getCertificate() != null && "RSLakra Inc.".equals(error.getCertificate().getIssuedBy().getOName())) {
-            // Ignore SSL certificate errors (if this is only for self-signed certificate)
-            handler.proceed();
-        } else {
-            handler.cancel();
+    public void onReceivedSslError(WebView mWebView, SslErrorHandler handler, SslError error) {
+        LogHelper.d(LOG_TAG, "onReceivedSslError(" + mWebView + ", " + handler + ", " + error + ")");
+        try {
+            /**
+             * Ignore SSL certificate errors (if this is only for self-signed certificate)
+             *
+             * The MITM attacks (where the attacker secretly relays and possibly alters the
+             * communication between two parties who believe they are directly communicating with
+             * each other) are not hidden and to handle them seamlessly, the best solution is to
+             * pinning the certificates.
+             *
+             * NOTE: Sadly, SSLError gives us an SslCertificate when you call getCertificate().
+             * SslCertificate is kind of useless. It's public API doesn't allow you to verify the
+             * public key, only the created on, expired date, issued to, issued by, etc..
+             * However, if you open up this class you will see an X509Certificate member variable
+             * that is un-exposed.
+             *
+             * Instead of going into it deep, lets implement the solution. But there is an API for
+             * getting the Bundle, and that X509 Certificate member variable gets stored in there.
+             * So we access it that way, because the Certificate has a lot more useful methods on it.
+             */
+            //            if(error != null && error.getUrl() != null && error.getUrl().contains("localhost") && error.getCertificate() != null && "RSLakra Inc.".equals(error.getCertificate().getIssuedBy().getOName())) {
+            if(error != null && error.getUrl() != null && error.getUrl().contains("localhost")) {
+                InputStream certStream = LogHelper.readAssets(mWebView.getContext(), "client.pem");
+                final Certificate pinnedCertificate = SSLHelper.toCertificate(SSLHelper.loadPEMCertificate(certStream));
+                final Certificate serverCertificate = SSLHelper.toCertificate(error.getCertificate());
+                if(pinnedCertificate.equals(serverCertificate)) {
+                    handler.proceed();
+                } else {
+                    super.onReceivedSslError(mWebView, handler, error);
+                }
+            } else {
+                super.onReceivedSslError(mWebView, handler, error);
+            }
+        } catch(Exception ex) {
+            LogHelper.e(LOG_TAG, ex);
         }
     }
     

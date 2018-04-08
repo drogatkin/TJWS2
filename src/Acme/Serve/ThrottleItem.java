@@ -35,13 +35,17 @@ package Acme.Serve;
 // <A HREF="/resources/classes/Acme.tar.Z">Fetch the entire Acme package.</A>
 public class ThrottleItem {
 	
-	private long maxBps;
+	private final long maxBps;
 	
 	// / Constructor.
 	public ThrottleItem(long maxBps) {
 		this.maxBps = maxBps;
 	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	public long getMaxBps() {
 		return maxBps;
 	}

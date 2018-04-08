@@ -135,7 +135,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 	/**
 	 * @see Acme.Serve.SSLAcceptor#init(java.util.Map, java.util.Map)
 	 */
-	public void init(Map inProperties, Map outProperties) throws IOException {
+	public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		clientAuth = "true".equals(inProperties.get(ARG_CLIENTAUTH));
 		context = initSSLContext(inProperties, outProperties);
 		selector = Selector.open();
@@ -185,7 +185,7 @@ public class SSLSelectorAcceptor extends SSLAcceptor {
 		InputStream inputStream;
 		OutputStream outputStream;
 		
-		protected SSLChannelSocket(Socket socket, SSLEngine sslEngine, ExecutorService exec) throws IOException {
+		protected SSLChannelSocket(final Socket socket, SSLEngine sslEngine, ExecutorService exec) throws IOException {
 			this.socket = socket;
 			setSoTimeout(socketHandshakeTimeout);
 			sslSocketChannel = new SSLSocketChannel(socket.getChannel(), sslEngine, exec, null);

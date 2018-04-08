@@ -13,19 +13,18 @@
 
 package org.apache.jasper.compiler;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.util.StringTokenizer;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.lang.reflect.Method;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.jasper.JasperException;
 import org.apache.juli.logging.Log;
@@ -39,10 +38,8 @@ import org.apache.juli.logging.LogFactory;
 public class BeeCompiler extends Compiler {
 	// must not be static
 	private final Log log = LogFactory.getLog(BeeCompiler.class);
-	
 	protected static Object javacLock = new Object();
-	
-	private Class javaCompiler;
+	private Class<?> javaCompiler;
 	
 	static {
 		System.setErr(new SystemLogHandler(System.err));
@@ -54,8 +51,9 @@ public class BeeCompiler extends Compiler {
 	protected void generateClass(String[] smap) throws FileNotFoundException, JasperException, Exception {
 		
 		long t1 = 0;
-		if (log.isDebugEnabled())
+		if (log.isDebugEnabled()) {
 			t1 = System.currentTimeMillis();
+		}
 		
 		List<String> parameters = new ArrayList<String>(20);
 		parameters.add("-encoding");
@@ -64,10 +62,7 @@ public class BeeCompiler extends Compiler {
 		String javaFileName = new File(ctxt.getServletJavaFileName()).getPath();
 		String classpath = ctxt.getClassPath();
 		
-		String sep = File.pathSeparator; // System.getProperty("path.separator");
-		
 		StringBuffer errorReport = new StringBuffer();
-		
 		StringBuffer info = new StringBuffer();
 		info.append("Compile: javaFileName=" + javaFileName + "\n");
 		
@@ -78,7 +73,7 @@ public class BeeCompiler extends Compiler {
 		String path = System.getProperty("java.class.path");
 		info.append("    cmd cp=" + path + "\n");
 		info.append("    ctx cp=" + classpath + "\n");
-		path += sep;
+		path += File.pathSeparator;
 		path += classpath;
 		
 		if (log.isDebugEnabled())
@@ -263,12 +258,12 @@ public class BeeCompiler extends Compiler {
 		/**
 		 * Thread <-> PrintStream associations.
 		 */
-		protected static ThreadLocal streams = new ThreadLocal();
+		protected static ThreadLocal<PrintStream> streams = new ThreadLocal<PrintStream>();
 		
 		/**
 		 * Thread <-> ByteArrayOutputStream associations.
 		 */
-		protected static ThreadLocal data = new ThreadLocal();
+		protected static ThreadLocal<ByteArrayOutputStream> data = new ThreadLocal<ByteArrayOutputStream>();
 		
 		// --------------------------------------------------------- Public
 		// Methods
@@ -281,9 +276,9 @@ public class BeeCompiler extends Compiler {
 		 * Start capturing thread's output.
 		 */
 		public static void setThread() {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			data.set(baos);
-			streams.set(new PrintStream(baos));
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			data.set(outputStream);
+			streams.set(new PrintStream(outputStream));
 		}
 		
 		/**

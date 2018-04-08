@@ -199,7 +199,7 @@ public class TJWSApp extends Application {
         // initialize logger
         LogHelper.log4jConfigure(getInstance().getLogsFolder(), LogType.DEBUG);
         LogHelper.i(LOG_TAG, "onCreate()");
-        LogManager.setLogLevel(Level.DEBUG);
+//        LogManager.setLogLevel(Level.DEBUG);
         
         // initialize service
         initService();

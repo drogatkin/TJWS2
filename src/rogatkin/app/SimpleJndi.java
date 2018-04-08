@@ -93,9 +93,7 @@ import rogatkin.app.remote.simple_namingPOA;
 
 public class SimpleJndi implements InitialContextFactory {
 	public static final char NAME_SEP_CHAR = '/';
-	
 	public static final String NAME_SEP = "" + NAME_SEP_CHAR; // can be "\\."
-	
 	public static final String NAME_SEP_REGEXP = NAME_SEP;
 	
 	static ORB orb;

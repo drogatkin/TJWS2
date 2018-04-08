@@ -84,7 +84,7 @@ public class Main extends Serve {
 			}
 		}
 		
-		Map arguments = new HashMap(20);
+		Map<Object, Object> arguments = new HashMap<Object, Object>(20);
 		arguments.put(ARG_WORK_DIRECTORY, workPath);
 		// Parse args.
 		// TODO: redesign process of parameters based on a map
@@ -113,8 +113,10 @@ public class Main extends Serve {
 				}
 			} else if (args[argn].equals("-k") && argn + 1 < argc) {
 				++argn;
-				arguments.put(ARG_BACKLOG,
-						args[argn]/* new Integer(args[argn]) */);
+				arguments.put(ARG_BACKLOG, args[argn]/*
+														 * new
+														 * Integer(args[argn])
+														 */);
 			} else if (args[argn].equals("-j") && argn + 1 < argc) {
 				++argn;
 				arguments.put(ARG_JSP, args[argn]);
@@ -210,8 +212,8 @@ public class Main extends Serve {
 					if (arguments.containsKey(name))
 						messages = appendMessage(messages, "Multiple usage of  '-" + name + "'=" + args[++argn] + " ignored\n");
 					else
-						arguments.put(name,// .toUpperCase(),
-								argn < argc - 1 ? args[++argn] : "");
+						arguments.put(name, // .toUpperCase(),
+										argn < argc - 1 ? args[++argn] : "");
 					// System.out.println("Added free
 					// arg:"+args[argn-1]+"="+args[argn]);
 				} else
@@ -319,6 +321,8 @@ public class Main extends Serve {
 							}
 						}
 					} while (true);
+					
+					in.close();
 				} catch (IOException e) {
 					System.err.println("TJWS: Problem reading aliases file: " + arguments.get(ARG_ALIASES) + "/" + e);
 				}
@@ -334,13 +338,16 @@ public class Main extends Serve {
 				if (file.isAbsolute() == false)
 					file = new File(workPath, file.getPath());
 				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-				
 				do {
 					String realmstr = in.readLine();
-					if (realmstr == null)
+					if (realmstr == null) {
 						break;
-					if (realmstr.startsWith("#"))
+					}
+					
+					if (realmstr.startsWith("#")) {
 						continue;
+					}
+					
 					StringTokenizer rt = new StringTokenizer(realmstr, "=,:");
 					if (rt.hasMoreTokens()) {
 						String realmname = null;
@@ -354,14 +361,15 @@ public class Main extends Serve {
 									String password = rt.nextToken();
 									BasicAuthRealm realm = null;
 									Object o[] = realms.get(realmPath);
-									if (o != null && o[0] != null)
+									if (o != null && o[0] != null) {
 										realm = (BasicAuthRealm) o[0];
-									else {
+									} else {
 										realm = new BasicAuthRealm(realmname);
-										if (realmPath.endsWith("/*") == false)
+										if (realmPath.endsWith("/*") == false) {
 											realmPath += "/*";
-										else if (realmPath.endsWith("/"))
+										} else if (realmPath.endsWith("/")) {
 											realmPath += "*";
+										}
 										realms.put(realmPath, realm);
 									}
 									realm.put(user, password);
@@ -370,6 +378,8 @@ public class Main extends Serve {
 						}
 					}
 				} while (true);
+				
+				in.close();
 			} catch (IOException ioe) {
 				System.err.println("TJWS: I/O problem in reading realms file " + arguments.get(ARG_REALMS) + ": " + ioe);
 			}
@@ -494,10 +504,7 @@ public class Main extends Serve {
 	}
 	
 	private static void usage() {
-		System.out.println(Identification.serverName + " " + Identification.serverVersion + "\n" + "Usage:  " + progName + " [-p port] [-s servletpropertiesfile] [-a aliasmappingfile]\n" + "         [-b bind address] [-k backlog] [-l[a][r][f access_log_fmt]]\n"
-				+ "         [-c cgi-bin-dir] [-m max_active_session] [-d log_directory]\n" + "         [-sp] [-j jsp_servlet_class] [-w war_deployment_module_class]\n" + "         [-nka] [-kat timeout_in_secs] [-mka max_times_connection_use]\n"
-				+ "         [-e [-]duration_in_minutes] [-nohup] [-z max_threadpool_size]\n" + "         [-err [class_name?PrintStream]] [-out [class_name?PrintStream]] [-g <rolling threshld>]\n" + "         [-acceptorImpl class_name_of_Accpetor_impl [extra_acceptor_parameters] ]\n" + "  Legend:\n"
-				+ "    -sp    session persistence\n" + "    -l     access log a - with user agent, and r - referer\n" + "    -nka   no keep alive for connection");
+		System.out.println(Identification.serverName + " " + Identification.serverVersion + "\n" + "Usage:  " + progName + " [-p port] [-s servletpropertiesfile] [-a aliasmappingfile]\n" + "         [-b bind address] [-k backlog] [-l[a][r][f access_log_fmt]]\n" + "         [-c cgi-bin-dir] [-m max_active_session] [-d log_directory]\n" + "         [-sp] [-j jsp_servlet_class] [-w war_deployment_module_class]\n" + "         [-nka] [-kat timeout_in_secs] [-mka max_times_connection_use]\n" + "         [-e [-]duration_in_minutes] [-nohup] [-z max_threadpool_size]\n" + "         [-err [class_name?PrintStream]] [-out [class_name?PrintStream]] [-g <rolling threshld>]\n" + "         [-acceptorImpl class_name_of_Accpetor_impl [extra_acceptor_parameters] ]\n" + "  Legend:\n" + "    -sp    session persistence\n" + "    -l     access log a - with user agent, and r - referer\n" + "    -nka   no keep alive for connection");
 		System.exit(1);
 	}
 	
@@ -533,7 +540,7 @@ public class Main extends Serve {
 							serve.log("An exception at stopping " + ts[i] + " " + t);
 					}
 				}
-			}// else
+			} // else
 		// serve.log("Daemon thread "+ts[i].getName()+" is untouched.");
 	}
 	
@@ -600,6 +607,8 @@ public class Main extends Serve {
 						}
 					}
 				} while (true);
+				
+				in.close();
 			} catch (IOException e) {
 				serve.log("IO problem in processing servlets definition file (" + servFile + "): " + e);
 			}

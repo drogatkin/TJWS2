@@ -35,8 +35,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import org.apache.log4j.Level;
-
 import com.rslakra.logger.LogManager;
 
 import Acme.IOHelper;
@@ -145,6 +143,8 @@ public final class TestEmbeddedServer {
 			// setting properties for the server, and exchangeable Acceptors
 			Properties properties = new Properties();
 			properties.setProperty(Serve.ARG_NOHUP, Serve.ARG_NOHUP);
+			/* keepAlive time. */
+//			properties.setProperty(Serve.ARG_MAX_CONN_USE, String.valueOf(100));
 			
 			// log properties
 			properties.setProperty(Serve.ARG_ACCESS_LOG_FMT, "{0} {2} [{3,date,yyyy/MM/dd HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#}");
@@ -309,7 +309,7 @@ public final class TestEmbeddedServer {
 	 * @param args
 	 */
 	public static void main(String... args) {
-//		LogManager.setLogLevel(Level.DEBUG);
+		// LogManager.setLogLevel(Level.DEBUG);
 		// LogManager.debug("TempDir:" + IOHelper.getTempDir());
 		TestEmbeddedServer server = new TestEmbeddedServer();
 		server.initServer(true);

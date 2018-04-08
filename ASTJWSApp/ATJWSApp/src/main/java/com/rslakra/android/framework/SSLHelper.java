@@ -30,6 +30,8 @@
 // https://github.com/rslakra/TJWS2
 package com.rslakra.android.framework;
 
+import android.net.http.SslCertificate;
+import android.os.Bundle;
 import android.util.Base64;
 
 import com.rslakra.android.logger.LogHelper;
@@ -230,6 +232,25 @@ public final class SSLHelper {
         return certBytes;
     }
     
+    /**
+     * Converts the <code>certBytes</code> into <code>Certificate</code> object.
+     *
+     * @param certBytes
+     * @return
+     */
+    public static Certificate toCertificate(final byte[] certBytes) {
+        Certificate mCertificate = null;
+        if(LogHelper.isNotNull(certBytes)) {
+            try {
+                final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+                mCertificate = certificateFactory.generateCertificate(new ByteArrayInputStream(certBytes));
+            } catch(CertificateException ex) {
+                LogHelper.e(LOG_TAG, ex);
+            }
+        }
+        
+        return mCertificate;
+    }
     
     /**
      * Produces a KeyStore from a String containing a PEM certificate (typically, the server's CA certificate)
@@ -240,9 +261,7 @@ public final class SSLHelper {
      */
     public static KeyStore loadPEMTrustStore(final InputStream keyStoreStream) throws Exception {
         byte[] certBytes = loadPEMCertificate(keyStoreStream);
-        final ByteArrayInputStream certBytesStream = new ByteArrayInputStream(certBytes);
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        X509Certificate x509Certificate = (X509Certificate) certificateFactory.generateCertificate(certBytesStream);
+        X509Certificate x509Certificate = (X509Certificate) toCertificate(certBytes);
         LogHelper.d(LOG_TAG, "ca=" + x509Certificate.getSubjectDN());
         final String alias = x509Certificate.getSubjectX500Principal().getName();
         
@@ -251,6 +270,18 @@ public final class SSLHelper {
         trustStore.setCertificateEntry(alias, x509Certificate);
         
         return trustStore;
+    }
+    
+    /**
+     * Converts the <code>SslCertificate</code> to <code>Certificate</code> object.
+     *
+     * @param sslCertificate
+     * @return
+     */
+    public static Certificate toCertificate(final SslCertificate sslCertificate) {
+        final Bundle bundle = sslCertificate.saveState(sslCertificate);
+        byte[] certBytes = bundle.getByteArray("x509-certificate");
+        return toCertificate(certBytes);
     }
     
     /**
@@ -633,4 +664,5 @@ public final class SSLHelper {
         
         return resBuilder.toString();
     }
+    
 }

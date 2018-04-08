@@ -253,12 +253,12 @@ public class Serve implements ServletContext, Serializable {
 	protected transient HashMap<String, PathTreeDictionary> virtuals;
 	protected transient PathTreeDictionary realms;
 	protected transient PathTreeDictionary mappingtable;
-	private Hashtable attributes;
+	private Hashtable<String, Object> attributes;
 	
 	protected transient KeepAliveCleaner keepAliveCleaner;
 	protected transient ThreadGroup serverThreads;
 	protected transient Utils.ThreadPool threadPool;
-	protected transient Constructor gzipInStreamConstr;
+	protected transient Constructor<?> gzipInStreamConstr;
 	private static final ThreadLocal<PathTreeDictionary> currentRegistry = new ThreadLocal<PathTreeDictionary>();
 	
 	// TODO for sessions consider configurable strength
@@ -269,7 +269,7 @@ public class Serve implements ServletContext, Serializable {
 	public int expiredIn;
 	public boolean httpSessCookie;
 	public boolean secureSessCookie;
-	public Map arguments;
+	public Map<Object, Object> arguments;
 	public Properties mime;
 	public WebsocketProvider websocketProvider;
 	
@@ -312,12 +312,12 @@ public class Serve implements ServletContext, Serializable {
 	 * @param arguments
 	 * @param logStream
 	 */
-	public Serve(Map arguments, PrintStream logStream) {
+	public Serve(Map<Object, Object> arguments, PrintStream logStream) {
 		this.arguments = arguments;
 		this.logStream = logStream;
 		defaultRegistry = new PathTreeDictionary();
 		realms = new PathTreeDictionary();
-		attributes = new Hashtable();
+		attributes = new Hashtable<String, Object>();
 		serverThreads = new ThreadGroup("TJWS Threads");
 		Properties props = new Properties();
 		props.putAll(arguments);
@@ -379,7 +379,7 @@ public class Serve implements ServletContext, Serializable {
 	 * 
 	 */
 	public Serve() {
-		this(new HashMap(), System.err);
+		this(new HashMap<Object, Object>(), System.err);
 	}
 	
 	protected void setAccessLogged() {
@@ -583,7 +583,7 @@ public class Serve implements ServletContext, Serializable {
 			}
 			// TODO consider moving implementation to HttpSessionContextImpl
 			// TODO think of concurrency
-			Enumeration itr = sessions.elements();
+			Enumeration<?> itr = sessions.elements();
 			int sc = 0;
 			while (itr.hasMoreElements()) {
 				AcmeSession session = (AcmeSession) itr.nextElement();
@@ -753,7 +753,7 @@ public class Serve implements ServletContext, Serializable {
 	 * @return
 	 */
 	protected File getPersistentFile(ServletContext servletContext) {
-		if (arguments.get(ARG_SESSION_PERSIST) == null || (Boolean) arguments.get(ARG_SESSION_PERSIST) == Boolean.FALSE) {
+		if (arguments.get(ARG_SESSION_PERSIST) == null || ((Boolean) arguments.get(ARG_SESSION_PERSIST)) == Boolean.FALSE) {
 			return null;
 		}
 		
@@ -815,7 +815,7 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 				
-				Enumeration itr = sessions.keys();
+				Enumeration<?> itr = sessions.keys();
 				while (itr.hasMoreElements()) {
 					Object sid = itr.nextElement();
 					if (sid != null) {
@@ -1058,10 +1058,25 @@ public class Serve implements ServletContext, Serializable {
 	}
 	
 	public static interface Acceptor {
-		public void init(Map inProperties, Map outProperties) throws IOException;
+		/**
+		 * 
+		 * @param inProperties
+		 * @param outProperties
+		 * @throws IOException
+		 */
+		public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException;
 		
+		/**
+		 * 
+		 * @return
+		 * @throws IOException
+		 */
 		public Socket accept() throws IOException;
 		
+		/**
+		 * 
+		 * @throws IOException
+		 */
 		public void destroy() throws IOException;
 	}
 	
@@ -1097,9 +1112,9 @@ public class Serve implements ServletContext, Serializable {
 		try {
 			log("Loading Acceptor:" + acceptorClass);
 			acceptor = (Acceptor) Class.forName(acceptorClass).newInstance();
-			log("TJWS: Acceptor:" + acceptor);
+			log("Acceptor:" + acceptor);
 		} catch (InstantiationException ex) {
-			log("TJWS: Couldn't instantiate Acceptor, the Server is inoperable", ex);
+			log("TJWS: Couldn't instantiate Acceptor, the Server is inoperable!", ex);
 		} catch (IllegalAccessException ex) {
 			log("TJWS: Error instantiate Acceptor!", ex);
 			Constructor<?> objectAcceptor;
@@ -1109,14 +1124,15 @@ public class Serve implements ServletContext, Serializable {
 				objectAcceptor.setAccessible(true);
 				acceptor = (Acceptor) objectAcceptor.newInstance(Utils.EMPTY_OBJECTS);
 			} catch (Throwable th) {
-				log("TJWS: Acceptor is not accessable or can't be instantiated, the Server is inoperable", th);
+				log("TJWS: Acceptor is not accessable or can't be instantiated, the Server is inoperable!", th);
 			}
 		} catch (ClassNotFoundException ex) {
-			log("TJWS: Acceptor class not found, the Server is inoperable", ex);
+			log("TJWS: Acceptor class not found, the Server is inoperable!", ex);
 			System.exit(Status.TERMINATED_WITH_ERROR.getStatus());
 		}
 		
 		Map acceptorProperties = new Properties();
+		log("TJWS: Init Acceptor:" + acceptor);
 		acceptor.init(arguments, acceptorProperties);
 		hostName = (String) acceptorProperties.get(ARG_BINDADDRESS);
 		
@@ -1186,7 +1202,7 @@ public class Serve implements ServletContext, Serializable {
 	// / Enumerates the names of the servlets in this context (server). Only
 	// servlets that are accessible will be returned. This enumeration always
 	// includes the servlet itself.
-	public Enumeration getServletNames() {
+	public Enumeration<String> getServletNames() {
 		PathTreeDictionary registry = currentRegistry.get();
 		if (registry == null) {
 			registry = defaultRegistry;
@@ -1222,7 +1238,7 @@ public class Serve implements ServletContext, Serializable {
 				IOHelper.safeClose(writer);
 			}
 			
-			Enumeration e = sessions.keys();
+			Enumeration<?> e = sessions.keys();
 			while (e.hasMoreElements()) {
 				Object sid = e.nextElement();
 				if (sid != null) {
@@ -1265,13 +1281,13 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	private class ServletDestroyer implements Runnable {
 		/** servletIterator */
-		private final Enumeration servletIterator;
+		private final Enumeration<Object> servletIterator;
 		
 		/**
 		 * 
 		 * @param servletIterator
 		 */
-		ServletDestroyer(final Enumeration servletIterator) {
+		ServletDestroyer(final Enumeration<Object> servletIterator) {
 			this.servletIterator = servletIterator;
 		}
 		
@@ -1287,7 +1303,7 @@ public class Serve implements ServletContext, Serializable {
 	 * @param registry
 	 */
 	private void destroyAll(PathTreeDictionary registry) {
-		final Enumeration servletIterator = registry.elements();
+		final Enumeration<Object> servletIterator = registry.elements();
 		int dhc = 0;
 		while (servletIterator.hasMoreElements()) {
 			Thread destroyThread = new Thread(new ServletDestroyer(servletIterator), "Destroy");
@@ -1318,8 +1334,8 @@ public class Serve implements ServletContext, Serializable {
 	}
 	
 	HttpSession createSession() {
-		Integer ms = (Integer) this.arguments.get(ARG_MAX_ACTIVE_SESSIONS);
-		if (ms != null && ms.intValue() < sessions.size()) {
+		Integer maxActiveSessions = ((Integer) this.arguments.get(ARG_MAX_ACTIVE_SESSIONS));
+		if (maxActiveSessions != null && maxActiveSessions.intValue() < sessions.size()) {
 			return null;
 		}
 		
@@ -1473,7 +1489,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
-	public Enumeration getAttributeNames() {
+	public Enumeration<String> getAttributeNames() {
 		return attributes.keys();
 	}
 	
@@ -2129,7 +2145,7 @@ public class Serve implements ServletContext, Serializable {
 		
 		private static final Map EMPTYHASHTABLE = new Hashtable();
 		private Socket socket;
-		private Hashtable sslAttributes;
+		private Hashtable<String, Object> sslAttributes;
 		private Serve serve;
 		private ServletInputStream inputStream;
 		private ServletOutputStream outputStream;
@@ -2147,14 +2163,14 @@ public class Serve implements ServletContext, Serializable {
 		private boolean oneOne;
 		private boolean reqMime;
 		private boolean websocketUpgrade;
-		private Vector reqHeaderNames = new Vector();
-		private Vector reqHeaderValues = new Vector();
+		private Vector<String> reqHeaderNames = new Vector<String>();
+		private Vector<String> reqHeaderValues = new Vector<String>();
 		private Locale locale;
 		private int uriLen;
 		private HttpServlet servlet;
 		
 		protected boolean keepAlive = true;
-		protected int timesRequested;
+		protected int keepAliveRequestedTime;
 		protected long lastRun, lastWait;
 		private Vector outCookies;
 		private Vector<Cookie> inCookies;
@@ -2164,11 +2180,11 @@ public class Serve implements ServletContext, Serializable {
 		private PrintWriter pw;
 		private ServletOutputStream rout;
 		private Map formParameters;
-		private Hashtable attributes = new Hashtable();
+		private Hashtable<String, Object> attributes = new Hashtable<String, Object>();
 		private int resCode = -1;
 		private String resMessage;
 		
-		private Hashtable resHeaderNames = new Hashtable();
+		private Hashtable<String, Object> resHeaderNames = new Hashtable<String, Object>();
 		private String[] postCache;
 		private boolean headersWritten;
 		private MessageFormat accessLogFormat;
@@ -2235,7 +2251,7 @@ public class Serve implements ServletContext, Serializable {
 		private void initSSLAttrs() {
 			if (isSSLSocket() && sslAttributes == null) {
 				try {
-					sslAttributes = new Hashtable();
+					sslAttributes = new Hashtable<String, Object>();
 					Object sslSession = socket.getClass().getMethod("getSession", Utils.EMPTY_CLASSES).invoke(socket, Utils.EMPTY_OBJECTS);
 					if (sslSession != null) {
 						sslAttributes.put("javax.net.ssl.session", sslSession);
@@ -2331,13 +2347,13 @@ public class Serve implements ServletContext, Serializable {
 			
 			// considering that clear() works faster than new
 			if (reqHeaderNames == null) {
-				reqHeaderNames = new Vector();
+				reqHeaderNames = new Vector<String>();
 			} else {
 				reqHeaderNames.clear();
 			}
 			
 			if (reqHeaderValues == null) {
-				reqHeaderValues = new Vector();
+				reqHeaderValues = new Vector<String>();
 			} else {
 				reqHeaderValues.clear();
 			}
@@ -2360,7 +2376,7 @@ public class Serve implements ServletContext, Serializable {
 			formParameters = null;
 			
 			if (attributes == null) {
-				attributes = new Hashtable();
+				attributes = new Hashtable<String, Object>();
 			} else {
 				attributes.clear();
 			}
@@ -2417,12 +2433,15 @@ public class Serve implements ServletContext, Serializable {
 							websocketUpgrade = false;
 						}
 					}
-				} while (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse());
+				} while (keepAlive && serve.isKeepAlive() && keepAliveRequestedTime < serve.getMaxTimesConnectionUse());
 			} catch (IOException ex) {
-				/* TODO - Print if required in future. */
+				/* Print if required in future. */
 				// serve.log(ioe);
 				if (ex instanceof SocketTimeoutException) {
-					serve.log("Keepalive timeout, asyncMode:" + asyncMode, ex);
+					/* Keep commented, if running as Android embedded server. */
+					if (!IOHelper.isAndroid()) {
+						serve.log("Keepalive timeout, asyncMode:" + asyncMode, ex);
+					}
 				} else {
 					String errMsg = ex.getMessage();
 					if ((errMsg == null || errMsg.indexOf("ocket closed") < 0) && ex instanceof java.nio.channels.AsynchronousCloseException == false) {
@@ -2543,13 +2562,13 @@ public class Serve implements ServletContext, Serializable {
 				keepAlive = "close".equalsIgnoreCase(strHeader) == false;
 				if (keepAlive) {
 					strHeader = getHeader(KEEPALIVE);
-					// serve.log("upgrading protocol "+s);
-					// FF specific ?
-					// parse value to extract the connection
-					// specific timeoutKeepAlive and
-					// maxAliveConnUse
-					// todo that introduce the value in req/resp
-					// and copy defaults from Serve
+					// serve.log("upgrading protocol:" + strHeader);
+					/*
+					 * FF specific ? parse value to extract the connection
+					 * specific timeoutKeepAlive and maxAliveConnUse todo that
+					 * introduce the value in req/resp and copy defaults from
+					 * Serve
+					 */
 				}
 			} else {
 				keepAlive = false;
@@ -2668,7 +2687,7 @@ public class Serve implements ServletContext, Serializable {
 			
 			if (!websocketUpgrade) {
 				lastRun = 0;
-				timesRequested++;
+				keepAliveRequestedTime++;
 				closeStreams();
 			}
 		}
@@ -2682,10 +2701,9 @@ public class Serve implements ServletContext, Serializable {
 			setHeader("Server", Serve.Identification.serverName + "/" + Serve.Identification.serverVersion);
 			if (keepAlive && serve.isKeepAlive() && !websocketUpgrade) {
 				if (reqMime) {
-					setHeader(CONNECTION, KEEPALIVE); // set for 1.1 too,
-					// because some client
-					// do not follow a
+					// set for 1.1 too, because some client do not follow a
 					// standard
+					setHeader(CONNECTION, KEEPALIVE);
 					if (oneOne) {
 						setHeader(KEEPALIVE, serve.getKeepAliveParamStr());
 					}
@@ -2841,7 +2859,7 @@ public class Serve implements ServletContext, Serializable {
 			
 			try {
 				finalizeRequest();
-				if (keepAlive && serve.isKeepAlive() && timesRequested < serve.getMaxTimesConnectionUse()) {
+				if (keepAlive && serve.isKeepAlive() && keepAliveRequestedTime < serve.getMaxTimesConnectionUse()) {
 					serve.threadPool.executeThread(this);
 				} else {
 					close();
@@ -3590,7 +3608,7 @@ public class Serve implements ServletContext, Serializable {
 		 * @return
 		 */
 		public Enumeration<String> getRequestHeaders(String header) {
-			Vector result = new Vector();
+			Vector<String> result = new Vector<String>();
 			int i = -1;
 			while ((i = reqHeaderNames.indexOf(header.toLowerCase(), i + 1)) >= 0) {
 				result.addElement(reqHeaderValues.elementAt(i));
@@ -3628,12 +3646,14 @@ public class Serve implements ServletContext, Serializable {
 				// System.err.println("^^^^^^^req sess: "+sessionValue+",
 				// found:"+result);
 			}
+			
 			if (result == null && create) {
 				result = serve.createSession();
 				if (result != null) {
 					sessionValue = result.getId();
-				} else
+				} else {
 					throw new RuntimeException("A session can't be created");
+				}
 				// System.err.println("^~~~~~created: "+sessionValue);
 			}
 			return result;
@@ -3649,7 +3669,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		// from ServletRequest
-		public Enumeration getAttributeNames() {
+		public Enumeration<String> getAttributeNames() {
 			return attributes.keys();
 		}
 		
@@ -3673,16 +3693,17 @@ public class Serve implements ServletContext, Serializable {
 		 * @param o
 		 *            - the Object to be stored
 		 */
-		public void setAttribute(String key, Object o) {
+		public void setAttribute(String key, Object value) {
 			// System.err.println("!!!Set att orig:"+key+"="+o);
 			// if ("javax.servlet.jsp.jspException".equals(key) && o instanceof
 			// Throwable)
 			// ((Throwable)o).printStackTrace();
 			
-			if (o != null)
-				attributes.put(key, o);
-			else
+			if (value != null) {
+				attributes.put(key, value);
+			} else {
 				attributes.remove(key);
+			}
 		}
 		
 		// / Gets the session id specified with this request. This may differ
@@ -3996,7 +4017,7 @@ public class Serve implements ServletContext, Serializable {
 				serve.log("acceptLanguage:" + acceptLanguage);
 			}
 			
-			final TreeSet tsLanguages = new TreeSet();
+			final TreeSet<LocaleWithWeight> localeWithWeights = new TreeSet<LocaleWithWeight>();
 			if (acceptLanguage != null) {
 				final StringTokenizer sTokenizer = new StringTokenizer(acceptLanguage, ";", false);
 				try {
@@ -4023,9 +4044,9 @@ public class Serve implements ServletContext, Serializable {
 								int dIndex = lan.indexOf('-');
 								if (dIndex < 0) {
 									// 1. 4
-									tsLanguages.add(new LocaleWithWeight(new Locale(lan.trim()), weight));
+									localeWithWeights.add(new LocaleWithWeight(new Locale(lan.trim()), weight));
 								} else {
-									tsLanguages.add(new LocaleWithWeight(new Locale(lan.substring(0, dIndex), lan.substring(dIndex + 1).trim().toUpperCase()), weight));
+									localeWithWeights.add(new LocaleWithWeight(new Locale(lan.substring(0, dIndex), lan.substring(dIndex + 1).trim().toUpperCase()), weight));
 								}
 							}
 						}
@@ -4038,11 +4059,11 @@ public class Serve implements ServletContext, Serializable {
 				}
 			}
 			
-			if (tsLanguages.size() == 0) {
-				tsLanguages.add(new LocaleWithWeight(Locale.getDefault(), 1));
+			if (localeWithWeights.size() == 0) {
+				localeWithWeights.add(new LocaleWithWeight(Locale.getDefault(), 1));
 			}
 			
-			return new AcceptLocaleEnumeration(tsLanguages);
+			return new AcceptLocaleEnumeration(localeWithWeights);
 		}
 		
 		/**
@@ -4393,9 +4414,9 @@ public class Serve implements ServletContext, Serializable {
 		// @param value the header field value
 		public void setHeader(String header, String value) {
 			header = header.trim().toLowerCase(); // normilize header
-			if (value == null)
+			if (value == null) {
 				resHeaderNames.remove(header);
-			else {
+			} else {
 				resHeaderNames.put(header, value);
 				// if (header.equals(CONTENTTYPE)) {
 				// String enc = extractEncodingFromContentType(value);
@@ -4632,13 +4653,13 @@ public class Serve implements ServletContext, Serializable {
 						}
 					}
 				// process keep alive headers
-				Object o = resHeaderNames.get(CONNECTION);
-				if (o instanceof String) {
-					outputStream.println(CONNECTION + ": " + o);
+				Object object = resHeaderNames.get(CONNECTION);
+				if (object instanceof String) {
+					outputStream.println(CONNECTION + ": " + object);
 				}
-				o = resHeaderNames.get(KEEPALIVE);
-				if (o instanceof String) {
-					outputStream.println(KEEPALIVE + ": " + o);
+				object = resHeaderNames.get(KEEPALIVE);
+				if (object instanceof String) {
+					outputStream.println(KEEPALIVE + ": " + object);
 				}
 				outputStream.println();
 				outputStream.flush();
@@ -5527,12 +5548,12 @@ public class Serve implements ServletContext, Serializable {
 	 * format n1/n2/n2[/*.ext] and get match to a pattern and a unmatched tail
 	 */
 	public static class PathTreeDictionary {
-		Node root_node;
+		Node rootNode;
 		Node ext;
 		Object ctx;
 		
 		public PathTreeDictionary() {
-			root_node = new Node();
+			rootNode = new Node();
 		}
 		
 		/**
@@ -5551,25 +5572,30 @@ public class Serve implements ServletContext, Serializable {
 		public synchronized Object[] put(String path, Object value) {
 			// TODO make returning Object[] for cconsitency
 			if (path.length() == 0) { // context
-				if (ctx == null)
+				if (ctx == null) {
 					ctx = new Node();
+				}
+				
 				Object result = ctx;
 				ctx = value;
 				return new Object[] { result, INT_ZERO };
 			}
 			if (path.charAt(0) == '*') {
 				String ext_str = null;
-				if (path.length() > 2 && path.charAt(1) == '.')
+				if (path.length() > 2 && path.charAt(1) == '.') {
 					ext_str = path.substring(1);
-				else
+				} else {
 					throw new IllegalArgumentException("No extension specified for * starting pattern:" + path);
-				if (ext == null)
+				}
+				
+				if (ext == null) {
 					ext = new Node();
+				}
 				return new Object[] { ext.put(ext_str, value), INT_ZERO };
 			}
 			// System.out.println("==>PUT path : "+path);
 			StringTokenizer st = new StringTokenizer(path, "\\/");
-			Node cur_node = root_node;
+			Node curNode = rootNode;
 			while (st.hasMoreTokens()) {
 				String nodename = st.nextToken();
 				// System.out.println("PUT curr node : "+nodename);
@@ -5584,32 +5610,36 @@ public class Serve implements ServletContext, Serializable {
 					throw new IllegalArgumentException("Using * in other than ending /* for path:" + path);
 				}
 				
-				Node node = (Node) cur_node.get(nodename);
+				Node node = (Node) curNode.get(nodename);
 				if (node == null) {
 					node = new Node();
-					cur_node.put(nodename, node);
+					curNode.put(nodename, node);
 				}
-				cur_node = node;
+				curNode = node;
 			}
 			
-			Object result = cur_node.object;
-			cur_node.object = value;
+			Object result = curNode.object;
+			curNode.object = value;
 			return new Object[] { result, INT_ZERO };
 		}
 		
 		public synchronized Object[] remove(Object value) {
-			Object[] result = remove(root_node, value);
-			if (result[0] == null)
+			Object[] result = remove(rootNode, value);
+			if (result[0] == null) {
 				result = remove(null, value);
-			if (result[0] == null)
+			}
+			if (result[0] == null) {
 				return remove(ext, value);
+			}
+			
 			return result;
 		}
 		
 		public synchronized Object[] remove(String path) {
 			Object[] result = get(path);
-			if (result[0] != null)
+			if (result[0] != null) {
 				return remove(result[0]);
+			}
 			return result;
 		}
 		
@@ -5634,6 +5664,7 @@ public class Serve implements ServletContext, Serializable {
 				}
 				return new Object[] { null, null };
 			}
+			
 			if (node.object == value) {
 				node.object = null;
 				return new Object[] { value, new Integer(0) };
@@ -5641,8 +5672,9 @@ public class Serve implements ServletContext, Serializable {
 			Enumeration e = node.keys();
 			while (e.hasMoreElements()) {
 				Object[] result = remove((Node) node.get((String) e.nextElement()), value);
-				if (result[0] != null)
+				if (result[0] != null) {
 					return result;
+				}
 			}
 			return new Object[] { null, null };
 		}
@@ -5664,28 +5696,29 @@ public class Serve implements ServletContext, Serializable {
 				return result;
 			}
 			char[] ps = path.toCharArray();
-			Node cur_node = root_node; // default servlet
+			Node curNode = rootNode; // default servlet
 			int p0 = 0, lm = 0; // last match
 			
 			boolean div_state = true;
 			for (int i = 0; i < ps.length; i++) {
 				// System.out.println("GET "+ps[i]);
 				if (ps[i] == '/' || ps[i] == '\\') { // next divider
-					if (div_state)
+					if (div_state) {
 						continue;
-					Node node = (Node) cur_node.get(new String(ps, p0, i - p0));
+					}
+					Node node = (Node) curNode.get(new String(ps, p0, i - p0));
 					// System.out.println("GET Node " + node + " for " + new
 					// String(ps, p0, i - p0));
 					
 					if (node == null) { // exact
-						node = (Node) cur_node.get(""); // for *
+						node = (Node) curNode.get(""); // for *
 						if (node != null && node.object != null) {
 							result[0] = node.object;
 							// System.out.println("GET * for " + node);
 						}
 						break;
 					}
-					cur_node = node;
+					curNode = node;
 					div_state = true;
 					p0 = i + 1;
 				} else {
@@ -5697,21 +5730,21 @@ public class Serve implements ServletContext, Serializable {
 			}
 			
 			String last_part = new String(ps, p0, ps.length - p0);
-			Node last_node = (Node) cur_node.get(last_part);
+			Node lastNode = (Node) curNode.get(last_part);
 			// System.out.println("GET cur node : " + last_node + " for: " +
 			// last_part + " root ext:" + ext+" and pos:"+p0);
-			if (last_node != null) {
-				if (last_node.object == null) {
-					last_node = (Node) last_node.get(""); // check for *
+			if (lastNode != null) {
+				if (lastNode.object == null) {
+					lastNode = (Node) lastNode.get(""); // check for *
 				}
-				if (last_node != null && last_node.object != null) {
-					result[0] = last_node.object;
+				if (lastNode != null && lastNode.object != null) {
+					result[0] = lastNode.object;
 					lm = last_part.length() > 0 ? ps.length : p0 - 1;
 				}
 			} else {
-				last_node = (Node) cur_node.get("");
-				if (last_node != null && last_node.object != null) {
-					result[0] = last_node.object;
+				lastNode = (Node) curNode.get("");
+				if (lastNode != null && lastNode.object != null) {
+					result[0] = lastNode.object;
 					lm = p0 > 0 ? p0 - 1 : 0;
 				}
 			}
@@ -5728,11 +5761,11 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 				if (result[0] == null) { // look for default servlet
-					last_node = (Node) root_node.get("");
-					if (last_node != null)
-						result[0] = last_node.object;
+					lastNode = (Node) rootNode.get("");
+					if (lastNode != null)
+						result[0] = lastNode.object;
 					if (result[0] == null) {
-						result[0] = root_node.object;
+						result[0] = rootNode.object;
 					}
 				}
 			}
@@ -5741,18 +5774,22 @@ public class Serve implements ServletContext, Serializable {
 			return result;
 		}
 		
-		public Enumeration keys() {
-			Vector result = new Vector();
-			if (ctx != null)
+		public Enumeration<String> keys() {
+			Vector<String> result = new Vector<String>();
+			if (ctx != null) {
 				result.addElement("");
-			if (root_node.object != null)
+			}
+			if (rootNode.object != null) {
 				result.addElement("/");
-			addSiblingNames(root_node, result, "");
+			}
+			addSiblingNames(rootNode, result, "");
 			if (ext != null) {
 				Enumeration e = ext.keys();
-				while (e.hasMoreElements())
+				while (e.hasMoreElements()) {
 					result.addElement("*" + e.nextElement());
+				}
 			}
+			
 			return result.elements();
 		}
 		
@@ -5762,26 +5799,31 @@ public class Serve implements ServletContext, Serializable {
 				String pc = (String) e.nextElement();
 				Node childNode = (Node) node.get(pc);
 				pc = path + '/' + (pc.length() == 0 ? "*" : pc);
-				if (childNode.object != null)
+				if (childNode.object != null) {
 					result.addElement(pc);
+				}
+				
 				addSiblingNames(childNode, result, pc);
 			}
 		}
 		
-		public Enumeration elements() {
-			Vector result = new Vector();
-			if (root_node.object != null)
-				result.add(root_node.object);
-			addSiblingObjects(root_node, result);
+		public Enumeration<Object> elements() {
+			Vector<Object> result = new Vector<Object>();
+			if (rootNode.object != null) {
+				result.add(rootNode.object);
+			}
+			
+			addSiblingObjects(rootNode, result);
 			return result.elements();
 		}
 		
-		public void addSiblingObjects(Node node, Vector result) {
+		public void addSiblingObjects(Node node, Vector<Object> result) {
 			Enumeration e = node.keys();
 			while (e.hasMoreElements()) {
 				Node childNode = (Node) node.get(e.nextElement());
-				if (childNode.object != null)
+				if (childNode.object != null) {
 					result.addElement(childNode.object);
+				}
 				addSiblingObjects(childNode, result);
 			}
 		}
@@ -5802,19 +5844,12 @@ public class Serve implements ServletContext, Serializable {
 	 */
 	public static class AcmeSession extends Hashtable implements HttpSession {
 		private long createTime;
-		
 		private long lastAccessTime;
-		
 		private String id;
-		
 		private int inactiveInterval; // in seconds
-		
 		private boolean expired;
-		
 		private transient ServletContext servletContext;
-		
 		private transient HttpSessionContext sessionContext;
-		
 		private transient List listeners;
 		
 		// TODO: check in documentation what is default inactive interval and
@@ -5886,16 +5921,19 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Enumeration getAttributeNames() throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
+			
 			return keys();
 		}
 		
 		public String[] getValueNames() throws IllegalStateException {
 			Enumeration e = getAttributeNames();
 			Vector names = new Vector();
-			while (e.hasMoreElements())
+			while (e.hasMoreElements()) {
 				names.addElement(e.nextElement());
+			}
 			String[] result = new String[names.size()];
 			names.copyInto(result);
 			return result;

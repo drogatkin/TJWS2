@@ -47,41 +47,44 @@ public class SelectorAcceptor implements Acceptor {
 	
 	private ServerSocketChannel channel;
 	private Selector selector;
-	private Iterator readyItor;
+	private Iterator<SelectionKey> selKeyItr;
 	
 	public Socket accept() throws IOException {
 		do {
-			if (readyItor == null) {
+			if (selKeyItr == null) {
 				if (selector.select() > 0) {
-					readyItor = selector.selectedKeys().iterator();
+					selKeyItr = selector.selectedKeys().iterator();
 				} else {
 					throw new IOException();
 				}
 			}
 			
-			if (readyItor.hasNext()) {
-				
+			if (selKeyItr.hasNext()) {
 				// Get key from set
-				SelectionKey key = (SelectionKey) readyItor.next();
+				SelectionKey selectionKey = selKeyItr.next();
 				
 				// Remove current entry
-				readyItor.remove();
+				selKeyItr.remove();
 				// TODO add processing CancelledKeyException
-				if (key.isValid() && key.isAcceptable()) {
+				if (selectionKey.isValid() && selectionKey.isAcceptable()) {
 					// Get channel
-					ServerSocketChannel keyChannel = (ServerSocketChannel) key.channel();
-					
+					ServerSocketChannel keyChannel = (ServerSocketChannel) selectionKey.channel();
 					// Get server socket
 					ServerSocket serverSocket = keyChannel.socket();
-					
 					// Accept request
 					return serverSocket.accept();
 				}
-			} else
-				readyItor = null;
+			} else {
+				selKeyItr = null;
+			}
 		} while (true);
 	}
 	
+	/**
+	 * 
+	 * @throws IOException
+	 * @see Acme.Serve.Serve.Acceptor#destroy()
+	 */
 	public void destroy() throws IOException {
 		String exceptions = "";
 		try {
@@ -91,8 +94,8 @@ public class SelectorAcceptor implements Acceptor {
 		}
 		try {
 			selector.close();
-		} catch (IOException e) {
-			exceptions += e.toString();
+		} catch (IOException ex) {
+			exceptions += ex.toString();
 		}
 		
 		if (exceptions.length() > 0) {
@@ -104,7 +107,7 @@ public class SelectorAcceptor implements Acceptor {
 	 * @see Acme.Serve.Serve.Acceptor#init(Acme.Serve.Serve, java.util.Map,
 	 *      java.util.Map)
 	 */
-	public void init(Map inProperties, Map outProperties) throws IOException {
+	public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		selector = Selector.open();
 		channel = ServerSocketChannel.open();
 		channel.configureBlocking(false);

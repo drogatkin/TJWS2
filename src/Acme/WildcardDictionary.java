@@ -50,47 +50,70 @@ import java.util.Vector;
 // <A HREF="/resources/classes/Acme.tar.Z">Fetch the entire Acme package.</A>
 // <P>
 // @see Acme.Utils#match
-
-public class WildcardDictionary extends Dictionary {
+public class WildcardDictionary<K, V> extends Dictionary<K, V> {
 	
-	private Vector keys;
-	
-	private Vector elements;
+	private Vector<K> keys;
+	private Vector<V> elements;
 	
 	// / Constructor.
 	public WildcardDictionary() {
-		keys = new Vector();
-		elements = new Vector();
+		keys = new Vector<K>();
+		elements = new Vector<V>();
 	}
 	
-	// / Returns the number of elements contained within the dictionary.
+	/**
+	 * Returns the number of elements contained within the dictionary.
+	 * 
+	 * @return
+	 * @see java.util.Dictionary#size()
+	 */
 	public int size() {
 		return elements.size();
 	}
 	
-	// / Returns true if the dictionary contains no elements.
+	/**
+	 * Returns true if the dictionary contains no elements.
+	 * 
+	 * @return
+	 * @see java.util.Dictionary#isEmpty()
+	 */
 	public boolean isEmpty() {
 		return size() == 0;
 	}
 	
-	// / Returns an enumeration of the dictionary's keys.
-	public Enumeration keys() {
+	/**
+	 * Returns an enumeration of the dictionary's keys.
+	 * 
+	 * @return
+	 * @see java.util.Dictionary#keys()
+	 */
+	public Enumeration<K> keys() {
 		return keys.elements();
 	}
 	
-	// / Returns an enumeration of the elements. Use the Enumeration methods
-	// on the returned object to fetch the elements sequentially.
-	public Enumeration elements() {
+	/**
+	 * Returns an enumeration of the elements. Use the Enumeration methods on
+	 * the returned object to fetch the elements sequentially.
+	 * 
+	 * @return
+	 * @see java.util.Dictionary#elements()
+	 */
+	public Enumeration<V> elements() {
 		return elements.elements();
 	}
 	
-	// / Gets the object associated with the specified key in the dictionary.
-	// The key is assumed to be a String, which is matched against
-	// the wildcard-pattern keys in the dictionary.
-	// @param key the string to match
-	// @returns the element for the key, or null if there's no match
-	// @see Acme.Utils#match
-	public synchronized Object get(Object key) {
+	/*
+	 * Gets the object associated with the specified key in the dictionary.
+	 * The key is assumed to be a String, which is matched against
+	 * the wildcard-pattern keys in the dictionary.
+	 * 
+	 * @param key the string to match
+	 * 
+	 * @returns the element for the key, or null if there's no match
+	 * 
+	 * @see Acme.Utils#match
+	 */
+	public synchronized V get(Object key) {
 		String sKey = (String) key;
 		int matching_len = 0, found = -1;
 		// to optimize speed, keys should be sorted by length
@@ -137,10 +160,10 @@ public class WildcardDictionary extends Dictionary {
 	// @return the old value of the key, or null if it did not have one.
 	// @exception NullPointerException If the value of the specified
 	// element is null.
-	public synchronized Object put(Object key, Object element) {
+	public synchronized V put(K key, V element) {
 		int i = keys.indexOf(key);
 		if (i != -1) {
-			Object oldElement = elements.elementAt(i);
+			V oldElement = elements.elementAt(i);
 			elements.setElementAt(element, i);
 			return oldElement;
 		} else {
@@ -154,14 +177,15 @@ public class WildcardDictionary extends Dictionary {
 	// key is not present.
 	// @param key the key that needs to be removed
 	// @return the value of key, or null if the key was not found.
-	public synchronized Object remove(Object key) {
+	public synchronized V remove(Object key) {
 		int i = keys.indexOf(key);
 		if (i != -1) {
-			Object oldElement = elements.elementAt(i);
+			V oldElement = elements.elementAt(i);
 			keys.removeElementAt(i);
 			elements.removeElementAt(i);
 			return oldElement;
-		} else
+		} else {
 			return null;
+		}
 	}
 }

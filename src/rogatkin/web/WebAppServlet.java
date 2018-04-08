@@ -141,7 +141,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	protected static final String WEBAPPCLASSLOADER = "rogatkin.webapp.AppClassLoader";
 	
 	protected static final String WEBAPPINITTIMEOUT = "tjws.webapp.%s.init.timeout"; // in
-																					 // seconds
+																						// seconds
 	
 	List<ServletAccessDescr> servlets;
 	
@@ -198,7 +198,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	protected SessionCookieConfig scc;
 	
-	protected Set<SessionTrackingMode> dstm = EnumSet.of(SessionTrackingMode.URL, SessionTrackingMode.COOKIE), stm;
+	protected Set<SessionTrackingMode> dstm = EnumSet.of(SessionTrackingMode.URL, SessionTrackingMode.COOKIE),
+					stm;
 	
 	private boolean applyCompression;
 	
@@ -259,7 +260,6 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	protected class ServletAccessDescr implements ServletConfig, Comparable<ServletAccessDescr> {
 		String className;
-		
 		String name;
 		Servlet instance;
 		MappingEntry[] mapping;
@@ -473,18 +473,18 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	protected static class ErrorPageDescr {
 		String errorPage;
-		
-		Class exception;
-		
+		Class<?> exception;
 		int errorCode;
 		
 		ErrorPageDescr(String page, String exClass, String code) {
 			if (page == null || page.length() == 0 || page.charAt(0) != '/')
 				throw new IllegalArgumentException("Error page path '" + page + "' must start with '/'");
-			if (page.charAt(0) == '/')
+			if (page.charAt(0) == '/') {
 				errorPage = page;
-			else
+			} else {
 				errorPage = "/" + page;
+			}
+			
 			try {
 				exception = Class.forName(exClass);
 			} catch (Exception e) {
@@ -676,18 +676,21 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					if (res == null)
 						result.log(String.format("No resource %s is available", name));
 					else {
-						Class typeClass = null;
-						if (type != null && type.length() > 0)
+						Class<?> typeClass = null;
+						if (type != null && type.length() > 0) {
 							try {
 								typeClass = Class.forName(type);
 							} catch (ClassNotFoundException cne) {
 								result.log(String.format("No definition of class %s found, type check is bypassed", type));
 								// TODO res.getClasses()
 							}
-						if (typeClass != null && typeClass.isInstance(res) == false)
+						}
+						
+						if (typeClass != null && typeClass.isInstance(res) == false) {
 							result.log(String.format("No resource %s of %s is available", name, type));
-						else
+						} else {
 							result.log(String.format("Confirmed availability of %s of %s authorized by %s in scope of %s", name, type, auth, scope));
+						}
 					}
 				}
 				if (appContextDelegator != null) {
@@ -760,11 +763,11 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							result.attributeListeners.add((ServletRequestAttributeListener) eventListener);
 						}
 						result.listeners.add(eventListener); // because the same
-															 // class can
-															 // implement
-															 // other
-															 // listener
-															 // interfaces
+																// class can
+																// implement
+																// other
+																// listener
+																// interfaces
 					} catch (Exception e) {
 						result.log("Event listener " + nodes.item(i).getTextContent() + " can't be created due an exception.", e);
 					} catch (Error e) {
@@ -1181,12 +1184,12 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 								}
 							if (sad.instance == null) {
 								sad.loadOnStart = Integer.MAX_VALUE; // mark
-																	 // unsuccessful
-																	 // instantiation
-																	 // and
-																	 // ban
-																	 // the
-																	 // servlet?
+																		// unsuccessful
+																		// instantiation
+																		// and
+																		// ban
+																		// the
+																		// servlet?
 								((HttpServletResponse) res).sendError(HttpServletResponse.SC_GONE, "Servlet " + sad.name + " hasn't been instantiated successfully or has been unloaded.");
 								return;
 							}
@@ -1399,8 +1402,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		ServletAccessDescr sad = createDescriptor();
 		// get class name from serve
 		sad.initParams = new HashMap<String, String>(10);
-		Map<String, String> arguments = (Map<String, String>) server.arguments;
-		sad.className = arguments.get(Serve.ARG_JSP);
+		Map<Object, Object> arguments = (Map<Object, Object>) server.arguments;
+		sad.className = String.valueOf(arguments.get(Serve.ARG_JSP));
 		if (sad.className == null) {
 			log("No JSP engine specified, Apache Jasper is assumed by default", null);
 			sad.className = "org.apache.jasper.servlet.JspServlet";
@@ -1411,12 +1414,13 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			String pnpx = sad.className + '.';
 			int cnl = pnpx.length();
 			String classPath = Utils.calculateClassPath(ucl);
-			for (String ipn : arguments.keySet()) {
-				if (ipn.startsWith(pnpx)) {
-					sad.initParams.put(ipn.substring(cnl), arguments.get(ipn).replace("%context%", contextName).replace("%deploydir%", deployDir.getPath()).replace("%classloader%", WEBAPPCLASSLOADER).replace("%classpath%", classPath));
-				}
+			Iterator<Object> itr = arguments.keySet().iterator();
+			while (itr.hasNext()) {
+				String ipn = (String) itr.next();
+				sad.initParams.put(ipn.substring(cnl), ((String) arguments.get(ipn)).replace("%context%", contextName).replace("%deploydir%", deployDir.getPath()).replace("%classloader%", WEBAPPCLASSLOADER).replace("%classpath%", classPath));
 			}
 		}
+		
 		sad.descr = "JSP support servlet";
 		sad.label = "JSP";
 		sad.loadOnStart = -1;
@@ -1426,8 +1430,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			jspPat = "/.*\\.jsp.*";
 		} else {
 			jspPat = buildREbyPathPatt(patterns.get(0));
-			for (int i = 1; i < patterns.size(); i++)
+			for (int i = 1; i < patterns.size(); i++) {
 				jspPat += "|" + buildREbyPathPatt(patterns.get(i));
+			}
 		}
 		sad.add(new MappingEntry("/", jspPat));
 		servlets.add(sad);
@@ -1749,8 +1754,10 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	@Override
 	public Set getResourcePaths(String path) {
-		if (path.charAt(0) != '/')
+		if (path.charAt(0) != '/') {
 			throw new IllegalArgumentException("getResourcePaths: path parameters must begin with '/'");
+		}
+		
 		path = extractQueryAnchor(path, false);
 		int ji = path.indexOf(".jar!/");
 		String jarpath = "";
@@ -1760,8 +1767,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			path = path.substring(0, ji + 4);
 		}
 		File dir = new File(getRealPath(path));
-		if (dir.exists() == false)
+		if (dir.exists() == false) {
 			return null;
+		}
 		log("Path:" + path + " dir " + dir + " jar p " + jarpath);
 		Set<String> set = null;
 		if (dir.isDirectory() == false) {
@@ -1784,6 +1792,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							set.add(new URL("jar:file:/" + dir.getPath() + "!/" + entryPath).toString());
 						}
 					}
+					jarFile.close();
 				} catch (Exception e) {
 					log("Problem: " + e);
 				}
@@ -2130,7 +2139,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		throw new UnsupportedOperationException();
 	}
 	
-	protected void setErrorAttributes(ServletRequest req, int status, String msg, String servletName, String requestURI, Throwable t, Class eclass) {
+	protected void setErrorAttributes(ServletRequest req, int status, String msg, String servletName, String requestURI, Throwable t, Class<?> eclass) {
 		req.setAttribute("javax.servlet.error.status_code", status);
 		req.setAttribute("javax.servlet.error.exception_type ", eclass);
 		req.setAttribute("javax.servlet.error.message", msg);
@@ -2147,36 +2156,46 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	public void destroy() {
 		Thread.currentThread().setContextClassLoader(ucl);
 		asyncThreads.shutdown();
-		if (filters != null)
-			for (FilterAccessDescriptor fad : filters)
+		if (filters != null) {
+			for (FilterAccessDescriptor fad : filters) {
 				try {
 					if (fad.filterInstance != null)
 						fad.filterInstance.destroy();
 				} catch (Exception e) {
 					log("Exception in filter destroy", e);
 				}
-		for (ServletAccessDescr sad : servlets)
+			}
+		}
+		
+		for (ServletAccessDescr sad : servlets) {
 			try {
 				if (sad.instance != null)
 					sad.instance.destroy();
 			} catch (Exception e) {
 				log("Exception in servlet destroy", e);
 			}
-		if (requestListeners != null)
+		}
+		
+		if (requestListeners != null) {
 			requestListeners.clear();
-		if (sessionListeners != null) // no notification since session can
-										 // persist
+		}
+		
+		if (sessionListeners != null) {
+			// no notification since session can persist
 			sessionListeners.clear();
+		}
 		if (listeners != null) {
 			for (int i = listeners.size() - 1; i > -1; i--) {
 				EventListener listener = listeners.get(i);
-				if (listener instanceof ServletContextListener)
+				if (listener instanceof ServletContextListener) {
 					try {
 						((ServletContextListener) listener).contextDestroyed(new ServletContextEvent(this));
 					} catch (Exception e) {
 						log("Exception in context destroy notification", e);
 					}
+				}
 			}
+			
 			listeners.clear();
 		}
 		Enumeration e = getAttributeNames();
@@ -2919,9 +2938,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					} else if (mn.equals("getDispatcherType")) {
 						return DispatcherType.REQUEST;
 					} else if (mn.equals("getParts")) { // ////////////////////
-														 // Multi
-														 // part
-														 // ///////////////////////////
+														// Multi
+														// part
+														// ///////////////////////////
 						if (multiparts != null)
 							return multiparts.getParts();
 						throw new ServletException(MULTIPART_ERR_MSQ);
@@ -2964,35 +2983,35 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					}
 				}
 			}), // response);
-					proxiedRespHolder[0] = (HttpServletResponse) Proxy.newProxyInstance(javax.servlet.http.HttpServletResponse.class.getClassLoader(), new Class[] { javax.servlet.http.HttpServletResponse.class, Openable.class }, new InvocationHandler() {
-						public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-							String mn = method.getName();
-							if (mn.equals("sendError")) {
-								if (errorPages != null)
-									for (ErrorPageDescr epd : errorPages)
-										if (epd.errorCode == ((Integer) args[0]).intValue()) {
-											setErrorAttributes(hreq, (Integer) args[0], args.length > 1 ? (String) args[1] : "", getServletName(), hreq.getRequestURI(), null, null);
-											// System.err.printf("ERROR
-											// Forwarding to %s for
-											// %d%n",epd.errorPage,
-											// args[0]);
-											getRequestDispatcher(epd.errorPage).forward(hreq, hres);
-											return null;
-										}
-							} else if (mn.equals("getOrigin")) {
-								Object origin = hres;
-								while (origin instanceof Openable)
-									origin = ((Openable) origin).getOrigin();
-								return origin;
-								
-							} // else if
-								 // (mn.equals("sendRedirect")) {
-								 // System.err.printf("Redirect
-								 // to:%s%n",args[0]);
-								 // }
-							return method.invoke(hres, args);
-						}
-					}));
+							proxiedRespHolder[0] = (HttpServletResponse) Proxy.newProxyInstance(javax.servlet.http.HttpServletResponse.class.getClassLoader(), new Class[] { javax.servlet.http.HttpServletResponse.class, Openable.class }, new InvocationHandler() {
+								public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+									String mn = method.getName();
+									if (mn.equals("sendError")) {
+										if (errorPages != null)
+											for (ErrorPageDescr epd : errorPages)
+												if (epd.errorCode == ((Integer) args[0]).intValue()) {
+													setErrorAttributes(hreq, (Integer) args[0], args.length > 1 ? (String) args[1] : "", getServletName(), hreq.getRequestURI(), null, null);
+													// System.err.printf("ERROR
+													// Forwarding to %s for
+													// %d%n",epd.errorPage,
+													// args[0]);
+													getRequestDispatcher(epd.errorPage).forward(hreq, hres);
+													return null;
+												}
+									} else if (mn.equals("getOrigin")) {
+										Object origin = hres;
+										while (origin instanceof Openable)
+											origin = ((Openable) origin).getOrigin();
+										return origin;
+										
+									} // else if
+										// (mn.equals("sendRedirect")) {
+										// System.err.printf("Redirect
+										// to:%s%n",args[0]);
+										// }
+									return method.invoke(hres, args);
+								}
+							}));
 		}
 		
 		public void destroy() {
@@ -3222,7 +3241,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					throw new IOException("Boundary attribute is missed in " + contentType);
 				int ei = contentType.indexOf(';', pi + "boundary=".length());
 				contentType = request.getContentType(); // since to lower case
-														 // was applied
+														// was applied
 				String boundary = ei < 0 ? contentType.substring(pi + "boundary=".length()) : contentType.substring(pi + "boundary=".length(), ei);
 				InvocationHandler handler = Proxy.getInvocationHandler(request);
 				try {
@@ -3236,7 +3255,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		
 		protected boolean handleError(Throwable t, ServletRequest request, ServletResponse response) throws java.io.IOException, ServletException {
 			if (errorPages != null) {
-				Class eclass = t.getClass();
+				Class<?> eclass = t.getClass();
 				for (ErrorPageDescr epd : errorPages) {
 					if (epd.exception != null && eclass.equals(epd.exception)) {
 						log("forward to " + epd.errorPage, t);
@@ -3246,8 +3265,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 						return true;
 					}
 				}
-				Class[] peclasses = eclass.getClasses();
-				for (Class peclass : peclasses)
+				Class<?>[] peclasses = eclass.getClasses();
+				for (Class<?> peclass : peclasses)
 					for (ErrorPageDescr epd : errorPages) {
 						if (epd.exception != null && peclass.equals(epd.exception)) {
 							log("forward to " + epd.errorPage, t);
@@ -3286,6 +3305,5 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	}
 	
 	private final static boolean _DEBUG = false;
-	
 	private final static boolean __DEBUG = "yes".equals(System.getProperty(DEF_DEBUG)) || _DEBUG;
 }

@@ -74,34 +74,47 @@ public class ThrottledOutputStream extends FilterOutputStream {
 	// The routine returns a WildcardDictionary. Do a lookup in this
 	// dictionary using a filename, and you'll get back a ThrottleItem
 	// containing the corresponding byte rate.
-	public static Acme.WildcardDictionary parseThrottleFile(String filename) throws IOException {
-		Acme.WildcardDictionary wcd = new Acme.WildcardDictionary();
+	public static Acme.WildcardDictionary<String, ThrottleItem> parseThrottleFile(String filename) throws IOException {
+		Acme.WildcardDictionary<String, ThrottleItem> wildCardDictionary = new Acme.WildcardDictionary<String, ThrottleItem>();
 		File thFile = new File(filename);
-		if (thFile.isAbsolute() == false)
+		if (thFile.isAbsolute() == false) {
 			thFile = new File(System.getProperty("user.dir", "."), thFile.getName());
-		BufferedReader br = new BufferedReader(new FileReader(thFile));
-		while (true) {
-			String line = br.readLine();
-			if (line == null)
-				break;
-			int i = line.indexOf('#');
-			if (i != -1)
-				line = line.substring(0, i);
-			line = line.trim();
-			if (line.length() == 0) {
-				continue;
-			}
-			String[] words = Utils.splitStr(line);
-			if (words.length != 2)
-				throw new IOException("malformed throttle line: " + line);
-			try {
-				wcd.put(words[0], new ThrottleItem(Long.parseLong(words[1])));
-			} catch (NumberFormatException e) {
-				throw new IOException("malformed number in throttle line: " + line);
-			}
 		}
-		br.close();
-		return wcd;
+		
+		BufferedReader bReader = new BufferedReader(new FileReader(thFile));
+		try {
+			
+			while (true) {
+				String line = bReader.readLine();
+				if (line == null) {
+					break;
+				}
+				
+				int i = line.indexOf('#');
+				if (i != -1) {
+					line = line.substring(0, i);
+				}
+				line = line.trim();
+				if (line.length() == 0) {
+					continue;
+				}
+				
+				final String[] words = Utils.splitStr(line);
+				if (words.length != 2) {
+					throw new IOException("malformed throttle line: " + line);
+				}
+				
+				try {
+					wildCardDictionary.put(words[0], new ThrottleItem(Long.parseLong(words[1])));
+				} catch (NumberFormatException ex) {
+					throw new IOException("malformed number in throttle line:" + line);
+				}
+			}
+		} finally {
+			bReader.close();
+		}
+		
+		return wildCardDictionary;
 	}
 	
 	private long maxBps;

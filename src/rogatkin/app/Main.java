@@ -44,11 +44,8 @@ import rogatkin.web.WebAppServlet;
 
 public class Main {
 	public static final String APP_MAIN_CLASS = "tjws.app.main";
-	
 	public static final String APP_MAIN_CLASSPATH = "tjws.app.main.classpath";
-	
 	public static final String APP_MAIN_STRIP_PARAM_RIGHT = "tjws.app.main.striprightparam";
-	
 	public static final String APP_MAIN_STRIP_PARAM_LEFT = "tjws.app.main.stripleftparam";
 	
 	/**
@@ -56,95 +53,119 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 		String mainClass = System.getProperty(APP_MAIN_CLASS);
-		if (mainClass == null)
+		if (mainClass == null) {
 			Acme.Serve.Main.main(initAppServer(args));
-		else {
-			URLClassLoader cl = null;
+		} else {
+			URLClassLoader classLoader = null;
 			try {
-				String cp = System.getProperty(APP_MAIN_CLASSPATH);
-				if (cp != null) {
-					String[] cps = cp.split(File.pathSeparator);
-					URL urls[] = new URL[cps.length];
-					for (int i = 0; i < cps.length; i++) {
-						if (cps[i].startsWith("file:") == false && cps[i].startsWith("http:") == false && cps[i].startsWith("https:") == false) {
-							urls[i] = new URL("file:/" + cps[i]);
+				final String classPath = System.getProperty(APP_MAIN_CLASSPATH);
+				if (classPath != null) {
+					final String[] classPathTokens = classPath.split(File.pathSeparator);
+					final URL urls[] = new URL[classPathTokens.length];
+					for (int i = 0; i < classPathTokens.length; i++) {
+						if (classPathTokens[i].startsWith("file:") == false && classPathTokens[i].startsWith("http") == false) {
+							urls[i] = new URL("file:/" + classPathTokens[i]);
 						} else {
-							urls[i] = new URL(cps[i]);
+							urls[i] = new URL(classPathTokens[i]);
 						}
 					}
-					cl = new URLClassLoader(urls);
+					classLoader = new URLClassLoader(urls);
 				}
 				
-				Class main = cl == null ? Class.forName(mainClass) : Class.forName(mainClass, true, cl);
-				if (cl != null)
-					Thread.currentThread().setContextClassLoader(cl);
+				Class<?> main = (classLoader == null ? Class.forName(mainClass) : Class.forName(mainClass, true, classLoader));
+				if (classLoader != null) {
+					Thread.currentThread().setContextClassLoader(classLoader);
+				}
 				main.getDeclaredMethod("main", String[].class).invoke(null, new Object[] { rangeParam(initAppServer(args)) });
-			} catch (Exception e) {
-				System.err.printf("Can't launch a user app %s (%s) due: %s", mainClass, Arrays.toString(cl == null ? new URL[] {} : cl.getURLs()), e);
-				e.printStackTrace();
+			} catch (Exception ex) {
+				System.err.printf("Can't launch a user app %s (%s) due: %s", mainClass, Arrays.toString(classLoader == null ? new URL[] {} : classLoader.getURLs()), ex);
+				ex.printStackTrace();
 			}
 		}
 	}
 	
+	/**
+	 * 
+	 * @param params
+	 * @return
+	 */
 	protected static String[] rangeParam(String... params) {
 		String range = System.getProperty(APP_MAIN_STRIP_PARAM_RIGHT);
-		if (range != null)
+		if (range != null) {
 			return Utils.copyOf(params, Integer.parseInt(range));
+		}
 		range = System.getProperty(APP_MAIN_STRIP_PARAM_LEFT);
-		if (range != null)
+		if (range != null) {
 			return Utils.copyOfRange(params, Integer.parseInt(range), params.length);
+		}
+		
 		return params;
 	}
 	
+	/**
+	 * 
+	 * @param args
+	 * @return
+	 */
 	protected static String[] initAppServer(String... args) {
 		// defaulting JNDI
-		if (System.getProperty(Context.INITIAL_CONTEXT_FACTORY) == null)
+		if (System.getProperty(Context.INITIAL_CONTEXT_FACTORY) == null) {
 			System.getProperties().setProperty(Context.INITIAL_CONTEXT_FACTORY, SimpleJndi.class.getName());
-		if (System.getProperty(Context.PROVIDER_URL) == null)
-			System.getProperties().setProperty(Context.PROVIDER_URL, "http://localhost:1221"/* "tjws://localhost:1221" */);
+		}
+		if (System.getProperty(Context.PROVIDER_URL) == null) {
+			System.getProperties().setProperty(Context.PROVIDER_URL, "http://localhost:1221");
+		}
+		
 		try {
 			final Context namingContext = new InitialContext();
 			WebAppServlet.setAppContextDelegator(new WebAppServlet.AppContextDelegator() {
 				public Object lookup(String name) {
 					try {
 						return namingContext.lookup(name);
-					} catch (NamingException nce) {
-						throw new RuntimeException("Can't delegate naming context operation", nce);
+					} catch (NamingException ex) {
+						throw new RuntimeException("Can't delegate naming context operation", ex);
 					}
 				}
 				
 				public Object lookupLink(String name) {
 					try {
 						return namingContext.lookupLink(name);
-					} catch (NamingException nce) {
-						throw new RuntimeException("Can't delegate naming context operation", nce);
+					} catch (NamingException ex) {
+						throw new RuntimeException("Can't delegate naming context operation", ex);
 					}
 				}
 				
-				public void add(String name, Object obj) {
+				public void add(String name, Object object) {
 					
 					try {
-						if (obj instanceof WebApp.MetaContext) {
-							SimpleDataSource sds = new SimpleDataSource(((WebApp.MetaContext) obj).getPath(), ((WebApp.MetaContext) obj).getClassLoader());
+						if (object instanceof WebApp.MetaContext) {
+							SimpleDataSource sds = new SimpleDataSource(((WebApp.MetaContext) object).getPath(), ((WebApp.MetaContext) object).getClassLoader());
 							// TODO all data sources created form App class path
 							// have to be destroyed at the app destroy
 							if (sds.isScopeApp()) {
-								HashSet<SimpleDataSource> dsmap = (HashSet<SimpleDataSource>) namingContext.getEnvironment().get(name);
-								if (dsmap == null) {
-									dsmap = new HashSet<SimpleDataSource>();
-									namingContext.addToEnvironment(name, dsmap);
+								HashSet<SimpleDataSource> simpleDataSource = (HashSet<SimpleDataSource>) namingContext.getEnvironment().get(name);
+								if (simpleDataSource == null) {
+									simpleDataSource = new HashSet<SimpleDataSource>();
+									namingContext.addToEnvironment(name, simpleDataSource);
 								}
-								dsmap.add(sds); // System.err.printf("Adding %s
-												 // for %s%n", sds, name);
+								// System.err.printf("Adding %s for %s%n", sds,
+								// name);
+								simpleDataSource.add(sds);
 							}
 						} else {
-							namingContext.addToEnvironment(name, obj);
+							namingContext.addToEnvironment(name, object);
 						}
-					} catch (NamingException nce) {
-						throw new RuntimeException("Can't delegate naming context operation", nce);
+					} catch (NamingException ex) {
+						throw new RuntimeException("Can't delegate naming context operation", ex);
 					}
 				}
 				
+				/**
+				 * 
+				 * @param name
+				 * @return
+				 * @see rogatkin.web.WebAppServlet.AppContextDelegator#remove(java.lang.String)
+				 */
 				@Override
 				public Object remove(String name) {
 					Object result = null;
@@ -153,11 +174,11 @@ public class Main {
 						if (result instanceof HashSet) {
 							for (SimpleDataSource sds : (HashSet<SimpleDataSource>) result) // {
 								sds.invalidate(); // System.err.printf("Invalidating
-													 // %s for %s%n", sds,
-													 // name);}
+													// %s for %s%n", sds,
+													// name);}
 						}
 						return result;
-					} catch (NamingException e) {
+					} catch (NamingException ex) {
 						// throw new RuntimeException("Can't resolve context in
 						// environment");
 					}
@@ -170,8 +191,9 @@ public class Main {
 		}
 		// Perhaps it should be set Context.URL_PKG_PREFIXES
 		// System.out.println("Xmx set "+Runtime.getRuntime().maxMemory());
-		if (args.length == 0)
+		if (args.length == 0) {
 			args = Acme.Serve.Main.readArguments(System.getProperty("user.dir", "."), Acme.Serve.Main.CLI_FILENAME);
+		}
 		if (args != null)
 			for (int i = 0; i < args.length; i++) {
 				if ("-dataSource".equals(args[i])) {

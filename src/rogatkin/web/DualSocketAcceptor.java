@@ -43,7 +43,7 @@ public class DualSocketAcceptor extends SSLAcceptor {
 	/**
 	 * @see Acme.Serve.SSLAcceptor#init(java.util.Map, java.util.Map)
 	 */
-	public void init(Map inProperties, Map outProperties) throws IOException {
+	public void init(Map<Object, Object> inProperties, Map<Object, Object> outProperties) throws IOException {
 		super.init(inProperties, outProperties);
 		int port = inProperties.get(Serve.ARG_PORT) != null ? ((Integer) inProperties.get(Serve.ARG_PORT)).intValue() : Serve.DEF_PORT;
 		int bl = 50;

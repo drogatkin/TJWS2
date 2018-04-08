@@ -108,7 +108,7 @@ public class EmbeddedServlet extends HttpServlet {
 				LogManager.info("dataBytes:\n" + IOHelper.toUTF8String(dataBytes) + "\n");
 				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_HTML, dataBytes, servletResponse);
 			} else if (pathSegment.endsWith("favicon.ico")) {
-				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_ICON, IOHelper.readFavIconBytes(), servletResponse);
+				IOHelper.sendResponse(IOHelper.CONTENT_TYPE_ICON, IOHelper.readIconBytes(), servletResponse);
 			} else if (pathSegment.endsWith(".js")) {
 				if (pathSegment.startsWith("/")) {
 					pathSegment = pathSegment.substring(1);

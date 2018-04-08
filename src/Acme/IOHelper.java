@@ -560,10 +560,24 @@ public final class IOHelper {
 	 * 
 	 * @return
 	 */
-	public static byte[] readFavIconBytes() {
+	public static byte[] readIconBytes(final InputStream inputStream) {
+		try {
+			return readBytes(inputStream, true);
+		} catch (IOException ex) {
+			LogManager.error(ex);
+			return null;
+		}
+	}
+	
+	/**
+	 * Returns the "favicon.ico" icon image 16X16 pixels in size.
+	 * 
+	 * @return
+	 */
+	public static byte[] readIconBytes() {
 		try {
 			final String iconPath = IOHelper.pathString(IOHelper.pathString(WebApp.class), "../resource/tjws.gif");
-			return readBytes(new FileInputStream(iconPath), true);
+			return readIconBytes(new FileInputStream(iconPath));
 		} catch (IOException ex) {
 			LogManager.error(ex);
 			return null;

@@ -309,10 +309,10 @@ public class WarRoller implements WarDeployer {
 			}
 		});
 		
-		Enumeration se = server.getServlets();
+		Enumeration<Object> servlets = server.getServlets();
 		ArrayList<WebAppServlet> markedServlets = new ArrayList<WebAppServlet>(10);
-		while (se.hasMoreElements()) {
-			Object servlet = se.nextElement();
+		while (servlets.hasMoreElements()) {
+			Object servlet = servlets.nextElement();
 			if (servlet instanceof WebAppServlet) {
 				WebAppServlet was = (WebAppServlet) servlet;
 				String name = was.deployDir.getName();
@@ -325,9 +325,11 @@ public class WarRoller implements WarDeployer {
 				}
 			}
 		}
+		
 		for (WebAppServlet was : markedServlets) {
 			redeploy(warDir, deployTarDir, was, virtualHost);
 		}
+		
 		for (String name : apps) {
 			// remaining not deployed yet apps
 			try {
