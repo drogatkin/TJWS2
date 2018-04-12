@@ -609,7 +609,7 @@ public class Serve implements ServletContext, Serializable {
 		} catch (IOException ioe) {
 			log("TJWS: problem in persisting sessions for  " + servletContext, ioe);
 		} finally {
-			IOHelper.safeClose(storeWriter);
+			IOHelper.closeSilently(storeWriter);
 		}
 	}
 	
@@ -632,7 +632,7 @@ public class Serve implements ServletContext, Serializable {
 			} catch (IOException ioe) {
 				log("TJWS: problem in sessions deserialization for " + servletContext, ioe);
 			} finally {
-				IOHelper.safeClose(bReader);
+				IOHelper.closeSilently(bReader);
 			}
 		}
 	}
@@ -968,7 +968,7 @@ public class Serve implements ServletContext, Serializable {
 			} catch (Exception ex) {
 				log("TJWS: Unexpected problem in restoring sessions.", ex);
 			} finally {
-				IOHelper.safeClose(bReader);
+				IOHelper.closeSilently(bReader);
 			}
 		}
 		
@@ -1235,7 +1235,7 @@ public class Serve implements ServletContext, Serializable {
 					throw (ThreadDeath) th;
 				}
 			} finally {
-				IOHelper.safeClose(writer);
+				IOHelper.closeSilently(writer);
 			}
 			
 			Enumeration<?> e = sessions.keys();
@@ -2464,7 +2464,8 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		synchronized final void close() {
-			IOHelper.safeClose(socket, true);
+			IOHelper.closeSilently(socket);
+			socket = null;
 		}
 		
 		private void parseRequest() throws IOException {

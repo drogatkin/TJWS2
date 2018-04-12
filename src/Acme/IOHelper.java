@@ -244,38 +244,26 @@ public final class IOHelper {
 	}
 	
 	/**
-	 * Closes the given <code>mCloseable</code>.
+	 * Closes the specified <code>mCloseables</code> objects.
 	 *
-	 * @param mCloseable
+	 * @param mCloseables
 	 */
-	public static final void safeClose(Object mCloseable, boolean nulify) {
-		try {
-			if (mCloseable != null) {
-				if (mCloseable instanceof Closeable) {
-					((Closeable) mCloseable).close();
-				} else if (mCloseable instanceof Socket) {
-					((Socket) mCloseable).close();
-				} else if (mCloseable instanceof ServerSocket) {
-					((ServerSocket) mCloseable).close();
-				} else {
-					throw new IllegalArgumentException("mCloseable is not an instance of closeable object!");
+	public static final void closeSilently(Object... mCloseables) {
+		if (isNotNull(mCloseables)) {
+			for (Object mCloseable : mCloseables) {
+				try {
+					if (mCloseable instanceof Closeable) {
+						((Closeable) mCloseable).close();
+					} else if (mCloseable instanceof Socket) {
+						((Socket) mCloseable).close();
+					} else if (mCloseable instanceof ServerSocket) {
+						((ServerSocket) mCloseable).close();
+					}
+				} catch (IOException ex) {
+					LogManager.error(ex);
 				}
 			}
-		} catch (IOException ex) {
-			LogManager.error(ex);
-		} finally {
-			if (nulify) {
-				mCloseable = null;
-			}
 		}
-	}
-	
-	/**
-	 * 
-	 * @param mCloseable
-	 */
-	public static final void safeClose(Object mCloseable) {
-		safeClose(mCloseable, false);
 	}
 	
 	/**
@@ -307,9 +295,9 @@ public final class IOHelper {
 				throw ex;
 			} finally {
 				/* close streams. */
-				safeClose(outputStream);
+				closeSilently(outputStream);
 				if (closeStream) {
-					safeClose(bInputStream);
+					closeSilently(bInputStream);
 				}
 			}
 		}
@@ -352,7 +340,7 @@ public final class IOHelper {
 			} finally {
 				/* close streams. */
 				if (closeStream) {
-					safeClose(outputStream);
+					closeSilently(outputStream);
 				}
 			}
 		}
@@ -391,8 +379,7 @@ public final class IOHelper {
 			} finally {
 				/* close streams. */
 				if (closeStreams) {
-					safeClose(sourceStream);
-					safeClose(targetStream);
+					closeSilently(sourceStream, targetStream);
 				}
 			}
 		}
@@ -640,7 +627,7 @@ public final class IOHelper {
 			final StringWriter stringWriter = new StringWriter();
 			PrintWriter printWriter = new PrintWriter(stringWriter);
 			throwable.printStackTrace(printWriter);
-			safeClose(printWriter);
+			closeSilently(printWriter);
 			return stringWriter.toString();
 		}
 		

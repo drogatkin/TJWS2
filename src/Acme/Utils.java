@@ -65,6 +65,8 @@ import javax.net.ssl.SSLParameters;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.rslakra.logger.LogManager;
+
 /// Assorted static utility routines.
 // <P>
 // Whenever I come up with a static routine that might be of general use,
@@ -775,7 +777,7 @@ public class Utils {
 	 * base 64 encoding, string converted to bytes using specified encoding
 	 * 
 	 * @param String
-	 *            <val>_s</val> original string to encode
+	 *            <val>textString</val> original string to encode
 	 * @param String
 	 *            encoding, can be null, then iso-8859-1 used
 	 * @return String result of encoding as iso-8859-1 string<br>
@@ -783,19 +785,18 @@ public class Utils {
 	 * @exception no
 	 *                exceptions
 	 */
-	public final static String base64Encode(String _s, String _enc) {
-		if (_s == null) {
+	public final static String base64Encode(String textString, String encoding) {
+		if (IOHelper.isNull(textString)) {
 			return null;
-		}
-		
-		if (_enc == null) {
-			_enc = IOHelper.ISO_8859_1;
-		}
-		
-		try {
-			return base64Encode(_s.getBytes(_enc));
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} else if (!IOHelper.isNullOrEmpty(textString)) {
+			if (IOHelper.isNullOrEmpty(encoding)) {
+				encoding = IOHelper.ISO_8859_1;
+			}
+			try {
+				return base64Encode(textString.getBytes(encoding));
+			} catch (Exception ex) {
+				LogManager.error(ex);
+			}
 		}
 		
 		return null;
@@ -915,18 +916,18 @@ public class Utils {
 	 * @return result of encoding, or null if encoding invalid or string null,
 	 *         or string is invalid base 64 encoding
 	 */
-	public final static String base64Decode(String _s, String _enc) {
-		if (_s == null) {
+	public final static String base64Decode(String base64Encoded, String encoding) {
+		if (IOHelper.isNull(base64Encoded)) {
 			return null;
-		}
-		
-		if (_enc == null) {
-			_enc = IOHelper.ISO_8859_1;
-		}
-		
-		try {
-			return new String(decode64(_s), _enc);
-		} catch (UnsupportedEncodingException uee) {
+		} else if (!IOHelper.isNullOrEmpty(base64Encoded)) {
+			if (IOHelper.isNullOrEmpty(encoding)) {
+				encoding = IOHelper.ISO_8859_1;
+			}
+			try {
+				return new String(decode64(base64Encoded), encoding);
+			} catch (UnsupportedEncodingException ex) {
+				LogManager.error(ex);
+			}
 		}
 		
 		return null;
@@ -1116,9 +1117,9 @@ public class Utils {
 				} catch (java.io.IOException e) {
 					// Just return originally-decoded bytes
 				} finally {
-					IOHelper.safeClose(baos);
-					IOHelper.safeClose(gzis);
-					IOHelper.safeClose(bais);
+					IOHelper.closeSilently(baos);
+					IOHelper.closeSilently(gzis);
+					IOHelper.closeSilently(bais);
 				}
 			} // end if: gzipped
 		} // end if: bytes.length >= 2
@@ -1299,6 +1300,7 @@ public class Utils {
 						try {
 							freeThreads.wait();
 						} catch (InterruptedException ex) {
+							// ignore me!
 						}
 					}
 				}
@@ -1341,7 +1343,7 @@ public class Utils {
 			}
 		}
 		
-		class PooledThread implements Runnable {
+		final class PooledThread implements Runnable {
 			Runnable runner;
 			boolean quit;
 			Thread delegateThread;
@@ -1371,7 +1373,7 @@ public class Utils {
 						try {
 							this.wait();
 						} catch (InterruptedException ie) {
-							
+							// ignore me!
 						}
 					}
 					
@@ -1411,6 +1413,10 @@ public class Utils {
 				delegateThread.interrupt();
 			}
 			
+			/**
+			 * 
+			 * @param runnable
+			 */
 			synchronized void setRunner(Runnable runnable) {
 				if (runner != null) {
 					throw new RuntimeException("Invalid worker thread state, current runner not null.");

@@ -152,7 +152,7 @@ public class WebApp {
 			System.err.printf("IO error (%s) at reading app descriptor%n", ioe);
 			return null;
 		} finally {
-			IOHelper.safeClose(br);
+			IOHelper.closeSilently(br);
 		}
 	}
 	
@@ -223,8 +223,8 @@ public class WebApp {
 		try {
 			Utils.copyStream(is = uc.getInputStream(), os = new FileOutputStream(targetWar), -1);
 		} finally {
-			IOHelper.safeClose(os);
-			IOHelper.safeClose(is);
+			IOHelper.closeSilently(os);
+			IOHelper.closeSilently(is);
 		}
 		targetWar.setLastModified(uc.getLastModified());
 	}

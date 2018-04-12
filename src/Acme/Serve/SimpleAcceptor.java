@@ -63,7 +63,8 @@ public class SimpleAcceptor implements Serve.Acceptor {
 			throw new IOException("Socket already destroyed!");
 		}
 		
-		IOHelper.safeClose(socket, true);
+		IOHelper.closeSilently(socket);
+		socket = null;
 	}
 	
 	/**

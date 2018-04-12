@@ -229,7 +229,7 @@ public final class TestConnection {
 		} catch (Exception ex) {
 			LogManager.error(ex);
 		} finally {
-			IOHelper.safeClose(bReader);
+			IOHelper.closeSilently(bReader);
 		}
 	}
 	

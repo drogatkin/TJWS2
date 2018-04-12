@@ -160,7 +160,8 @@ public class SSLAcceptor implements Acceptor {
 	 * @see Acme.Serve.Serve.Acceptor#destroy()
 	 */
 	public void destroy() throws IOException {
-		IOHelper.safeClose(socket, true);
+		IOHelper.closeSilently(socket);
+		socket = null;
 	}
 	
 	/**
@@ -236,7 +237,7 @@ public class SSLAcceptor implements Acceptor {
 			LogManager.error("Error initializing SSLAcceptor!", ex);
 			throw IOHelper.newIOException(ex);
 		} finally {
-			IOHelper.safeClose(keyStoreStream);
+			IOHelper.closeSilently(keyStoreStream);
 		}
 		
 		try {
