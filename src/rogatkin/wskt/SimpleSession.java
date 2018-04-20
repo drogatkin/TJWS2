@@ -104,6 +104,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	int dataLen;
 	boolean frameText;
 	byte[] completeData;
+	
 	// /////////////////////////////////
 	ByteChannel channel;
 	ServeConnection serveConnection; // temporary
@@ -447,13 +448,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 	@Override
 	public <T> void addMessageHandler(Class<T> handClass, Partial<T> partial) {
 		// TODO Auto-generated method stub
-		
 	}
 	
 	@Override
 	public void close() throws IOException {
 		close(null);
-		
 	}
 	
 	@Override
@@ -461,32 +460,32 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		close(reason, null);
 	}
 	
-	public void close(CloseReason reason, byte[] b) throws IOException {
+	public void close(CloseReason reason, byte[] dataBytes) throws IOException {
 		// new Exception("attempt close already closed").printStackTrace();
 		if (isOpen() == false) {
 			return;
 		}
+		
 		try {
 			for (SimpleMessageHandler mh : handlers) {
 				mh.processClose(reason);
-				//
 				mh.destroy();
 			}
-			if (b == null)
+			if (dataBytes == null)
 				if (reason == null)
-					b = new byte[0];
+					dataBytes = new byte[0];
 				else {
 					ByteBuffer bb = ByteBuffer.allocate(2 + reason.getReasonPhrase().length());
 					bb.putShort((short) reason.getCloseCode().getCode());
 					if (reason.getReasonPhrase().length() > 0)
 						bb.put(reason.getReasonPhrase().getBytes());
 					bb.flip();
-					b = new byte[bb.remaining()];
-					bb.put(b);
+					dataBytes = new byte[bb.remaining()];
+					bb.put(dataBytes);
 				}
 			if (basicRemote != null) {
 				try {
-					basicRemote.sendEcho((byte) 8, b);
+					basicRemote.sendEcho((byte) 8, dataBytes);
 				} catch (Exception e) {
 					// eat it, can be closed
 				}
@@ -695,7 +694,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		Method onError;
 		boolean partText, partBin;
 		
-		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose, paramMapError, paramMapPong, paramMapBin;
+		ParameterEntry[] paramMapText, paramMapOpen, paramMapClose,
+						paramMapError, paramMapPong, paramMapBin;
 		Object endpoint;
 		Object result;
 		
@@ -719,7 +719,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					Annotation[][] paramAnnotations = method.getParameterAnnotations();
 					Class<?>[] paramTypes = method.getParameterTypes();
 					final ParameterEntry[] paramEntries = new ParameterEntry[paramTypes.length];
-					boolean partReq = false, primeText = false, primeBin = false;
+					boolean partReq = false, primeText = false,
+									primeBin = false;
 					for (Class<?> paramClass : paramTypes) {
 						paramEntries[paramIndex] = new ParameterEntry();
 						if (paramClass == String.class) {
@@ -1127,26 +1128,27 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			}
 		}
 		
-		boolean processBinary(byte[] b, boolean f) {
+		boolean processBinary(byte[] dataBytes, boolean part) {
 			if (onBin != null && partBin) {
-				processBinary(b, f);
+				processBinary(dataBytes, part);
 				return true;
 			}
+			
 			return false;
 		}
 		
-		void processBinary(byte[] b) {
-			processBinary(b, null);
+		void processBinary(byte[] dataBytes) {
+			processBinary(dataBytes, null);
 		}
 		
-		void processBinary(byte[] b, Boolean part) {
+		void processBinary(byte[] dataBytes, Boolean part) {
 			if (onBin != null) {
 				Class<?>[] paramts = onBin.getParameterTypes();
 				Object[] params = new Object[paramts.length];
-				for (int pi = 0; pi < params.length; pi++)
+				for (int pi = 0; pi < params.length; pi++) {
 					switch (paramMapBin[pi].sourceType) {
 						case BIN:
-							params[pi] = b;
+							params[pi] = dataBytes;
 							break;
 						case SESSION_PARAM:
 							params[pi] = SimpleSession.this;
@@ -1158,11 +1160,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							params[pi] = part;
 							break;
 						case DECODER:
-							ByteBuffer bb = ByteBuffer.wrap(b);
-							for (Decoder decoder : paramMapBin[pi].decoder)
-								if (((Decoder.Binary) decoder).willDecode(bb))
+							ByteBuffer byteBuffer = ByteBuffer.wrap(dataBytes);
+							for (Decoder decoder : paramMapBin[pi].decoder) {
+								if (((Decoder.Binary) decoder).willDecode(byteBuffer)) {
 									try {
-										params[pi] = ((Decoder.Binary) decoder).decode(bb);
+										params[pi] = ((Decoder.Binary) decoder).decode(byteBuffer);
 										break;
 									} catch (DecodeException e) {
 										if (__debugOn) {
@@ -1173,20 +1175,23 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 											serverContainer.log(e, "Unhandled error");
 										}
 									}
+								}
+							}
 							break;
 						case BYTEBUF:
-							params[pi] = ByteBuffer.wrap(b);
+							params[pi] = ByteBuffer.wrap(dataBytes);
 							break;
 						case INPUT:
-							params[pi] = new ByteArrayInputStream(b);
+							params[pi] = new ByteArrayInputStream(dataBytes);
 							break;
 						default:
 							serverContainer.log("Unmapped binary parameter %d at calling %s", pi, onBin);
 							params[pi] = null;
 					}
+				}
 				try {
 					if (__debugOn) {
-						serverContainer.log("Called %s", b);
+						serverContainer.log("Called %s", dataBytes);
 					}
 					result = onBin.invoke(endpoint, params);
 					if (result != null) {
@@ -1201,7 +1206,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					}
 				}
 			} else {
-				serverContainer.log("No handler for binary message %s", b);
+				serverContainer.log("No handler for binary message %s", dataBytes);
 			}
 		}
 		
@@ -1573,9 +1578,9 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							}
 						}
 					} // else
-						 // throw new IllegalArgumentException
-						 // ("Only text encoders are implemented - "+rt+" for
-						 // method "+em.getName());
+						// throw new IllegalArgumentException
+						// ("Only text encoders are implemented - "+rt+" for
+						// method "+em.getName());
 				}
 			}
 			

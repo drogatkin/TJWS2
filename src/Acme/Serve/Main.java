@@ -517,16 +517,18 @@ public class Main extends Serve {
 		
 		Thread[] ts = new Thread[ac];
 		ac = tg.enumerate(ts, true);
-		if (ac == ts.length)
+		if (ac == ts.length) {
 			serve.log("Destroy:interruptRunningProcesses: Not all threads will be stopped.");
+		}
 		// kill non daemon
-		for (int i = 0; i < ac; i++)
+		for (int i = 0; i < ac; i++) {
 			if (ts[i].isDaemon() == false) {
 				String tn = ts[i].getName();
 				// System.err.println("Interrupting and kill " + tn);
-				
-				if (ts[i] == Thread.currentThread() || "Stop Monitor".equals(tn) || "ShutDownHook".equals(tn) || "DestroyJavaVM".equals(tn) || (tn != null && tn.startsWith("AWT-")) || "main".equals(tn))
+				if (ts[i] == Thread.currentThread() || "Stop Monitor".equals(tn) || "ShutDownHook".equals(tn) || "DestroyJavaVM".equals(tn) || (tn != null && tn.startsWith("AWT-")) || "main".equals(tn)) {
 					continue;
+				}
+				
 				ts[i].interrupt();
 				Thread.yield();
 				if (ts[i].isAlive()) {
@@ -541,7 +543,8 @@ public class Main extends Serve {
 					}
 				}
 			} // else
-		// serve.log("Daemon thread "+ts[i].getName()+" is untouched.");
+				// serve.log("Daemon thread "+ts[i].getName()+" is untouched.");
+		}
 	}
 	
 	private static void readServlets(File servFile) {

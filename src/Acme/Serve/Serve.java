@@ -637,7 +637,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
-	// / Register a standard set of Servlets. These will return
+	// Register a standard set of Servlets. These will return
 	// files or directory listings, and run CGI programs, much like a
 	// standard HTTP server.
 	// <P>
@@ -1089,13 +1089,13 @@ public class Serve implements ServletContext, Serializable {
 	public static interface WebsocketProvider {
 		public void init(Serve serve);
 		
-		public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws IOException;
+		public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest request, HttpServletResponse response) throws IOException;
 		
-		public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp) throws IOException;
+		public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest request, HttpServletResponse response) throws IOException;
 		
 		public void destroy();
 		
-		public void deploy(ServletContext servletCtx, List classpathFiles);
+		public void deploy(ServletContext servletContext, List classPathFiles);
 	}
 	
 	/**
@@ -1806,13 +1806,13 @@ public class Serve implements ServletContext, Serializable {
 			return result.keys();
 		}
 		
-		synchronized protected Map createParameters() {
+		synchronized protected Map<String, String[]> createParameters() {
 			if (requestDispatcher.parameters == null) {
 				String query = getQueryString();
 				if (query != null) {
 					requestDispatcher.parameters = Utils.parseQueryString(query, null);
 				} else {
-					requestDispatcher.parameters = new Hashtable();
+					requestDispatcher.parameters = new Hashtable<String, String[]>();
 				}
 			}
 			
@@ -1825,7 +1825,7 @@ public class Serve implements ServletContext, Serializable {
 		String dispatchPath;
 		String dispatchQuery;
 		int dispatchLen;
-		Map parameters;
+		Map<String, String[]> parameters;
 		
 		SimpleRequestDispatcher(String path) {
 			PathTreeDictionary registry = (PathTreeDictionary) currentRegistry.get();
@@ -2016,7 +2016,7 @@ public class Serve implements ServletContext, Serializable {
 							if (serveConnection.asyncMode != null) {
 								serveConnection.asyncMode.notifyTimeout();
 								serveConnection.keepAlive = false;
-								if (serveConnection.websocketUpgrade) {
+								if (serveConnection.webSocketUpgrade) {
 									serveConnection.asyncMode = null;
 								}
 								serveConnection.joinAsync();
@@ -2162,7 +2162,7 @@ public class Serve implements ServletContext, Serializable {
 		// HTTP/1.1 or better
 		private boolean oneOne;
 		private boolean reqMime;
-		private boolean websocketUpgrade;
+		private boolean webSocketUpgrade;
 		private Vector<String> reqHeaderNames = new Vector<String>();
 		private Vector<String> reqHeaderValues = new Vector<String>();
 		private Locale locale;
@@ -2172,7 +2172,7 @@ public class Serve implements ServletContext, Serializable {
 		protected boolean keepAlive = true;
 		protected int keepAliveRequestedTime;
 		protected long lastRun, lastWait;
-		private Vector outCookies;
+		private Vector<Cookie> outCookies;
 		private Vector<Cookie> inCookies;
 		private String sessionCookieValue, sessionUrlValue, sessionValue,
 						reqSessionValue;
@@ -2389,7 +2389,7 @@ public class Serve implements ServletContext, Serializable {
 			resMessage = null;
 			resHeaderNames.clear();
 			headersWritten = false;
-			websocketUpgrade = false;
+			webSocketUpgrade = false;
 			postCache = null;
 			if (asyncMode != null) {
 				serve.log("TJWS: debug", new Exception("Restarting without clean async mode"));
@@ -2423,14 +2423,14 @@ public class Serve implements ServletContext, Serializable {
 					}
 					
 					finalizeRequest();
-					if (websocketUpgrade) {
+					if (webSocketUpgrade) {
 						outputStream.flush();
 						try {
 							serve.websocketProvider.upgrade(socket, reqUriPath, servlet, this, this);
 							return;
 						} catch (Exception ex) {
 							serve.log("TJWS: websocket upgrade protocol error: " + ex, ex);
-							websocketUpgrade = false;
+							webSocketUpgrade = false;
 						}
 					}
 				} while (keepAlive && serve.isKeepAlive() && keepAliveRequestedTime < serve.getMaxTimesConnectionUse());
@@ -2457,7 +2457,7 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 			} finally {
-				if (asyncMode == null && !websocketUpgrade) {
+				if (asyncMode == null && !webSocketUpgrade) {
 					close();
 				}
 			}
@@ -2470,37 +2470,35 @@ public class Serve implements ServletContext, Serializable {
 		
 		private void parseRequest() throws IOException {
 			byte[] lineBytes = new byte[4096];
-			int len;
-			String line;
-			// / TODO put time mark here for start waiting for receiving
-			// requests
+			// TODO put time mark here for start waiting for receiving requests
 			lastWait = System.currentTimeMillis();
 			// Read the first line of the request.
 			socket.setSoTimeout(serve.timeoutKeepAlive);
-			len = inputStream.readLine(lineBytes, 0, lineBytes.length);
-			if (len <= 0) {
+			int length = inputStream.readLine(lineBytes, 0, lineBytes.length);
+			if (length <= 0) {
 				if (keepAlive) {
 					keepAlive = false;
 					// connection seems be closed
 				} else {
 					problem("Status-Code 400: Bad Request(empty)", SC_BAD_REQUEST);
 				}
+				
 				return;
 			}
 			
-			if (len >= lineBytes.length) {
+			if (length >= lineBytes.length) {
 				problem("Status-Code 414: Request-URI Too Long", SC_REQUEST_URI_TOO_LONG);
 				return;
 			}
 			
-			line = new String(lineBytes, 0, len, IOHelper.UTF_8);
+			String line = new String(lineBytes, 0, length, IOHelper.UTF_8);
 			// serve.log("R>"+line);
-			StringTokenizer ust = new StringTokenizer(line);
-			if (ust.hasMoreTokens()) {
-				reqMethod = ust.nextToken();
-				if (ust.hasMoreTokens()) {
-					reqUriPathUn = ust.nextToken();
-					// TODO make it only when URL overwrite enambled
+			final StringTokenizer lineTokens = new StringTokenizer(line);
+			if (lineTokens.hasMoreTokens()) {
+				reqMethod = lineTokens.nextToken();
+				if (lineTokens.hasMoreTokens()) {
+					reqUriPathUn = lineTokens.nextToken();
+					// TODO make it only when URL overwrite enabled
 					int uop = reqUriPathUn.indexOf(SESSION_URL_NAME);
 					if (uop > 0) {
 						sessionUrlValue = reqUriPathUn.substring(uop + SESSION_URL_NAME.length());
@@ -2512,8 +2510,8 @@ public class Serve implements ServletContext, Serializable {
 						}
 					}
 					
-					if (ust.hasMoreTokens()) {
-						reqProtocol = ust.nextToken();
+					if (lineTokens.hasMoreTokens()) {
+						reqProtocol = lineTokens.nextToken();
 						oneOne = !reqProtocol.toUpperCase().equals("HTTP/1.0");
 						reqMime = true;
 						
@@ -2559,7 +2557,7 @@ public class Serve implements ServletContext, Serializable {
 					strHeader = strHeader.toLowerCase();
 				}
 				
-				websocketUpgrade = strHeader != null && strHeader.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
+				webSocketUpgrade = strHeader != null && strHeader.indexOf(UPGRADE) >= 0 && WEBSOCKET.equalsIgnoreCase(getHeader(UPGRADE));
 				keepAlive = "close".equalsIgnoreCase(strHeader) == false;
 				if (keepAlive) {
 					strHeader = getHeader(KEEPALIVE);
@@ -2625,12 +2623,12 @@ public class Serve implements ServletContext, Serializable {
 				// SimpleRequestDispatcher(reqUriPathUn).forward((ServletRequest)
 				// this, (ServletResponse) this);
 				Object[] os = registry.get(reqUriPath);
-				if (websocketUpgrade) {
-					websocketUpgrade = false;
+				if (webSocketUpgrade) {
+					webSocketUpgrade = false;
 					if (serve.websocketProvider != null) {
 						try {
 							serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, this);
-							websocketUpgrade = resCode == SC_SWITCHING_PROTOCOLS;
+							webSocketUpgrade = (resCode == SC_SWITCHING_PROTOCOLS);
 							// System.err.println("hs code:"+resCode);
 						} catch (Exception wse) {
 							problem("Can't handshake " + wse, SC_INTERNAL_SERVER_ERROR, wse);
@@ -2686,7 +2684,7 @@ public class Serve implements ServletContext, Serializable {
 				serve.logStream.println(accessLogFormat.format(logPlaceHolders));
 			}
 			
-			if (!websocketUpgrade) {
+			if (!webSocketUpgrade) {
 				lastRun = 0;
 				keepAliveRequestedTime++;
 				closeStreams();
@@ -2700,7 +2698,7 @@ public class Serve implements ServletContext, Serializable {
 			
 			setDateHeader("Date", System.currentTimeMillis());
 			setHeader("Server", Serve.Identification.serverName + "/" + Serve.Identification.serverVersion);
-			if (keepAlive && serve.isKeepAlive() && !websocketUpgrade) {
+			if (keepAlive && serve.isKeepAlive() && !webSocketUpgrade) {
 				if (reqMime) {
 					// set for 1.1 too, because some client do not follow a
 					// standard
@@ -2710,7 +2708,7 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 				return true;
-			} else if (websocketUpgrade) {
+			} else if (webSocketUpgrade) {
 				setHeader(CONNECTION, UPGRADE);
 				return true;
 			} else {
@@ -4182,8 +4180,9 @@ public class Serve implements ServletContext, Serializable {
 		// / Adds the specified cookie to the response. It can be called
 		// multiple times to set more than one cookie.
 		public void addCookie(Cookie cookie) {
-			if (outCookies == null)
-				outCookies = new Vector();
+			if (outCookies == null) {
+				outCookies = new Vector<Cookie>();
+			}
 			
 			outCookies.addElement(cookie);
 		}
@@ -4198,21 +4197,29 @@ public class Serve implements ServletContext, Serializable {
 		public String encodeURL(String url) {
 			int uop = url.indexOf(SESSION_URL_NAME);
 			// TODO not robust enough
-			if (uop > 0)
+			if (uop > 0) {
 				url = url.substring(0, uop);
-			if (sessionValue == null || isRequestedSessionIdFromCookie())
+			}
+			
+			if (sessionValue == null || isRequestedSessionIdFromCookie()) {
 				return url;
+			}
+			
 			try {
 				new URL(url); // for testing syntac
 				int ehp = url.indexOf('/');
-				if (ehp < 0)
+				if (ehp < 0) {
 					ehp = url.indexOf('?');
-				if (ehp < 0)
+				}
+				if (ehp < 0) {
 					ehp = url.indexOf('#');
-				if (ehp < 0)
+				}
+				if (ehp < 0) {
 					ehp = url.length();
-				if (url.regionMatches(true, 0, getRequestURL().toString(), 0, ehp) == false)
+				}
+				if (url.regionMatches(true, 0, getRequestURL().toString(), 0, ehp) == false) {
 					return url;
+				}
 			} catch (MalformedURLException e) {
 			}
 			
@@ -4232,7 +4239,8 @@ public class Serve implements ServletContext, Serializable {
 		 * @since 2.4
 		 */
 		public int getRemotePort() {
-			return getServerPort(); // TODO not quite robust
+			// TODO not quite robust
+			return getServerPort();
 		}
 		
 		/**
@@ -4245,8 +4253,9 @@ public class Serve implements ServletContext, Serializable {
 		 * @since 2.4
 		 */
 		public String getLocalName() {
-			InetAddress ia = socket/* serve.serverSocket */.getLocalAddress();
-			return ia == null ? null : ia.getCanonicalHostName(); /* 1.4 */
+			InetAddress localAddress = socket.getLocalAddress();
+			/* 1.4 */
+			return (localAddress == null ? null : localAddress.getCanonicalHostName());
 		}
 		
 		/**
@@ -4260,8 +4269,8 @@ public class Serve implements ServletContext, Serializable {
 		 * 
 		 */
 		public String getLocalAddr() {
-			InetAddress ia = /* serve.serverSocket */socket.getLocalAddress();
-			return ia == null ? null : ia.getHostAddress();
+			InetAddress localAddress = socket.getLocalAddress();
+			return (localAddress == null ? null : localAddress.getHostAddress());
 		}
 		
 		/**
@@ -4469,25 +4478,28 @@ public class Serve implements ServletContext, Serializable {
 				} else {
 					outputStream.println(reqProtocol + " " + resCode + " " + resMessage.substring(0, 255).replace('\r', '/').replace('\n', '/'));
 				}
-				Enumeration he = resHeaderNames.keys();
-				while (he.hasMoreElements()) {
-					String name = (String) he.nextElement();
+				
+				final Enumeration<String> headerNames = resHeaderNames.keys();
+				while (headerNames.hasMoreElements()) {
+					final String name = headerNames.nextElement();
 					// skip header until make decision
 					if (CONNECTION.equals(name) || KEEPALIVE.equals(name)) {
 						continue;
 					}
 					
-					Object o = resHeaderNames.get(name);
-					if (o instanceof String) {
-						String value = (String) o;
+					final Object headerValue = resHeaderNames.get(name);
+					if (headerValue instanceof String) {
+						String value = (String) headerValue;
 						if (value != null) {// just in case
 							if (CONTENTTYPE.equals(name)) {
 								if (charEncoding != null && value.startsWith("text/")) {
 									int p = value.indexOf(';');
-									if (p > 0)
+									if (p > 0) {
 										value = value.substring(0, p);
+									}
 									value += "; charset=" + charEncoding;
 								}
+								
 								// TODO check locale and can take from it as
 								// well based on mapping locale charset
 							}
@@ -4501,12 +4513,14 @@ public class Serve implements ServletContext, Serializable {
 									}
 							} else
 								outputStream.println(name + ": " + value);
-							if (chunked_out == false)
-								if (TRANSFERENCODING.equals(name) && CHUNKED.equals(value))
+							if (chunked_out == false) {
+								if (TRANSFERENCODING.equals(name) && CHUNKED.equals(value)) {
 									chunked_out = true;
+								}
+							}
 						}
-					} else if (o instanceof String[]) {
-						String[] values = (String[]) o;
+					} else if (headerValue instanceof String[]) {
+						String[] values = (String[]) headerValue;
 						if ("set-cookie".equals(name)) {
 							for (int i = 0; i < values.length; i++) {
 								outputStream.print(name);
@@ -4523,37 +4537,42 @@ public class Serve implements ServletContext, Serializable {
 					}
 				}
 				
-				StringBuffer sb = null;
-				StringBuffer sb2 = null;
-				Cookie cc = null;
+				StringBuffer setCookieBuilder = null;
+				StringBuffer cookieBuilderVersion1 = null;
+				Cookie cookie = null;
 				// add session cookie
 				if (sessionValue != null) {
 					HttpSession session = serve.getSession(sessionValue);
 					if (session != null) {
 						if (((AcmeSession) session).isValid()) {
 							if (session.isNew()) {
-								cc = new AcmeCookie(SESSION_COOKIE_NAME, sessionValue);
-								if (serve.expiredIn < 0)
-									cc.setMaxAge(Math.abs(serve.expiredIn) * 60);
-								((AcmeCookie) cc).setHttpOnly(serve.httpSessCookie);
-								if (serve.secureSessCookie)
-									((AcmeCookie) cc).setSecure(true);
+								cookie = new AcmeCookie(SESSION_COOKIE_NAME, sessionValue);
+								if (serve.expiredIn < 0) {
+									cookie.setMaxAge(Math.abs(serve.expiredIn) * 60);
+								}
+								
+								((AcmeCookie) cookie).setHttpOnly(serve.httpSessCookie);
+								if (serve.secureSessCookie) {
+									((AcmeCookie) cookie).setSecure(true);
+								}
+								
 								ServletContext sc = ((AcmeSession) session).getServletContext();
 								try {
 									String cp = (String) sc.getClass().getMethod("getContextPath", Utils.EMPTY_CLASSES).invoke(sc, Utils.EMPTY_OBJECTS);
-									if (cp.length() == 0)
+									if (cp.length() == 0) {
 										cp = "/";
-									cc.setPath(cp);
+									}
+									cookie.setPath(cp);
 								} catch (Exception e) {
 									
 								}
-								addCookie(cc);
+								addCookie(cookie);
 							}
 						} else {
-							cc = new AcmeCookie(SESSION_COOKIE_NAME, "");
-							cc.setMaxAge(0);
-							((AcmeCookie) cc).setHttpOnly(serve.httpSessCookie);
-							addCookie(cc);
+							cookie = new AcmeCookie(SESSION_COOKIE_NAME, "");
+							cookie.setMaxAge(0);
+							((AcmeCookie) cookie).setHttpOnly(serve.httpSessCookie);
+							addCookie(cookie);
 						}
 					}
 				}
@@ -4563,77 +4582,92 @@ public class Serve implements ServletContext, Serializable {
 				// cc.setMaxAge(0);
 				//
 				for (int i = 0; outCookies != null && i < outCookies.size(); i++) {
-					cc = (Cookie) outCookies.elementAt(i);
-					if (cc.getSecure() && isSecure() == false)
+					cookie = (Cookie) outCookies.elementAt(i);
+					if (cookie.getSecure() && isSecure() == false) {
 						continue;
-					int version = cc.getVersion();
+					}
+					
+					int version = cookie.getVersion();
 					boolean httpOnly = false;
 					try {
-						httpOnly = Boolean.TRUE.equals(cc.getClass().getMethod("isHttpOnly", Utils.EMPTY_CLASSES).invoke(cc, Utils.EMPTY_OBJECTS));
-					} catch (Exception e) {
-						
+						httpOnly = Boolean.TRUE.equals(cookie.getClass().getMethod("isHttpOnly", Utils.EMPTY_CLASSES).invoke(cookie, Utils.EMPTY_OBJECTS));
+					} catch (Exception ex) {
+						// ignore me!
 					}
+					
 					String token;
 					if (version > 1) {
-						if (sb2 == null)
-							sb2 = new StringBuffer(SETCOOKIE + "2: ");
-						else
-							sb2.append(',');
-						sb2.append(cc.getName());
-						sb2.append("=\"");
-						sb2.append(cc.getValue()).append('"');
-						token = cc.getComment();
-						if (token != null)
-							sb2.append("; Comment=\"").append(token).append('"');
-						token = cc.getDomain();
-						if (token != null)
-							sb2.append("; Domain=\"").append(token).append('"');
-						if (cc.getMaxAge() >= 0)
-							sb2.append("; Max-Age=\"").append(cc.getMaxAge()).append('"');
-						token = cc.getPath();
-						if (token != null)
-							sb2.append("; Path=\"").append(token).append('"');
-						if (cc.getSecure()) {
-							sb2.append("; Secure");
+						if (cookieBuilderVersion1 == null) {
+							cookieBuilderVersion1 = new StringBuffer(SETCOOKIE + "2: ");
+						} else {
+							cookieBuilderVersion1.append(',');
 						}
-						if (httpOnly)
-							sb2.append("; HttpOnly");
-						sb2.append("; Version=\"").append(version).append('"');
+						cookieBuilderVersion1.append(cookie.getName());
+						cookieBuilderVersion1.append("=\"");
+						cookieBuilderVersion1.append(cookie.getValue()).append('"');
+						token = cookie.getComment();
+						if (token != null) {
+							cookieBuilderVersion1.append("; Comment=\"").append(token).append('"');
+						}
+						token = cookie.getDomain();
+						if (token != null) {
+							cookieBuilderVersion1.append("; Domain=\"").append(token).append('"');
+						}
+						if (cookie.getMaxAge() >= 0) {
+							cookieBuilderVersion1.append("; Max-Age=\"").append(cookie.getMaxAge()).append('"');
+						}
+						token = cookie.getPath();
+						if (token != null) {
+							cookieBuilderVersion1.append("; Path=\"").append(token).append('"');
+						}
+						if (cookie.getSecure()) {
+							cookieBuilderVersion1.append("; Secure");
+						}
+						if (httpOnly) {
+							cookieBuilderVersion1.append("; HttpOnly");
+						}
+						cookieBuilderVersion1.append("; Version=\"").append(version).append('"');
 					} else {
-						if (sb == null)
-							sb = new StringBuffer(SETCOOKIE + ": ");
-						else
-							// sb.append(',');
-							sb.append("\r\n" + SETCOOKIE + ": "); // for IE not
-						sb.append(cc.getName());
-						sb.append('=');
-						sb.append(cc.getValue());// .append('"');
-						if (cc.getDomain() != null && cc.getDomain().length() > 0) {
-							sb.append("; domain=" + cc.getDomain());
+						if (setCookieBuilder == null) {
+							setCookieBuilder = new StringBuffer(SETCOOKIE + ": ");
+						} else {
+							// for IE not
+							setCookieBuilder.append("\r\n" + SETCOOKIE + ": ");
 						}
-						if (cc.getMaxAge() >= 0) {
-							sb.append("; expires=");
-							sb.append(expdatefmt.format(new Date(new Date().getTime() + 1000l * cc.getMaxAge())));
+						setCookieBuilder.append(cookie.getName());
+						setCookieBuilder.append('=');
+						setCookieBuilder.append(cookie.getValue());// .append('"');
+						if (!IOHelper.isNullOrEmpty(cookie.getDomain())) {
+							setCookieBuilder.append("; domain=" + cookie.getDomain());
 						}
-						if (cc.getPath() != null && cc.getPath().length() > 0) {
-							sb.append("; path=" + cc.getPath());
+						if (cookie.getMaxAge() >= 0) {
+							setCookieBuilder.append("; expires=");
+							setCookieBuilder.append(expdatefmt.format(new Date(new Date().getTime() + 1000l * cookie.getMaxAge())));
 						}
-						if (cc.getSecure()) {
-							sb.append("; secure");
+						
+						if (!IOHelper.isNullOrEmpty(cookie.getPath())) {
+							setCookieBuilder.append("; path=" + cookie.getPath());
 						}
-						if (httpOnly)
-							sb.append("; HttpOnly");
+						if (cookie.getSecure()) {
+							setCookieBuilder.append("; secure");
+						}
+						
+						if (httpOnly) {
+							setCookieBuilder.append("; HttpOnly");
+						}
 					}
 				}
-				if (sb != null) {
-					outputStream.println(sb.toString());
+				if (setCookieBuilder != null) {
+					outputStream.println(setCookieBuilder.toString());
 					// System.err.println("We sent cookies: " + sb);
 				}
-				if (sb2 != null) {
-					outputStream.println(sb2.toString());
+				
+				if (cookieBuilderVersion1 != null) {
+					outputStream.println(cookieBuilderVersion1.toString());
 					// System.err.println("We sent cookies 2: " + sb2);
 				}
-				if (!websocketUpgrade)
+				
+				if (!webSocketUpgrade)
 					// setHeader(KEEPALIVE, "timeout=30000");
 					if (chunked_out == false) {
 						if (contentLen < 0)
@@ -6010,19 +6044,20 @@ public class Serve implements ServletContext, Serializable {
 		 * 
 		 * @param listeners
 		 */
-		public synchronized void setListeners(List listeners) {
-			if (listeners == null) {
+		public synchronized void setListeners(List<?> listeners) {
+			if (this.listeners == null) {
 				this.listeners = listeners;
-				if (listeners != null) {
-					HttpSessionEvent event = new HttpSessionEvent(this);
-					for (int i = 0; i < listeners.size(); i++) {
+				if (this.listeners != null) {
+					HttpSessionEvent localHttpSessionEvent = new HttpSessionEvent(this);
+					for (int i = 0; i < this.listeners.size(); i++) {
 						try {
-							((HttpSessionListener) listeners.get(i)).sessionCreated(event);
-						} catch (ClassCastException cce) {
-							// servletContext. log("Wrong session listener
-							// type."+cce);
-						} catch (NullPointerException npe) {
-							// servletContext. log("Null session listener.");
+							((HttpSessionListener) this.listeners.get(i)).sessionCreated(localHttpSessionEvent);
+						} catch (ClassCastException classCastException) {
+							// servletContext.log("Wrong session listener type:"
+							// + classCastException, classCastException);
+						} catch (NullPointerException nullPointerException) {
+							// servletContext.log("Null session listener!",
+							// nullPointerException);
 						}
 					}
 				}
@@ -6123,7 +6158,6 @@ public class Serve implements ServletContext, Serializable {
 		// id:latency:contextname:tttt
 		// entry:base64 ser data
 		// entry:base64 ser data
-		// $$
 		void save(Writer w) throws IOException {
 			if (expired) {
 				return;
@@ -6271,14 +6305,16 @@ public class Serve implements ServletContext, Serializable {
 		protected float weight;
 		protected Locale locale;
 		
-		LocaleWithWeight(Locale locale, float weight) {
+		LocaleWithWeight(final Locale locale, float weight) {
 			this.locale = locale;
 			this.weight = weight;
 		}
 		
-		public int compareTo(Object o) {
-			if (o instanceof LocaleWithWeight)
-				return (int) (((LocaleWithWeight) o).weight - weight) * 100;
+		public int compareTo(Object object) {
+			if (object instanceof LocaleWithWeight) {
+				return (int) (((LocaleWithWeight) object).weight - weight) * 100;
+			}
+			
 			throw new IllegalArgumentException();
 		}
 		
@@ -6290,8 +6326,8 @@ public class Serve implements ServletContext, Serializable {
 	protected static class AcceptLocaleEnumeration implements Enumeration {
 		private Iterator itr;
 		
-		public AcceptLocaleEnumeration(TreeSet ts) {
-			itr = ts.iterator();
+		public AcceptLocaleEnumeration(TreeSet treeSet) {
+			itr = treeSet.iterator();
 		}
 		
 		public boolean hasMoreElements() {

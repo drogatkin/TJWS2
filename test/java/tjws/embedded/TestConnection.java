@@ -101,7 +101,7 @@ public final class TestConnection {
 		}
 		
 		if (passChars == null) {
-			throw new IllegalArgumentException("Invalid passChars:" + passChars);
+			throw new IllegalArgumentException("Invalid passChars:" + String.valueOf(passChars));
 		}
 		
 		try {

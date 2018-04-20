@@ -1739,16 +1739,19 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	
 	@Override
 	public URL getResource(String path) throws MalformedURLException {
-		if (path.charAt(0) != '/')
+		if (path.charAt(0) != '/') {
 			throw new MalformedURLException("Path: " + path + " has to start with '/'");
+		}
 		path = extractQueryAnchor(path, false);
-		int ji = path.indexOf(".jar!/");
+		// int ji = path.indexOf(".jar!/");
 		try {
 			File resFile = new File(getRealPath(path)).getCanonicalFile();
-			if (resFile.exists())
+			if (resFile.exists()) {
 				return resFile.toURL();
+			}
 		} catch (IOException io) {
 		}
+		
 		return null;
 	}
 	
@@ -1759,68 +1762,78 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		}
 		
 		path = extractQueryAnchor(path, false);
-		int ji = path.indexOf(".jar!/");
-		String jarpath = "";
-		if (ji > 0) {
-			if (path.length() > ji + ".jar!/".length())
-				jarpath = path.substring(ji + ".jar!/".length());
-			path = path.substring(0, ji + 4);
+		int jarIndex = path.indexOf(".jar!/");
+		String jarPath = "";
+		if (jarIndex > 0) {
+			if (path.length() > jarIndex + ".jar!/".length()) {
+				jarPath = path.substring(jarIndex + ".jar!/".length());
+			}
+			path = path.substring(0, jarIndex + 4);
 		}
+		
 		File dir = new File(getRealPath(path));
 		if (dir.exists() == false) {
 			return null;
 		}
-		log("Path:" + path + " dir " + dir + " jar p " + jarpath);
+		log("Path:" + path + ", dir:" + dir + ", jarPath:" + jarPath);
 		Set<String> set = null;
 		if (dir.isDirectory() == false) {
-			if (ji > 0) {
+			if (jarIndex > 0) {
 				set = new TreeSet<String>();
 				try {
 					JarFile jarFile = new JarFile(dir);
-					int cp = jarpath.endsWith("/") ? jarpath.length() : jarpath.length() + 1;
-					for (Enumeration entries = jarFile.entries(); entries.hasMoreElements();) {
+					int cp = jarPath.endsWith("/") ? jarPath.length() : jarPath.length() + 1;
+					for (Enumeration<JarEntry> entries = jarFile.entries(); entries.hasMoreElements();) {
 						JarEntry entry = (JarEntry) entries.nextElement();
 						String entryPath = entry.getName();
-						
-						if (cp == 1 || entryPath.startsWith(jarpath)) {
-							if (entryPath.length() == cp)
+						if (cp == 1 || entryPath.startsWith(jarPath)) {
+							if (entryPath.length() == cp) {
 								continue;
+							}
+							
 							int ns = entryPath.indexOf('/', cp + 1);
 							// log("e Path:"+entryPath+", ns "+ns);
-							if (ns > 0)
+							if (ns > 0) {
 								entryPath = entryPath.substring(0, ns + 1);
+							}
 							set.add(new URL("jar:file:/" + dir.getPath() + "!/" + entryPath).toString());
 						}
 					}
 					jarFile.close();
-				} catch (Exception e) {
-					log("Problem: " + e);
+				} catch (Exception ex) {
+					log("Problem: " + ex);
 				}
 				
 			}
+			
 			return set;
 		}
+		
 		set = new TreeSet<String>();
 		String[] els = dir.list();
 		for (String el : els) {
 			String fp = path + "/" + el;
-			if (new File(getRealPath(fp)).isDirectory())
+			if (new File(getRealPath(fp)).isDirectory()) {
 				fp += "/";
+			}
 			set.add("/" + fp);
 		}
+		
 		return set;
 	}
 	
 	@Override
 	public String getMimeType(String file) {
 		if (mimes != null && file != null) {
-			int p = file.lastIndexOf('.');
-			if (p > 0) {
-				String result = mimes.get(file.substring(p).toLowerCase());
-				if (result != null)
+			int lastIndex = file.lastIndexOf('.');
+			if (lastIndex > 0) {
+				String result = mimes.get(file.substring(lastIndex).toLowerCase());
+				if (result != null) {
 					return result;
+				}
 			}
 		}
+		
 		return server.getMimeType(file);
 	}
 	
@@ -1837,8 +1850,9 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	@Override
 	public ServletContext getContext(String uripath) {
 		Servlet servlet = server.getServlet(uripath);
-		if (servlet != null)
+		if (servlet != null) {
 			return servlet.getServletConfig().getServletContext();
+		}
 		return null;
 	}
 	
@@ -2596,7 +2610,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			}
 			
 			@Override
-			public Map getParameterMap() {
+			public Map<String, String[]> getParameterMap() {
 				HashMap<String, String[]> result = new HashMap<String, String[]>();
 				result.putAll(super.getParameterMap());
 				result.putAll(createParameters());

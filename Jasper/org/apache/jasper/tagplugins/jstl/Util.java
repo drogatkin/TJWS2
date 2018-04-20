@@ -32,6 +32,8 @@ import javax.servlet.jsp.PageContext;
 
 import org.apache.jasper.Constants;
 
+import Acme.IOHelper;
+
 /**
  * Util contains some often used consts, static methods and embedded class
  * to support the JSTL tag plugin.
@@ -62,7 +64,8 @@ public class Util {
 	 * The validity of the given scope has already been checked by the
 	 * appropriate TLV.
 	 *
-	 * @param scope String description of scope
+	 * @param scope
+	 *            String description of scope
 	 *
 	 * @return PageContext constant corresponding to given scope description
 	 * 
@@ -259,7 +262,7 @@ public class Util {
 	 */
 	public static class ImportResponseWrapper extends HttpServletResponseWrapper {
 		
-		private StringWriter sw = new StringWriter();
+		private StringWriter stringWriter = new StringWriter();
 		private ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		private ServletOutputStream sos = new ServletOutputStream() {
 			@Override
@@ -267,10 +270,10 @@ public class Util {
 				bos.write(b);
 			}
 			
-//			// @Override
-//			public void setWriteListener(WriteListener writeListener) {
-//				// TODO implement it, or borrow from Tomcat 8
-//			}
+			// // @Override
+			// public void setWriteListener(WriteListener writeListener) {
+			// // TODO implement it, or borrow from Tomcat 8
+			// }
 			
 			// @Override
 			public boolean isReady() {
@@ -285,21 +288,23 @@ public class Util {
 		
 		public ImportResponseWrapper(HttpServletResponse arg0) {
 			super(arg0);
-			// TODO Auto-generated constructor stub
 		}
 		
 		@Override
 		public PrintWriter getWriter() {
-			if (isStreamUsed)
+			if (isStreamUsed) {
 				throw new IllegalStateException("Unexpected internal error during &lt;import&gt: " + "Target servlet called getWriter(), then getOutputStream()");
+			}
 			isWriterUsed = true;
-			return new PrintWriter(sw);
+			return new PrintWriter(stringWriter);
 		}
 		
 		@Override
 		public ServletOutputStream getOutputStream() {
-			if (isWriterUsed)
+			if (isWriterUsed) {
 				throw new IllegalStateException("Unexpected internal error during &lt;import&gt: " + "Target servlet called getOutputStream(), then getWriter()");
+			}
+			
 			isStreamUsed = true;
 			return sos;
 		}
@@ -330,20 +335,23 @@ public class Util {
 			return this.charEncoding;
 		}
 		
-		public void setCharEncoding(String ce) {
-			this.charEncoding = ce;
+		public void setCharEncoding(String charEncoding) {
+			this.charEncoding = charEncoding;
 		}
 		
 		public String getString() throws UnsupportedEncodingException {
-			if (isWriterUsed)
-				return sw.toString();
-			else if (isStreamUsed) {
-				if (this.charEncoding != null && !this.charEncoding.equals(""))
+			if (isWriterUsed) {
+				return stringWriter.toString();
+			} else if (isStreamUsed) {
+				if (this.charEncoding != null && !this.charEncoding.equals("")) {
 					return bos.toString(charEncoding);
-				else
-					return bos.toString("ISO-8859-1");
-			} else
-				return ""; // target didn't write anything
+				} else {
+					return bos.toString(IOHelper.ISO_8859_1);
+				}
+			} else {
+				// target didn't write anything
+				return "";
+			}
 		}
 		
 	}

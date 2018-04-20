@@ -86,8 +86,10 @@ import com.rslakra.logger.LogManager;
 // <A HREF="/resources/classes/Acme.tar.Z">Fetch the entire Acme package.</A>
 
 public class Utils {
-	// / Returns a date string formatted in Unix ls style - if it's within
-	// six months of now, Mmm dd hh:ss, else Mmm dd yyyy.
+	/*
+	 * Returns a date string formatted in Unix ls style - if it's within six
+	 * months of now, Mmm dd hh:ss, else Mmm dd yyyy.
+	 */
 	static final SimpleDateFormat SHORT_DATE_FORMAT = new SimpleDateFormat("MMM dd HH:mm");
 	static final SimpleDateFormat LONG_DATE_FORMAT = new SimpleDateFormat("MMM dd yyyy");
 	
@@ -480,28 +482,36 @@ public class Utils {
 			for (int s = 0;; ++p, ++s) {
 				boolean sEnd = (s >= string.length());
 				boolean pEnd = (p >= pattern.length() || pattern.charAt(p) == '|');
-				if (sEnd && pEnd)
+				if (sEnd && pEnd) {
 					return true;
-				if (sEnd || pEnd)
+				}
+				if (sEnd || pEnd) {
 					break;
-				if (pattern.charAt(p) == '?')
+				}
+				if (pattern.charAt(p) == '?') {
 					continue;
+				}
 				if (pattern.charAt(p) == '*') {
 					int i;
 					++p;
-					for (i = string.length(); i >= s; --i)
-						if (match(pattern.substring(p), string.substring(i))) // not
-																				// quite
-																				// right
+					for (i = string.length(); i >= s; --i) {
+						if (match(pattern.substring(p), string.substring(i))) {
+							// not quite right
 							return true;
+						}
+					}
 					break;
 				}
-				if (pattern.charAt(p) != string.charAt(s))
+				
+				if (pattern.charAt(p) != string.charAt(s)) {
 					break;
+				}
 			}
+			
 			p = pattern.indexOf('|', p);
-			if (p == -1)
+			if (p == -1) {
 				return false;
+			}
 		}
 	}
 	
@@ -1284,7 +1294,7 @@ public class Utils {
 					}
 				}
 				
-				if (pooledThread != null && pooledThread.isAlive() == false) {
+				if (pooledThread != null && !pooledThread.isAlive()) {
 					pooledThread = null;
 				}
 				

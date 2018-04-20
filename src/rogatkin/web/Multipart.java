@@ -74,7 +74,7 @@ public class Multipart {
 			ServletInputStream sis = request.getInputStream();
 			parts = new LinkedList<PartImpl>();
 			long bytesRead = 0;
-			parts_loop:
+//			parts_loop:
 			do {
 				// read part
 				PartImpl pi = new PartImpl();
