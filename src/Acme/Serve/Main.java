@@ -113,10 +113,7 @@ public class Main extends Serve {
 				}
 			} else if (args[argn].equals("-k") && argn + 1 < argc) {
 				++argn;
-				arguments.put(ARG_BACKLOG, args[argn]/*
-														 * new
-														 * Integer(args[argn])
-														 */);
+				arguments.put(ARG_BACKLOG, args[argn]);
 			} else if (args[argn].equals("-j") && argn + 1 < argc) {
 				++argn;
 				arguments.put(ARG_JSP, args[argn]);
@@ -159,8 +156,9 @@ public class Main extends Serve {
 						++argn;
 						arguments.put(ARG_ACCESS_LOG_FMT, args[argn]);
 					}
-				} else
+				} else {
 					arguments.put(ARG_LOG_OPTIONS, "");
+				}
 			} else if (args[argn].startsWith("-nohup")) {
 				arguments.put(ARG_NOHUP, ARG_NOHUP);
 			} else if (args[argn].equals("-m") && argn + 1 < argc) {
@@ -213,13 +211,15 @@ public class Main extends Serve {
 						messages = appendMessage(messages, "Multiple usage of  '-" + name + "'=" + args[++argn] + " ignored\n");
 					else
 						arguments.put(name, // .toUpperCase(),
-										argn < argc - 1 ? args[++argn] : "");
+								argn < argc - 1 ? args[++argn] : "");
 					// System.out.println("Added free
 					// arg:"+args[argn-1]+"="+args[argn]);
-				} else
+				} else {
 					messages = appendMessage(messages, "Parameter '-' ignored, perhaps extra blank separator was used.\n");
-			} else
+				}
+			} else {
 				usage();
+			}
 			
 			++argn;
 		}
@@ -252,12 +252,14 @@ public class Main extends Serve {
 				File logFile = new File(logDir, "TJWS-" + System.currentTimeMillis() + ".log");
 				int logRollThreshold = arguments.get(ARG_LOGROLLING_LINES) != null ? ((Integer) arguments.get(ARG_LOGROLLING_LINES)).intValue() : 0;
 				OutputStream logStream = logRollThreshold > 1000 ? (OutputStream) new RollingOutputStream(logFile, logRollThreshold) : (OutputStream) new FileOutputStream(logFile);
-				if (logEncoding != null)
-					printstream = new PrintStream(logStream, true, logEncoding); /* 1.4 */
-				else
+				if (logEncoding != null) {
+					/* 1.4 */
+					printstream = new PrintStream(logStream, true, logEncoding);
+				} else {
 					printstream = new PrintStream(logStream, true);
-			} catch (IOException e) {
-				System.err.println("I/O problem at setting a log stream " + e);
+				}
+			} catch (IOException ex) {
+				System.err.println("I/O problem at setting a log stream " + ex);
 			}
 		}
 		if (arguments.get(ARG_ERR) != null) {

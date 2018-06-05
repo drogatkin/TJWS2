@@ -98,11 +98,8 @@ public class CgiServlet extends HttpServlet {
 		
 		log("running " + path + "?" + queryString);
 		
-		// Make argument list.
-		String argList[] = (path + (queryString != null && queryString.indexOf("=") == -1 ? "+" + queryString : "")).split("\\+"); /*
-																																	 * 1.
-																																	 * 4
-																																	 */
+		/* Make argument list. - 1. 4 */
+		String argList[] = (path + (queryString != null && queryString.indexOf("=") == -1 ? "+" + queryString : "")).split("\\+");
 		
 		// Make environment list.
 		Vector<String> envVec = new Vector<String>();
