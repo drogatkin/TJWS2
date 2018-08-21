@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import Acme.IOHelper;
 import Acme.Utils;
 
 /// Runs CGI programs.
@@ -61,6 +62,9 @@ import Acme.Utils;
 // @see Acme.Serve.Serve
 
 public class CgiServlet extends HttpServlet {
+	
+	/** serialVersionUID */
+	private static final long serialVersionUID = 1L;
 	
 	// / Returns a string containing information about the author, version, and
 	// copyright of the servlet.
@@ -148,10 +152,10 @@ public class CgiServlet extends HttpServlet {
 		String envList[] = makeList(envVec);
 		
 		// Start the command.
-		Process proc = Runtime.getRuntime().exec(argList, envList);
-		OutputStream procOut = proc.getOutputStream();
-		BufferedReader procIn = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-		InputStream procErr = proc.getErrorStream();
+		Process process = Runtime.getRuntime().exec(argList, envList);
+		OutputStream processOutputStream = process.getOutputStream();
+		BufferedReader processInputStream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		InputStream processErrorStream = process.getErrorStream();
 		try {
 			// If it's a POST, copy the request data to the process.
 			if (req.getMethod().equalsIgnoreCase("post")) {
@@ -161,9 +165,9 @@ public class CgiServlet extends HttpServlet {
 					if (c == -1) {
 						break;
 					}
-					procOut.write(c);
+					processOutputStream.write(c);
 				}
-				procOut.close();
+				processOutputStream.close();
 			}
 			
 			// Now read the response from the process.
@@ -171,7 +175,7 @@ public class CgiServlet extends HttpServlet {
 			// Some of the headers have to be intercepted and handled.
 			boolean firstLine = true;
 			while (true) {
-				String line = procIn.readLine();
+				String line = processInputStream.readLine();
 				if (line == null) {
 					break;
 				}
@@ -222,7 +226,7 @@ public class CgiServlet extends HttpServlet {
 					} else if (name.equalsIgnoreCase("Content-length")) {
 						try {
 							response.setContentLength(Integer.parseInt(value));
-						} catch (NumberFormatException ignore) {
+						} catch (NumberFormatException ex) {
 						}
 					} else if (name.equalsIgnoreCase("Location")) {
 						response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
@@ -241,33 +245,36 @@ public class CgiServlet extends HttpServlet {
 				}
 			}
 			// Copy the rest of the data uninterpreted.
-			Utils.copyStream(procIn, resOut, null);
-		} catch (IOException e) {
+			Utils.copyStream(processInputStream, resOut, null);
+		} catch (IOException ex) {
 			// res.sendError( HttpServletResponse.SC_INTERNAL_SERVER_ERROR );
 			// There's some weird bug in Java, when reading from a Process
 			// you get a spurious IOException. We have to ignore it.
 		} finally {
-			try {
-				procOut.close();
-			} catch (IOException e) {
-			}
-			try {
-				procIn.close();
-			} catch (IOException e) {
-			}
-			try {
-				procErr.close();
-			} catch (IOException e) {
-			}
+			IOHelper.closeSilently(processOutputStream);
+			IOHelper.closeSilently(processInputStream);
+			IOHelper.closeSilently(processErrorStream);
+			
 			// TODO make it configurable
 			// proc.destroy();
 		}
 	}
 	
-	private static String makeEnv(String name, String value) {
+	/**
+	 * 
+	 * @param name
+	 * @param value
+	 * @return
+	 */
+	private static String makeEnv(final String name, final String value) {
 		return name + "=" + value;
 	}
 	
+	/**
+	 * 
+	 * @param strVector
+	 * @return
+	 */
 	private static String[] makeList(Vector<String> strVector) {
 		String list[] = new String[strVector.size()];
 		for (int i = 0; i < strVector.size(); ++i) {

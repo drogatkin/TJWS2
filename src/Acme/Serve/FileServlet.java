@@ -69,13 +69,15 @@ import Acme.Utils;
 // @see Acme.Serve.Serve
 
 public class FileServlet extends HttpServlet {
-	public static final String DEF_USE_COMPRESSION = "tjws.fileservlet.usecompression";
+	/** serialVersionUID */
+	private static final long serialVersionUID = 1L;
 	
+	public static final String DEF_USE_COMPRESSION = "tjws.fileservlet.usecompression";
 	public static final String DEF_USE_SUPRESSIND = "tjws.fileservlet.suppressindex";
 	
 	// We keep a single throttle table for all instances of the servlet.
 	// Normally there is only one instance; the exception is subclasses.
-	static Acme.WildcardDictionary throttleTab = null;
+	static Acme.WildcardDictionary<Object, Object> throttleTab = null;
 	
 	static final String[] DEFAULTINDEXPAGES = { "index.html", "index.htm", "default.htm", "default.html", "index.php", "index.jsp" };
 	
@@ -83,7 +85,6 @@ public class FileServlet extends HttpServlet {
 	
 	static final String BYTES_UNIT = "bytes";
 	protected String charSet = IOHelper.UTF_8;
-	
 	private static final boolean logenabled = false;
 	
 	// TODO implement free space
@@ -114,16 +115,17 @@ public class FileServlet extends HttpServlet {
 	// @see ThrottledOutputStream
 	public FileServlet(String throttles, String charset) throws IOException {
 		this();
-		if (charset != null)
+		if (charset != null) {
 			this.charSet = charset;
+		}
 		readThrottles(throttles);
 	}
 	
 	private void readThrottles(String throttles) throws IOException {
 		Acme.WildcardDictionary newThrottleTab = ThrottledOutputStream.parseThrottleFile(throttles);
-		if (throttleTab == null)
+		if (throttleTab == null) {
 			throttleTab = newThrottleTab;
-		else {
+		} else {
 			// Merge the new one into the old one.
 			Enumeration keys = newThrottleTab.keys();
 			Enumeration elements = newThrottleTab.elements();
@@ -204,6 +206,7 @@ public class FileServlet extends HttpServlet {
 				log("hdr:" + hn + ":" + req.getHeader(hn));
 			}
 		}
+		
 		if (!file.canRead()) {
 			res.sendError(HttpServletResponse.SC_FORBIDDEN);
 			return;
@@ -211,8 +214,8 @@ public class FileServlet extends HttpServlet {
 			// by Niel Markwick
 			try {
 				file.getCanonicalPath();
-			} catch (Exception e) {
-				res.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden, exception:" + e);
+			} catch (Exception ex) {
+				res.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden, exception:" + ex);
 				return;
 			}
 		
@@ -226,10 +229,13 @@ public class FileServlet extends HttpServlet {
 			headOnly = true;
 			noContLen = true;
 		}
+		
 		// TODO add processing If-None-Match, If-Unmodified-Since and If-Match
 		String contentType = getServletContext().getMimeType(file.getName());
-		if (contentType != null)
+		if (contentType != null) {
 			res.setContentType(contentType);
+		}
+		
 		long flen = file.length();
 		// check for range
 		String range = req.getHeader("Range");
@@ -242,16 +248,18 @@ public class FileServlet extends HttpServlet {
 				if (i > 0) {
 					try {
 						sr = Long.parseLong(range.substring(BYTES_UNIT.length() + 1, i));
-						if (sr < 0)
+						if (sr < 0) {
 							throw new NumberFormatException("Invalid start range value:" + sr);
+						}
 						try {
 							er = Long.parseLong(range.substring(i + 1));
 						} catch (NumberFormatException nfe) {
 							er = flen - 1;
 						}
 					} catch (NumberFormatException nfe) {
-						
+						// ignore me!
 					}
+					
 				} // else invalid range? ignore?
 			} // else other units not supported
 			log("range values " + sr + " to " + er);
@@ -272,6 +280,7 @@ public class FileServlet extends HttpServlet {
 			res.setHeader("Content-Range", BYTES_UNIT + " " + sr + '-' + er + '/' + flen);
 			log("content-range:" + BYTES_UNIT + " " + sr + '-' + er + '/' + flen);
 		}
+		
 		// String ifRange = req.getHeader("If-Range");
 		// res.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
 		boolean doCompress = false;
@@ -281,23 +290,24 @@ public class FileServlet extends HttpServlet {
 				doCompress = true;
 			}
 		}
+		
 		if ((doCompress == false || headOnly) && !noContLen) {
-			if (clen < Integer.MAX_VALUE)
+			if (clen < Integer.MAX_VALUE) {
 				res.setContentLength((int) clen);
-			else
+			} else {
 				res.setHeader("Content-Length", Long.toString(clen));
+			}
 		}
 		
-		String dnla = req.getHeader("GetContentFeatures.DLNA.ORG"); // check
-																	 // also
-																	 // Pragma:
-																	 // getIfoFileURI.dlna.org
+		// check also Pragma: getIfoFileURI.dlna.org
+		String dnla = req.getHeader("GetContentFeatures.DLNA.ORG");
 		if ("1".equals(dnla)) {
 			res.setHeader("transferMode.dlna.org", "Streaming");
 			// res.setHeader("contentFeatures.dlna.org",
 			// "DLNA.ORG_OP=00;DLNA.ORG_CI=0");
 			// res.setHeader("","");
 		}
+		
 		OutputStream out = null;
 		InputStream in = null;
 		try {
@@ -315,24 +325,21 @@ public class FileServlet extends HttpServlet {
 				in = new FileInputStream(file);
 				while (sr > 0) {
 					long sl = in.skip(sr);
-					if (sl > 0)
+					if (sl > 0) {
 						sr -= sl;
-					else {
+					} else {
 						res.sendError(HttpServletResponse.SC_CONFLICT, "Conflict");
 						// better can be Internal Server Error
 						return;
 					}
 				}
 				copyStream(in, out, clen);
-				if (doCompress)
+				if (doCompress) {
 					((GZIPOutputStream) out).finish();
+				}
 			}
 		} finally {
-			if (in != null)
-				try {
-					in.close();
-				} catch (IOException ioe) {
-				}
+			IOHelper.closeSilently(in);
 			if (out != null) {
 				out.flush();
 				out.close();
@@ -340,18 +347,35 @@ public class FileServlet extends HttpServlet {
 		}
 	}
 	
-	// / Copy a file from in to out.
-	// Sub-classes can override this in order to do filtering of some sort.
+	/**
+	 * Copy a file from in to out.
+	 * Sub-classes can override this in order to do filtering of some sort.
+	 * 
+	 * @param in
+	 * @param out
+	 * @param len
+	 * @throws IOException
+	 */
 	public void copyStream(InputStream in, OutputStream out, long len) throws IOException {
 		Utils.copyStream(in, out, len);
 	}
 	
+	/**
+	 * 
+	 * @param req
+	 * @param res
+	 * @param headOnly
+	 * @param path
+	 * @param file
+	 * @throws IOException
+	 */
 	private void serveDirectory(HttpServletRequest req, HttpServletResponse res, boolean headOnly, String path, File file) throws IOException {
 		log("indexing " + file);
 		if (!file.canRead()) {
 			res.sendError(HttpServletResponse.SC_FORBIDDEN);
 			return;
 		}
+		
 		res.setStatus(HttpServletResponse.SC_OK);
 		res.setContentType("text/html;charset=" + charSet);
 		OutputStream out = res.getOutputStream();
@@ -377,12 +401,14 @@ public class FileServlet extends HttpServlet {
 				File aFile = new File(file, names[i]);
 				String aFileType;
 				long aFileLen;
-				if (aFile.isDirectory())
+				if (aFile.isDirectory()) {
 					aFileType = "d";
-				else if (aFile.isFile())
+				} else if (aFile.isFile()) {
 					aFileType = "-";
-				else
+				} else {
 					aFileType = "?";
+				}
+				
 				String aFileRead = (aFile.canRead() ? "r" : "-");
 				String aFileWrite = (aFile.canWrite() ? "w" : "-");
 				String aFileExe = "-";
@@ -461,7 +487,11 @@ public class FileServlet extends HttpServlet {
 		return false;
 	}
 	
-	// @Override
+	/**
+	 * 
+	 * @param msg
+	 * @see javax.servlet.GenericServlet#log(java.lang.String)
+	 */
 	public void log(String msg) {
 		if (logenabled) {
 			super.log(msg);

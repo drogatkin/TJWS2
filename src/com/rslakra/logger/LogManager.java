@@ -58,6 +58,9 @@ public final class LogManager {
 	/** mRootLogger */
 	private static Logger mRootLogger;
 	
+	/** sEnableServerLogs */
+	private static boolean sEnableServerLogs;
+	
 	/** singleton instance. */
 	private LogManager() {
 		throw new RuntimeException("Object creation is not allowed for this object!");
@@ -86,6 +89,24 @@ public final class LogManager {
 		}
 		
 		return mRootLogger;
+	}
+	
+	/**
+	 * Returns the <code>sEnableServerLogs</code> value.
+	 * 
+	 * @return
+	 */
+	public static boolean isEnableServerLogs() {
+		return sEnableServerLogs;
+	}
+	
+	/**
+	 * The <code>sEnableServerLogs</code> to be set.
+	 * 
+	 * @param enableServerLogs
+	 */
+	public static void setEnableServerLogs(boolean enableServerLogs) {
+		sEnableServerLogs = enableServerLogs;
 	}
 	
 	/**
@@ -210,7 +231,7 @@ public final class LogManager {
 	 * @return
 	 */
 	public static boolean isDebugEnabled() {
-		return isLogEnabledFor(Level.DEBUG);
+		return (isEnableServerLogs() && isLogEnabledFor(Level.DEBUG));
 	}
 	
 	/**
@@ -219,7 +240,7 @@ public final class LogManager {
 	 * @return
 	 */
 	public static boolean isInfoEnabled() {
-		return isLogEnabledFor(Level.INFO);
+		return (isEnableServerLogs() && isLogEnabledFor(Level.INFO));
 	}
 	
 	/**
@@ -288,7 +309,9 @@ public final class LogManager {
 	 * @param object
 	 */
 	public static void info(final Object object) {
-		getRootLogger().info(toString(object));
+		if (isInfoEnabled()) {
+			getRootLogger().info(toString(object));
+		}
 	}
 	
 	/**
@@ -297,7 +320,9 @@ public final class LogManager {
 	 * @param throwable
 	 */
 	public static void info(final Object object, final Throwable throwable) {
-		getRootLogger().info(toString(object), throwable);
+		if (isInfoEnabled()) {
+			getRootLogger().info(toString(object), throwable);
+		}
 	}
 	
 	/**
@@ -305,7 +330,9 @@ public final class LogManager {
 	 * @param object
 	 */
 	public static void debug(final Object object) {
-		getRootLogger().debug(toString(object));
+		if (isDebugEnabled()) {
+			getRootLogger().debug(toString(object));
+		}
 	}
 	
 	/**
@@ -314,46 +341,8 @@ public final class LogManager {
 	 * @param throwable
 	 */
 	public static void debug(final Object object, final Throwable throwable) {
-		getRootLogger().debug(toString(object), throwable);
+		if (isDebugEnabled()) {
+			getRootLogger().debug(toString(object), throwable);
+		}
 	}
-	
-	// /**
-	// *
-	// * @param message
-	// */
-	// public static final void log(String message) {
-	// if (isLogEnabled()) {
-	// if (getLogStream() != null) {
-	// getLogStream().println("[" + new Date().toString() + "] " + message);
-	// } else {
-	// System.out.println("[" + new Date().toString() + "] " + message);
-	// }
-	// }
-	// }
-	//
-	// /**
-	// * Logs the given message.
-	// *
-	// * @see javax.servlet.ServletContext#log(java.lang.String,
-	// * java.lang.Throwable)
-	// */
-	// public static void log(String message, Throwable throwable) {
-	// if (throwable != null) {
-	// message = message + IOHelper.getLineSeparator() +
-	// IOHelper.toString(throwable);
-	// }
-	// log(message);
-	// }
-	//
-	// /**
-	// * Logs the given message.
-	// *
-	// * @param throwable
-	// */
-	// public static void log(Throwable throwable) {
-	// if (throwable != null) {
-	// log(IOHelper.getLineSeparator() + IOHelper.toString(throwable));
-	// }
-	// }
-	
 }

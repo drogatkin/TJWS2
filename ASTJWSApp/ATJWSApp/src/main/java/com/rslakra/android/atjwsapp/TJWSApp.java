@@ -187,14 +187,14 @@ public class TJWSApp extends Application {
             }
         }
         
-        if(Thread.getDefaultUncaughtExceptionHandler() == null)
+        if(Thread.getDefaultUncaughtExceptionHandler() == null) {
             Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 
                 public void uncaughtException(Thread thread, Throwable ex) {
                     LogHelper.e(LOG_TAG, "Unhandled exception " + ex + " in the thread: " + thread, ex);
                 }
             });
-        
+        }
         
         // initialize logger
         LogHelper.log4jConfigure(getInstance().getLogsFolder(), LogType.DEBUG);

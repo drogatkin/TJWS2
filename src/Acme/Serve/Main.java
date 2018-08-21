@@ -46,13 +46,16 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
+import Acme.IOHelper;
 import Acme.Utils;
 
 public class Main extends Serve {
+	/** serialVersionUID */
+	private static final long serialVersionUID = 1L;
 	public static final String CLI_FILENAME = "cmdparams";
 	private static final String progName = "Serve";
 	protected static Serve serve;
-	private static Thread sdHook;
+	private static Thread shutDownHook;
 	
 	/**
 	 * main entry for standalone run
@@ -305,19 +308,25 @@ public class Main extends Serve {
 										try {
 											if (maptokenzr.hasMoreTokens()) {
 												File mapFile = new File(maptokenzr.nextToken());
-												if (mapFile.isAbsolute() == false)
+												if (mapFile.isAbsolute() == false) {
 													mapFile = new File(workPath, mapFile.getPath());
-												if (srcpath.endsWith("/*") == false)
-													if (srcpath.endsWith("/"))
+												}
+												
+												if (srcpath.endsWith("/*") == false) {
+													if (srcpath.endsWith("/")) {
 														srcpath += "*";
-													else
+													} else {
 														srcpath += "/*";
-												if (mapFile.getCanonicalFile().exists())
+													}
+												}
+												
+												if (mapFile.getCanonicalFile().exists()) {
 													mappingtable.put(srcpath, mapFile);
-												else
+												} else {
 													System.err.println("TJWS: Mapping file " + mapFile + " (" + srcpath + ") doesn't exist or not readable.");
+												}
 											}
-										} catch (NullPointerException e) {
+										} catch (NullPointerException ex) {
 										}
 								}
 							}
@@ -392,8 +401,10 @@ public class Main extends Serve {
 		serve.setMappingTable(mappingtable);
 		serve.setRealms(realms);
 		File tempFile = arguments.get(ARG_SERVLETS) == null ? null : new File((String) arguments.get(ARG_SERVLETS));
-		if (tempFile != null && tempFile.isAbsolute() == false)
+		if (tempFile != null && tempFile.isAbsolute() == false) {
 			tempFile = new File(workPath, tempFile.getPath());
+		}
+		
 		final File servFile = tempFile;
 		// TODO analyze possible race condition
 		if (servFile != null) {
@@ -403,6 +414,7 @@ public class Main extends Serve {
 				}
 			}).start();
 		}
+		
 		// And add the standard Servlets.
 		String throttles = (String) arguments.get(ARG_THROTTLES);
 		if (throttles == null) {
@@ -439,12 +451,12 @@ public class Main extends Serve {
 				}
 			}, "Stop Monitor").start();
 		} else {
-			sdHook = new Thread(new Runnable() {
+			shutDownHook = new Thread(new Runnable() {
 				synchronized public void run() {
 					serve.destroyAllServlets();
 				}
 			}, "ShutDownHook");
-			Runtime.getRuntime().addShutdownHook(sdHook);
+			Runtime.getRuntime().addShutdownHook(shutDownHook);
 		}
 		
 		// And run.
@@ -460,12 +472,12 @@ public class Main extends Serve {
 		}
 		
 		try {
-			if (sdHook != null) {
-				Runtime.getRuntime().removeShutdownHook(sdHook);
+			if (shutDownHook != null) {
+				Runtime.getRuntime().removeShutdownHook(shutDownHook);
 			}
 			serve.destroyAllServlets();
-		} catch (IllegalStateException ise) {
-			
+		} catch (IllegalStateException ex) {
+			// ignore me!
 		} catch (Throwable th) {
 			if (th instanceof ThreadDeath) {
 				throw (ThreadDeath) th;
@@ -478,38 +490,58 @@ public class Main extends Serve {
 		return code.getStatus();
 	}
 	
+	/**
+	 * 
+	 * @param messages
+	 * @param message
+	 * @return
+	 */
 	private static StringBuffer appendMessage(StringBuffer messages, String message) {
-		if (messages == null)
+		if (messages == null) {
 			messages = new StringBuffer(100);
+		}
 		return messages.append(message);
 	}
 	
+	/**
+	 * 
+	 * @param workPath
+	 * @param file
+	 * @return
+	 */
 	public static String[] readArguments(String workPath, String file) {
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(new File(workPath, file)));
 			return Utils.splitStr(br.readLine(), "\"");
-		} catch (Exception e) { // many can happen
+		} catch (Exception ex) {
+			// many can happen
 			// e.printStackTrace();
 			return null;
 		} finally {
-			if (br != null)
-				try {
-					br.close();
-				} catch (IOException ioe) {
-				}
+			IOHelper.closeSilently(br);
 		}
 	}
 	
+	/**
+	 * 
+	 * @throws IOException
+	 */
 	public static void stop() throws IOException {
 		serve.notifyStop();
 	}
 	
+	/**
+	 * 
+	 */
 	private static void usage() {
 		System.out.println(Identification.serverName + " " + Identification.serverVersion + "\n" + "Usage:  " + progName + " [-p port] [-s servletpropertiesfile] [-a aliasmappingfile]\n" + "         [-b bind address] [-k backlog] [-l[a][r][f access_log_fmt]]\n" + "         [-c cgi-bin-dir] [-m max_active_session] [-d log_directory]\n" + "         [-sp] [-j jsp_servlet_class] [-w war_deployment_module_class]\n" + "         [-nka] [-kat timeout_in_secs] [-mka max_times_connection_use]\n" + "         [-e [-]duration_in_minutes] [-nohup] [-z max_threadpool_size]\n" + "         [-err [class_name?PrintStream]] [-out [class_name?PrintStream]] [-g <rolling threshld>]\n" + "         [-acceptorImpl class_name_of_Accpetor_impl [extra_acceptor_parameters] ]\n" + "  Legend:\n" + "    -sp    session persistence\n" + "    -l     access log a - with user agent, and r - referer\n" + "    -nka   no keep alive for connection");
 		System.exit(1);
 	}
 	
+	/**
+	 * 
+	 */
 	private static void killAliveThreads() {
 		serve.serverThreads.interrupt();
 		ThreadGroup tg = Thread.currentThread().getThreadGroup();
@@ -522,6 +554,7 @@ public class Main extends Serve {
 		if (ac == ts.length) {
 			serve.log("Destroy:interruptRunningProcesses: Not all threads will be stopped.");
 		}
+		
 		// kill non daemon
 		for (int i = 0; i < ac; i++) {
 			if (ts[i].isDaemon() == false) {
@@ -549,6 +582,10 @@ public class Main extends Serve {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param servFile
+	 */
 	private static void readServlets(File servFile) {
 		/**
 		 * servlet.properties file format servlet. <servletname>.code=
@@ -567,10 +604,14 @@ public class Main extends Serve {
 				 */
 				do {
 					String servletdsc = in.readLine();
-					if (servletdsc == null)
+					if (servletdsc == null) {
 						break;
-					if (servletdsc.startsWith("#"))
+					}
+					
+					if (servletdsc.startsWith("#")) {
 						continue;
+					}
+					
 					StringTokenizer dsctokenzr = new StringTokenizer(servletdsc, ".=,", false);
 					if (dsctokenzr.hasMoreTokens()) {
 						if (!dsctokenzr.nextToken().equalsIgnoreCase("servlet")) {
@@ -579,12 +620,12 @@ public class Main extends Serve {
 						}
 						if (dsctokenzr.hasMoreTokens()) {
 							String servletname = dsctokenzr.nextToken();
-							
 							while (dsctokenzr.hasMoreTokens()) {
 								String lt = dsctokenzr.nextToken();
 								if (lt.equalsIgnoreCase("code")) {
-									if (dsctokenzr.hasMoreTokens())
+									if (dsctokenzr.hasMoreTokens()) {
 										servletstbl.put(servletname, dsctokenzr.nextToken("="));
+									}
 								} else if (lt.equalsIgnoreCase("initArgs")) {
 									Hashtable initparams = new Hashtable();
 									while (dsctokenzr.hasMoreTokens()) {
@@ -625,8 +666,9 @@ public class Main extends Serve {
 				// "+servletstbl.get(servletname));
 				serve.addServlet(servletname, (String) servletstbl.get(servletname), (Hashtable) parameterstbl.get(servletname));
 			}
-		} else
+		} else {
 			serve.log("Servlets definition file neither provided, found, nor readable: " + servFile);
+		}
 	}
 	
 	static class RollingOutputStream extends FilterOutputStream {
@@ -638,8 +680,9 @@ public class Main extends Serve {
 		public RollingOutputStream(File file, int rollingSize) throws IOException {
 			super(null);
 			rollingThresh = rollingSize;
-			if (rollingThresh < 1000)
+			if (rollingThresh < 1000) {
 				rollingThresh = 1000;
+			}
 			nameBase = file;
 			out = new FileOutputStream(nameBase);
 		}

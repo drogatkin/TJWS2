@@ -186,6 +186,9 @@ import Acme.Utils;
 // Inheritance can extend usage of this server
 public class Serve implements ServletContext, Serializable {
 	
+	/** serialVersionUID */
+	private static final long serialVersionUID = 1L;
+	
 	public static final String ARG_PORT = "port";
 	public static final String ARG_THROTTLES = "throttles";
 	public static final String ARG_SERVLETS = "servlets";
@@ -467,8 +470,9 @@ public class Serve implements ServletContext, Serializable {
 			log("TJWS: Class not found: " + className);
 			ClassLoader cl = getClass().getClassLoader();
 			log("TJWS: Class loader: " + cl);
-			if (cl instanceof java.net.URLClassLoader)
+			if (cl instanceof java.net.URLClassLoader) {
 				log("TJWS: CP: " + java.util.Arrays.asList(((java.net.URLClassLoader) cl).getURLs()));
+			}
 		} catch (ClassCastException e) {
 			log("TJWS: Servlet class doesn't implement javax.servlet.Servlet: " + e.getMessage());
 		} catch (InstantiationException e) {
@@ -654,7 +658,7 @@ public class Serve implements ServletContext, Serializable {
 	public void addDefaultServlets(String cgi) {
 		try {
 			addDefaultServlets(cgi, null);
-		} catch (IOException ioe) {
+		} catch (IOException ex) {
 			/* ignore, makes sense only for throtles */
 		}
 	}
@@ -701,7 +705,12 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
-	// TODO review this method and figure throttles use
+	/**
+	 * TODO review this method and figure throttles use
+	 * 
+	 * @param deployerFactory
+	 * @param throttles
+	 */
 	protected void addWarDeployer(String deployerFactory, String throttles) {
 		if (deployerFactory == null) { // try to use def
 			deployerFactory = "rogatkin.web.WarRoller";
@@ -743,6 +752,10 @@ public class Serve implements ServletContext, Serializable {
 		}
 	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	protected File getPersistentFile() {
 		return getPersistentFile(null);
 	}
@@ -1005,7 +1018,7 @@ public class Serve implements ServletContext, Serializable {
 					acceptor.destroy();
 					acceptor = null;
 				} catch (IOException ex) {
-					log(ex);
+					log("Error destroying acceptor!", ex);
 				}
 			}
 			
@@ -1029,7 +1042,7 @@ public class Serve implements ServletContext, Serializable {
 					websocketProvider.destroy();
 				} catch (Exception ex) {
 					// just in case
-					log(ex);
+					log("Error destroying websocket provider!", ex);
 				}
 			}
 		}
@@ -1806,6 +1819,10 @@ public class Serve implements ServletContext, Serializable {
 			return result.keys();
 		}
 		
+		/**
+		 * 
+		 * @return
+		 */
 		synchronized protected Map<String, String[]> createParameters() {
 			if (requestDispatcher.parameters == null) {
 				String query = getQueryString();
@@ -1864,8 +1881,8 @@ public class Serve implements ServletContext, Serializable {
 			response.reset();
 			servlet.service(new ServletRequestWrapper((HttpServletRequest) request, this), response);
 			// TODO think when response isn't actual response ServeConnection
-			// ((ServeConnection) _response).closeStreams(); // do not allow to
-			// continue
+			// ((ServeConnection) _response).closeStreams();
+			// do not allow to continue
 		}
 		
 		/**
@@ -1894,8 +1911,15 @@ public class Serve implements ServletContext, Serializable {
 						return super.getAttributeNames();
 					}
 					
+					/**
+					 * 
+					 * @param name
+					 * @return
+					 * @see javax.servlet.ServletRequestWrapper#getAttribute(java.lang.String)
+					 */
 					public Object getAttribute(String name) {
-						getAttributeNames(); // here is some overhead
+						// here is some overhead
+						getAttributeNames();
 						return super.getAttribute(name);
 					}
 					
@@ -2058,7 +2082,7 @@ public class Serve implements ServletContext, Serializable {
 	}
 	
 	public static interface Identification {
-		public static final String serverName = "D. Rogatkin's TJWS (+Android, JSR340, JSR356) https://github.com/drogatkin/TJWS2.git";
+		public static final String serverName = "D. Rogatkin's TJWS (+Android, JSR340, JSR356) https://github.com/drogatkin/TJWS2.git or https://github.com/rslakra/TJWS2.git";
 		public static final String serverVersion = "Version 1.115 (nightly)";
 		public static final String serverUrl = "http://tjws.sourceforge.net";
 		public static final String serverIdHtml = "<ADDRESS><A HREF=\"" + serverUrl + "\">" + serverName + " " + serverVersion + "</A></ADDRESS>";
@@ -2072,10 +2096,20 @@ public class Serve implements ServletContext, Serializable {
 		private Hashtable initParams;
 		private String servletName;
 		
+		/**
+		 * 
+		 * @param context
+		 */
 		public ServeConfig(ServletContext context) {
 			this(context, null, "undefined");
 		}
 		
+		/**
+		 * 
+		 * @param context
+		 * @param initParams
+		 * @param servletName
+		 */
 		public ServeConfig(ServletContext context, Hashtable initParams, String servletName) {
 			this.context = context;
 			this.initParams = initParams;
@@ -2084,7 +2118,12 @@ public class Serve implements ServletContext, Serializable {
 		
 		// Methods from ServletConfig.
 		
-		// / Returns the context for the servlet.
+		/**
+		 * Returns the context for the servlet.
+		 * 
+		 * @return
+		 * @see javax.servlet.ServletConfig#getServletContext()
+		 */
 		public ServletContext getServletContext() {
 			return context;
 		}
@@ -2144,6 +2183,7 @@ public class Serve implements ServletContext, Serializable {
 		public final static String FORWARDED_SERVER = "X-Forwarded-Server".toLowerCase();
 		
 		private static final Map EMPTYHASHTABLE = new Hashtable();
+		
 		private Socket socket;
 		private Hashtable<String, Object> sslAttributes;
 		private Serve serve;
@@ -2159,6 +2199,7 @@ public class Serve implements ServletContext, Serializable {
 		private String charEncoding; // req and resp
 		private String remoteUser;
 		private String authType;
+		
 		// HTTP/1.1 or better
 		private boolean oneOne;
 		private boolean reqMime;
@@ -2174,11 +2215,10 @@ public class Serve implements ServletContext, Serializable {
 		protected long lastRun, lastWait;
 		private Vector<Cookie> outCookies;
 		private Vector<Cookie> inCookies;
-		private String sessionCookieValue, sessionUrlValue, sessionValue,
-						reqSessionValue;
+		private String sessionCookieValue, sessionUrlValue, sessionValue, reqSessionValue;
 		protected String reqQuery;
-		private PrintWriter pw;
-		private ServletOutputStream rout;
+		private PrintWriter printWriter;
+		private ServletOutputStream servletOutput;
 		private Map formParameters;
 		private Hashtable<String, Object> attributes = new Hashtable<String, Object>();
 		private int resCode = -1;
@@ -2190,8 +2230,10 @@ public class Serve implements ServletContext, Serializable {
 		private MessageFormat accessLogFormat;
 		private Object[] logPlaceHolders;
 		
-		// TODO consider creation an instance per thread in a pool, thread
-		// memory can be used
+		/*
+		 * TODO consider creation an instance per thread in a pool, thread
+		 * memory can be used
+		 */
 		
 		// used for cookie
 		private final SimpleDateFormat expdatefmt = new SimpleDateFormat("EEE, dd-MMM-yyyy HH:mm:ss 'GMT'", Locale.US);
@@ -2204,22 +2246,27 @@ public class Serve implements ServletContext, Serializable {
 		
 		// ASCII date, used in headers
 		private final SimpleDateFormat asciiDateFmt = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy", Locale.US);
-		private static final TimeZone tz = TimeZone.getTimeZone("GMT");
+		private static final TimeZone timeZone = TimeZone.getTimeZone("GMT");
 		static {
-			tz.setID("GMT");
+			timeZone.setID("GMT");
 		}
 		
-		// / Constructor.
+		/**
+		 * Constructor.
+		 * 
+		 * @param socket
+		 * @param serve
+		 */
 		public ServeConnection(Socket socket, Serve serve) {
 			LogManager.debug("ServeConnection(" + socket + ", " + serve + ")");
 			// serve.log("+++++++"+this);
 			// Save arguments.
 			this.socket = socket;
 			this.serve = serve;
-			expdatefmt.setTimeZone(tz);
-			headerdateformat.setTimeZone(tz);
-			rfc850DateFmt.setTimeZone(tz);
-			asciiDateFmt.setTimeZone(tz);
+			expdatefmt.setTimeZone(timeZone);
+			headerdateformat.setTimeZone(timeZone);
+			rfc850DateFmt.setTimeZone(timeZone);
+			asciiDateFmt.setTimeZone(timeZone);
 			if (serve.isAccessLogged()) {
 				// note format string must be not null
 				accessLogFormat = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
@@ -2229,11 +2276,13 @@ public class Serve implements ServletContext, Serializable {
 				// start handshake
 				if (this.socket instanceof SSLSocket) {
 					final SSLSocket sslSocket = ((SSLSocket) this.socket);
-					LogManager.debug("EnabledCipherSuites:" + IOHelper.toString(sslSocket.getEnabledCipherSuites()));
+					// LogManager.debug("EnabledCipherSuites:" +
+					// IOHelper.toString(sslSocket.getEnabledCipherSuites()));
 					sslSocket.setEnabledCipherSuites(sslSocket.getEnabledCipherSuites());
-					LogManager.debug("EnabledProtocols:" + IOHelper.toString(sslSocket.getEnabledProtocols()));
+					// LogManager.debug("EnabledProtocols:" +
+					// IOHelper.toString(sslSocket.getEnabledProtocols()));
 					sslSocket.setEnabledProtocols(sslSocket.getEnabledProtocols());
-					LogManager.debug("startHandshake() ...");
+					// LogManager.debug("startHandshake() ...");
 					sslSocket.startHandshake();
 				}
 				
@@ -2291,8 +2340,8 @@ public class Serve implements ServletContext, Serializable {
 			// System.err.println("===>CLOSE()");
 			IOException ioe = null;
 			try {
-				if (pw != null) {
-					pw.flush();
+				if (printWriter != null) {
+					printWriter.flush();
 				} else {
 					outputStream.flush();
 				}
@@ -2333,6 +2382,10 @@ public class Serve implements ServletContext, Serializable {
 		 * }
 		 */
 		
+		/**
+		 * 
+		 * @throws IOException
+		 */
 		private void restart() throws IOException {
 			// new Exception("RESTART").printStackTrace();
 			reqMethod = null;
@@ -2371,8 +2424,8 @@ public class Serve implements ServletContext, Serializable {
 			// requested and used
 			reqSessionValue = null;
 			reqQuery = null;
-			pw = null;
-			rout = null;
+			printWriter = null;
+			servletOutput = null;
 			formParameters = null;
 			
 			if (attributes == null) {
@@ -3230,8 +3283,9 @@ public class Serve implements ServletContext, Serializable {
 			if (scheme == null) {
 				// lazy stuf dlc
 				synchronized (this) {
-					if (scheme == null)
+					if (scheme == null) {
 						scheme = isSSLSocket() || (serve.proxySSL) ? "https" : "http";
+					}
 				}
 			}
 			
@@ -3470,21 +3524,24 @@ public class Serve implements ServletContext, Serializable {
 			return cookieArray;
 		}
 		
-		// / Returns the method with which the request was made. This can be
-		// "GET",
-		// "HEAD", "POST", or an extension method.
-		// Same as the CGI variable REQUEST_METHOD.
+		/**
+		 * Returns the method with which the request was made. This can be
+		 * "GET", "HEAD", "POST", or an extension method.
+		 * Same as the CGI variable REQUEST_METHOD.
+		 * 
+		 * @see javax.servlet.http.HttpServletRequest#getMethod()
+		 */
 		public String getMethod() {
 			return reqMethod;
 		}
 		
-		/*******************************************************************************************************************************************************
+		/***********************************************************************
 		 * Returns the part of this request's URL from the protocol name up to
 		 * the query string in the first line of the HTTP request. To
 		 * reconstruct an URL with a scheme and host, use
 		 * HttpUtils.getRequestURL(javax.servlet.http.HttpServletRequest).
-		 */
-		// / Returns the full request URI.
+		 ************************************************************************/
+		// Returns the full request URI.
 		public String getRequestURI() {
 			return reqUriPathUn;
 		}
@@ -3560,32 +3617,48 @@ public class Serve implements ServletContext, Serializable {
 			return authType;
 		}
 		
-		// / Returns the value of a header field, or null if not known.
-		// Same as the information passed in the CGI variabled HTTP_*.
-		// @param name the header field name
+		/**
+		 * Returns the value of a header field, or null if not known.
+		 * Same as the information passed in the CGI variabled HTTP_*.
+		 * 
+		 * @see javax.servlet.http.HttpServletRequest#getHeader(java.lang.String)
+		 */
 		public String getHeader(String name) {
 			name = name.toLowerCase();
 			int i = -1;
-			if (serve.proxyConfig && HOST.equals(name))
+			if (serve.proxyConfig && HOST.equals(name)) {
 				i = reqHeaderNames.indexOf(FORWARDED_HOST);
-			if (i < 0)
+			}
+			if (i < 0) {
 				i = reqHeaderNames.indexOf(name);
-			if (i < 0)
+			}
+			if (i < 0) {
 				return null;
+			}
 			return (String) reqHeaderValues.elementAt(i);
 		}
 		
+		/**
+		 * @see javax.servlet.http.HttpServletRequest#getIntHeader(java.lang.String)
+		 */
 		public int getIntHeader(String name) {
 			String val = getHeader(name);
-			if (val == null)
+			if (val == null) {
 				return -1;
+			}
+			
 			return Integer.parseInt(val);
 		}
 		
+		/**
+		 * @see javax.servlet.http.HttpServletRequest#getDateHeader(java.lang.String)
+		 */
 		public long getDateHeader(String name) {
 			String val = getHeader(name);
-			if (val == null)
+			if (val == null) {
 				return -1;
+			}
+			
 			try {
 				return headerdateformat.parse(val).getTime();
 			} catch (ParseException pe) {
@@ -3602,6 +3675,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		/**
+		 * Returns the request headers for the given <code>header</code>.
 		 * 
 		 * @param header
 		 * @return
@@ -3616,6 +3690,7 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		/**
+		 * Returns the request header names.
 		 * 
 		 * @return
 		 */
@@ -3799,31 +3874,44 @@ public class Serve implements ServletContext, Serializable {
 		
 		// Methods from ServletResponse.
 		
-		// / Sets the content length for this response.
-		// @param length the content length
+		/**
+		 * Sets the content length for this response.
+		 * 
+		 * @see javax.servlet.ServletResponse#setContentLength(int)
+		 */
 		public void setContentLength(int length) {
-			if (length >= 0)
+			if (length >= 0) {
 				setIntHeader(CONTENTLENGTH, length);
-			else
+			} else {
 				setHeader(CONTENTLENGTH, null);
+			}
 		}
 		
-		// / Sets the content type for this response.
-		// @param type the content type
+		/**
+		 * Sets the content type for this response.
+		 * 
+		 * @see javax.servlet.ServletResponse#setContentType(java.lang.String)
+		 */
 		public void setContentType(String type) {
 			setHeader(CONTENTTYPE, type);
 		}
 		
-		// / Returns an output stream for writing response data.
+		/**
+		 * Returns an output stream for writing response data.
+		 * 
+		 * @see javax.servlet.ServletResponse#getOutputStream()
+		 */
 		public ServletOutputStream getOutputStream() {
 			synchronized (outputStream) {
-				if (rout == null) {
-					if (pw != null)
+				if (servletOutput == null) {
+					if (printWriter != null) {
 						throw new IllegalStateException("Already returned as a writer");
-					rout = outputStream;
+					}
+					servletOutput = outputStream;
 				}
 			}
-			return rout;
+			
+			return servletOutput;
 		}
 		
 		// / Returns a print writer for writing response data. The MIME type of
@@ -3836,17 +3924,21 @@ public class Serve implements ServletContext, Serializable {
 		// @exception IOException on other I/O errors
 		public PrintWriter getWriter() throws IOException {
 			synchronized (outputStream) {
-				if (pw == null) {
-					if (rout != null)
+				if (printWriter == null) {
+					if (servletOutput != null) {
 						throw new IllegalStateException("Already was returned as servlet output stream");
+					}
+					
 					String encoding = getCharacterEncoding();
-					if (encoding != null)
-						pw = new PrintWriter(new OutputStreamWriter(outputStream, encoding));
-					else
-						pw = new PrintWriter(outputStream);
+					if (encoding != null) {
+						printWriter = new PrintWriter(new OutputStreamWriter(outputStream, encoding));
+					} else {
+						printWriter = new PrintWriter(outputStream);
+					}
 				}
 			}
-			return pw;
+			
+			return printWriter;
 		}
 		
 		// / Returns the character set encoding used for this MIME body. The
@@ -3954,8 +4046,8 @@ public class Serve implements ServletContext, Serializable {
 					outCookies.clear();
 				}
 				resHeaderNames.clear();
-				pw = null;
-				rout = null;
+				printWriter = null;
+				servletOutput = null;
 				((ServeOutputStream) outputStream).reset();
 				assureHeaders();
 			} else {
@@ -4089,6 +4181,12 @@ public class Serve implements ServletContext, Serializable {
 			addHeader(header, headerdateformat.format(new Date(date)));
 		}
 		
+		/**
+		 * Add headers in the request.
+		 * 
+		 * @see javax.servlet.http.HttpServletResponse#addHeader(java.lang.String,
+		 *      java.lang.String)
+		 */
 		public void addHeader(String header, String value) {
 			header = header.trim().toLowerCase();
 			Object object = resHeaderNames.get(header);
@@ -4111,6 +4209,10 @@ public class Serve implements ServletContext, Serializable {
 			}
 		}
 		
+		/**
+		 * @see javax.servlet.http.HttpServletResponse#addIntHeader(java.lang.String,
+		 *      int)
+		 */
 		public void addIntHeader(String header, int value) {
 			addHeader(header, Integer.toString(value));
 		}
@@ -4137,10 +4239,18 @@ public class Serve implements ServletContext, Serializable {
 			return serve.getRequestDispatcher(urlpath);
 		}
 		
+		/**
+		 * Returns true if the scheme is <code>https</code> otherwise false.
+		 * 
+		 * @see javax.servlet.ServletRequest#isSecure()
+		 */
 		public boolean isSecure() {
 			return "https".equals(getScheme());
 		}
 		
+		/**
+		 * @see javax.servlet.ServletRequest#removeAttribute(java.lang.String)
+		 */
 		public void removeAttribute(String name) {
 			attributes.remove(name);
 		}
@@ -4193,7 +4303,11 @@ public class Serve implements ServletContext, Serializable {
 			return resHeaderNames.contains(name);
 		}
 		
-		// JSDK 2.1 extension
+		/**
+		 * JSDK 2.1 extension.
+		 * 
+		 * @see javax.servlet.http.HttpServletResponse#encodeURL(java.lang.String)
+		 */
 		public String encodeURL(String url) {
 			int uop = url.indexOf(SESSION_URL_NAME);
 			// TODO not robust enough
@@ -4853,18 +4967,14 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		@Override
 		public DispatcherType getDispatcherType() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 		
 		/**
-		 * (non-Javadoc)
-		 * 
 		 * @see javax.servlet.ServletRequest#getServletContext()
 		 */
 		@Override
 		public ServletContext getServletContext() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 		
@@ -4880,36 +4990,27 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		/**
-		 * (non-Javadoc)
-		 * 
 		 * @see javax.servlet.ServletRequest#isAsyncSupported()
 		 */
 		@Override
 		public boolean isAsyncSupported() {
-			// TODO Auto-generated method stub
 			return false;
 		}
 		
 		/**
-		 * (non-Javadoc)
-		 * 
 		 * @see javax.servlet.ServletRequest#startAsync()
 		 */
 		@Override
 		public AsyncContext startAsync() throws IllegalStateException {
-			// TODO Auto-generated method stub
 			return null;
 		}
 		
 		/**
-		 * (non-Javadoc)
-		 * 
 		 * @see javax.servlet.ServletRequest#startAsync(javax.servlet.ServletRequest,
 		 *      javax.servlet.ServletResponse)
 		 */
 		@Override
-		public AsyncContext startAsync(ServletRequest arg0, ServletResponse arg1) throws IllegalStateException {
-			// TODO Auto-generated method stub
+		public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
 			return null;
 		}
 		
@@ -4919,30 +5020,30 @@ public class Serve implements ServletContext, Serializable {
 		 * @see javax.servlet.http.HttpServletResponse#getStatus()
 		 */
 		public int getStatus() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 		
 		/**
-		 * (non-Javadoc)
+		 * Returns the request header names.
+		 * Note: If it does not work, return null here.
 		 * 
 		 * @see javax.servlet.http.HttpServletRequest#getHeaderNames()
 		 */
 		@Override
 		public Enumeration<String> getHeaderNames() {
-			// TODO Auto-generated method stub
+//			return this.getRequestHeaderNames();
 			return null;
 		}
 		
 		/**
-		 * (non-Javadoc)
+		 * Returns the request headers for the given <code>header</code>.
+		 * Note: If it does not work, return null here.
 		 * 
 		 * @see javax.servlet.http.HttpServletRequest#getHeaders(java.lang.String)
 		 */
 		@Override
-		public Enumeration<String> getHeaders(String arg0) {
-			// TODO Auto-generated method stub
-			return null;
+		public Enumeration<String> getHeaders(String header) {
+			return getRequestHeaders(header);
 		}
 	}
 	
@@ -5440,10 +5541,18 @@ public class Serve implements ServletContext, Serializable {
 			write(b, 0, b.length);
 		}
 		
-		public void write(byte[] b, int off, int len) throws IOException {
+		/**
+		 * 
+		 * @param dataBytes
+		 * @param off
+		 * @param len
+		 * @throws IOException
+		 * @see java.io.OutputStream#write(byte[], int, int)
+		 */
+		public void write(byte[] dataBytes, int off, int len) throws IOException {
 			if (closed) {
 				if (STREAM_DEBUG) {
-					System.err.println((b == null ? "null" : new String(b, off, len)) + "\n won't be written, stream closed.");
+					System.err.println((dataBytes == null ? "null" : new String(dataBytes, off, len)) + "\n won't be written, stream closed.");
 				}
 				throw new IOException("An attempt of writing " + len + " bytes to a closed out.");
 			}
@@ -5454,8 +5563,8 @@ public class Serve implements ServletContext, Serializable {
 			
 			// write connection headers.
 			serveConnection.writeHeaders();
-			b = buffer.put(b, off, len);
-			len = b.length;
+			dataBytes = buffer.put(dataBytes, off, len);
+			len = dataBytes.length;
 			if (len == 0) {
 				return;
 			}
@@ -5466,12 +5575,12 @@ public class Serve implements ServletContext, Serializable {
 				// no encoding Ok
 				outputStream.write((hexl + "\r\n").getBytes());
 				longBytes += 2 + hexl.length();
-				outputStream.write(b, off, len);
+				outputStream.write(dataBytes, off, len);
 				longBytes += len;
 				outputStream.write("\r\n".getBytes());
 				longBytes += 2;
 			} else {
-				outputStream.write(b, off, len);
+				outputStream.write(dataBytes, off, len);
 				longBytes += len;
 			}
 			
@@ -5479,7 +5588,7 @@ public class Serve implements ServletContext, Serializable {
 				if (chunked) {
 					System.err.println(Integer.toHexString(len));
 				}
-				System.err.print(new String(b, off, len));
+				System.err.print(new String(dataBytes, off, len));
 				if (chunked) {
 					System.err.println();
 				}
@@ -5658,6 +5767,11 @@ public class Serve implements ServletContext, Serializable {
 			return new Object[] { result, INT_ZERO };
 		}
 		
+		/**
+		 * 
+		 * @param value
+		 * @return
+		 */
 		public synchronized Object[] remove(Object value) {
 			Object[] result = remove(rootNode, value);
 			if (result[0] == null) {
@@ -5670,14 +5784,26 @@ public class Serve implements ServletContext, Serializable {
 			return result;
 		}
 		
+		/**
+		 * 
+		 * @param path
+		 * @return
+		 */
 		public synchronized Object[] remove(String path) {
 			Object[] result = get(path);
 			if (result[0] != null) {
 				return remove(result[0]);
 			}
+			
 			return result;
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param value
+		 * @return
+		 */
 		public Object[] remove(Node node, Object value) {
 			// TODO make full path, not only last element
 			if (node == null) {
@@ -5819,19 +5945,25 @@ public class Serve implements ServletContext, Serializable {
 			}
 			addSiblingNames(rootNode, result, "");
 			if (ext != null) {
-				Enumeration e = ext.keys();
-				while (e.hasMoreElements()) {
-					result.addElement("*" + e.nextElement());
+				Enumeration itr = ext.keys();
+				while (itr.hasMoreElements()) {
+					result.addElement("*" + itr.nextElement());
 				}
 			}
 			
 			return result.elements();
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param result
+		 * @param path
+		 */
 		public void addSiblingNames(Node node, Vector result, String path) {
-			Enumeration e = node.keys();
-			while (e.hasMoreElements()) {
-				String pc = (String) e.nextElement();
+			Enumeration itr = node.keys();
+			while (itr.hasMoreElements()) {
+				String pc = (String) itr.nextElement();
 				Node childNode = (Node) node.get(pc);
 				pc = path + '/' + (pc.length() == 0 ? "*" : pc);
 				if (childNode.object != null) {
@@ -5852,10 +5984,15 @@ public class Serve implements ServletContext, Serializable {
 			return result.elements();
 		}
 		
+		/**
+		 * 
+		 * @param node
+		 * @param result
+		 */
 		public void addSiblingObjects(Node node, Vector<Object> result) {
-			Enumeration e = node.keys();
-			while (e.hasMoreElements()) {
-				Node childNode = (Node) node.get(e.nextElement());
+			Enumeration itr = node.keys();
+			while (itr.hasMoreElements()) {
+				Node childNode = (Node) node.get(itr.nextElement());
 				if (childNode.object != null) {
 					result.addElement(childNode.object);
 				}
@@ -5887,14 +6024,25 @@ public class Serve implements ServletContext, Serializable {
 		private transient HttpSessionContext sessionContext;
 		private transient List listeners;
 		
-		// TODO: check in documentation what is default inactive interval and
-		// what
-		// means 0
-		// and what is mesurement unit
+		/**
+		 * TODO: check in documentation what is default inactive interval and
+		 * what means 0 and what is mesurement unit
+		 * 
+		 * @param id
+		 * @param servletContext
+		 * @param sessionContext
+		 */
 		AcmeSession(String id, ServletContext servletContext, HttpSessionContext sessionContext) {
 			this(id, 0, servletContext, sessionContext);
 		}
 		
+		/**
+		 * 
+		 * @param id
+		 * @param inactiveInterval
+		 * @param servletContext
+		 * @param sessionContext
+		 */
 		AcmeSession(String id, int inactiveInterval, ServletContext servletContext, HttpSessionContext sessionContext) {
 			// new
 			// Exception("Session created with:
@@ -5946,8 +6094,9 @@ public class Serve implements ServletContext, Serializable {
 		}
 		
 		public Object getAttribute(String name) throws IllegalStateException {
-			if (expired)
+			if (expired) {
 				throw new IllegalStateException();
+			}
 			return get((Object) name);
 		}
 		
@@ -5985,6 +6134,7 @@ public class Serve implements ServletContext, Serializable {
 					((HttpSessionBindingListener) oldValue).valueUnbound(new HttpSessionBindingEvent(this, name));
 				}
 			}
+			
 			if (value != null) {
 				if (value instanceof HttpSessionBindingListener) {
 					((HttpSessionBindingListener) value).valueBound(new HttpSessionBindingEvent(this, name));
@@ -6052,10 +6202,10 @@ public class Serve implements ServletContext, Serializable {
 					for (int i = 0; i < this.listeners.size(); i++) {
 						try {
 							((HttpSessionListener) this.listeners.get(i)).sessionCreated(localHttpSessionEvent);
-						} catch (ClassCastException classCastException) {
+						} catch (ClassCastException ex) {
 							// servletContext.log("Wrong session listener type:"
 							// + classCastException, classCastException);
-						} catch (NullPointerException nullPointerException) {
+						} catch (NullPointerException ex) {
 							// servletContext.log("Null session listener!",
 							// nullPointerException);
 						}
@@ -6102,8 +6252,10 @@ public class Serve implements ServletContext, Serializable {
 				for (int i = 0, n = listeners.size(); i < n; i++) {
 					try {
 						((HttpSessionAttributeListener) listeners.get(i)).attributeRemoved(event);
-					} catch (ClassCastException cce) {
-					} catch (NullPointerException npe) {
+					} catch (ClassCastException ex) {
+						// ignore me!
+					} catch (NullPointerException ex) {
+						// ignore me!
 					}
 				}
 			}
@@ -6127,8 +6279,10 @@ public class Serve implements ServletContext, Serializable {
 						}
 						
 						sessionListener.attributeAdded(event);
-					} catch (ClassCastException cce) {
-					} catch (NullPointerException npe) {
+					} catch (ClassCastException ex) {
+						// ignore me!
+					} catch (NullPointerException ex) {
+						// ignore me!
 					}
 				}
 			}
@@ -6212,7 +6366,8 @@ public class Serve implements ServletContext, Serializable {
 		 */
 		static AcmeSession restore(BufferedReader r, int inactiveInterval, ServletContext servletContext, HttpSessionContext sessionContext) throws IOException {
 			String s = r.readLine();
-			if (s == null) {// eos
+			if (s == null) {
+				// eos
 				return null;
 			}
 			
