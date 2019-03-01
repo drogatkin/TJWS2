@@ -1,0 +1,70 @@
+1. CREATE PRIVATE KEYS
+openssl genrsa -des3 -out client_key.pem 2048
+openssl genrsa -des3 -out server_key.pem 2048
+
+
+2. CREATE SELF-SIGNED CERTIFICATES
+openssl req -new -x509 -key client_key.pem -out client.pem -days 365
+openssl req -new -x509 -key server_key.pem -out server.pem -days 365
+
+3. CREATE TRUST STORES
+keytool \
+      -import \
+      -v \
+      -trustcacerts \
+      -alias 0 \
+      -file <(openssl x509 -in server.pem) \
+      -keystore clienttruststore.bks \
+      -storetype BKS \
+      -provider org.bouncycastle.jce.provider.BouncyCastleProvider \
+      -providerpath ../../../../libs/bcprov-jdk15-146.jar \
+      -storepass password
+
+     
+keytool \
+      -import \
+      -v \
+      -trustcacerts \
+      -alias 0 \
+      -file <(openssl x509 -in client.pem) \
+      -keystore servertruststore.jks \
+      -storetype JKS \
+      -storepass password
+
+4. COMBINE KEYS AND CERTIFICATES
+openssl pkcs12 -export -out client.p12 -inkey client_key.pem -in client.pem
+openssl pkcs12 -export -out server.p12 -inkey server_key.pem -in server.pem
+
+openssl pkcs12 -export -out client.pfx -inkey client_key.pem -in client.pem
+openssl pkcs12 -export -out server.pfx -inkey server_key.pem -in server.pem
+
+5. CONVERT FROM PKCS12 (this step is not working, even i tried the same in stop 3 here)
+keytool –importkeystore –srckeystore client.p12 –srcstoretype pkcs12 –destkeystore client.bks –deststoretype bks –provider org.bouncycastle.jce.provider.BouncyCastleProvider –providerpath <path_to_bcprov_jar>
+keytool –importkeystore –srckeystore server.p12 –srcstoretype pkcs12 –destkeystore server.jks –deststoretype jks
+keytool -import -alias tjws -file tjws.cer -keystore tjws.bks -storetype BKS -providerClass org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath ./BouncyCastle/bcprov-jdk15on-159.jar
+
+
+---------------------------------------------------------------------------------------------------
+getSupportedProtocols
+0 = "SSLv3"
+1 = "TLSv1"
+2 = "TLSv1.1"
+3 = "TLSv1.2"
+
+
+---------------------------------------------------------------------------------------------------
+adb shell su -c "chmod 777 /data"
+adb shell su -c "chmod 777 /data/data"
+adb shell su -c "chmod 777 /data/user/0/com.rslakra.android.tjwsasapp/files"
+
+
+Pull Command: Copies the file from android device to local machine
+Convention: adb pull <remote path> <local path>
+adb pull "/data/user/0/com.rslakra.android.tjwsasapp/files/logs/android.log" android.log
+
+---------------------------------------------------------------------------------------------------
+Instructions on generating the pin for the end-entity certificate of localhost:
+openssl x509 -in tjws.crt -pubkey -noout | openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+OR
+(this will only works when the server is already running).
+openssl s_client -servername localhost -connect localhost:9161 | openssl x509 -pubkey -noout | openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64

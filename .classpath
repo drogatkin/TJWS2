@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="compatibility/src"/>
+	<classpathentry kind="src" path="test/java"/>
+	<classpathentry kind="src" path="Jasper"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="libs/jsch-0.1.54.jar"/>
+	<classpathentry kind="lib" path="libs/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="libs/javax.servlet.jsp.jar"/>
+	<classpathentry kind="lib" path="libs/tomcat-6.0.33-tomcat-juli.jar"/>
+	<classpathentry kind="lib" path="libs/jasper.jar"/>
+	<classpathentry kind="lib" path="libs/javax.websocket-api-1.1.jar"/>
+	<classpathentry kind="lib" path="libs/javax.json-1.0.4.jar"/>
+	<classpathentry kind="lib" path="libs/tomcat-api-7.0.35.jar"/>
+	<classpathentry kind="lib" path="libs/class-scanner.jar"/>
+	<classpathentry kind="lib" path="libs/javax.servlet-3.0.jar"/>
+	<classpathentry kind="lib" path="libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="libs/bcprov-jdk15on-159.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

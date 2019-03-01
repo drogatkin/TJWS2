@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
+    "https://raw.githubusercontent.com/drogatkin/7Bee/master/bee.dtd" [
+      <!ENTITY android_sdk "\tools\adt-bundle-windows-x86_64-20140702\sdk">
+      <!ENTITY jasper_lib "\projects\jasper7\build\jasper.jar">
+      <!ENTITY servlet_lib "\projects\servlet\javax.servlet.jar">
+      <!ENTITY tjws_wskt_lib "\projects\TJWS2\1.x\lib\wskt.jar">
+      <!ENTITY fast_scan_lib "\projects\fast-classpath-scanner\lib\class-scanner.jar">
+      <!ENTITY target "4.4W">
+]>
+<!-- Prepare war file for Android deployment Copyright 2015 (c) Dmitriy Rogatkin -->
+<bee name="dexer" type="script">
+    <variable name="dx path">&android_sdk;/build-tools/android-&target;/lib/dx.jar</variable>
+    <expression name="jre crop">
+       <if>
+         <expression>
+            <operator name="eq">
+               <value>/</value>
+               <value name="file.separator" type="property"/>
+            </operator>
+          </expression>
+          <then>
+             <value>/jre</value>
+          </then>
+          <else>
+             <value>\\jre</value>
+          </else>
+       </if>   
+    </expression>
+    <expression variable="JAVA_HOME">
+        <function name="cropname">
+            <parameter name="java.home" type="property"/>
+            <parameter variable="jre crop"/>
+        </function>
+    </expression>
+    <!--echo variable="JAVA_HOME"/-->
+    <expression name="jasper path">
+        <operator name="append">
+            <value>&jasper_lib;</value>
+            <value name="path.separator" type="property"/>
+            <value>&servlet_lib;</value>
+            <value name="path.separator" type="property"/>
+            <value variable="JAVA_HOME"/>
+            <value>/lib/tools.jar</value>
+            <value name="path.separator" type="property"/>
+            <value>&android_sdk;/platforms/android-10/android.jar</value>
+        </operator>
+    </expression>
+    <variable name="source war"/>
+    <variable name="dest war"/>
+    <target name="dex war" dir=".">
+        <variable name="current"/>
+        <block>
+            <if>
+                <expression>
+                    <operator name="eq">
+                        <function name="timestamp">
+                            <parameter>&jasper_lib;</parameter>
+                        </function>
+                        <value></value>
+                    </operator>
+                </expression>
+                <then>
+                    <echo>Jasper lib (jar) not found please check script ENTITY jasper_lib, itspecified currently as: &jasper_lib;</echo>
+                    <function name="stop">
+                        <parameter>-1</parameter>
+                    </function>
+                </then>
+            </if>
+            <for variable="current" in="~#args#~">
+                <if>
+                    <expression>
+                        <operator name="neq">
+                            <value variable="source war"/>
+                            <value/>
+                        </operator>
+                    </expression>
+                    <then>
+                        <expression name="dest war">
+                            <value variable="current"/>
+                        </expression>
+                    </then>
+                    <else>
+                        <expression name="source war">
+                            <value variable="current"/>
+                        </expression>
+                    </else>
+                </if>
+            </for>
+            <expression name="unwar dir">
+                <operator name="append">
+                    <value name="java.io.tmpdir" type="property"/>
+                    <value>war_temp</value>
+                </operator>
+            </expression>
+            <if>
+                <expression>
+                    <operator name="or">
+                        <operator name="eq">
+                            <value variable="source war"/>
+                            <value/>
+                        </operator>
+                        <operator name="eq">
+                            <value variable="source war"/>
+                            <value>~#args#~</value>
+                        </operator>
+                    </operator>
+                </expression>
+                <then>
+                    <echo>Usage: bee -- &lt;original war path&gt; [&lt;destination war with 'dalvik' codes&gt;]</echo>
+                    <interrupt/>
+                </then>
+            </if>
+            <!-- <echo variable="source war"/> <echo variable="dest war"/> <echo variable="unwar 
+				dir"/> -->
+            <!-- clean up working dir -->
+            <if>
+                <expression>
+                    <operator name="and">
+                        <operator name="neq">
+                            <function name="timestamp">
+                                <parameter type="dir" variable="unwar dir"/>
+                            </function>
+                            <value></value>
+                        </operator>
+                        <operator name="neq">
+                            <value>true</value>
+                            <value name="recover" type="property"/>
+                        </operator>
+                    </operator>
+                </expression>
+                <then>
+                    <echo>Cleaning working folder</echo>
+                    <expression name="unwar dir *">
+                        <operator name="append">
+                            <value variable="unwar dir"/>
+                            <value>/*/*/*/*/*/*/*/*/*/*/*/*/*/*</value>
+                        </operator>
+                    </expression>
+                    <if>
+                        <expression>
+                            <function name="rm">
+                                <parameter variable="unwar dir *"/>
+                            </function>
+                        </expression>
+                        <else>
+                            <echo>Can not clean working directory, please do it manually and restart the script</echo>
+                            <echo variable="unwar dir *"/>
+                            <interrupt/>
+                        </else>
+                    </if>  
+                </then>
+            </if>
+            <function name="mkd">
+                <parameter variable="unwar dir"/>
+            </function>
+            <function name="unzip">
+                <parameter variable="source war"/>
+                <parameter variable="unwar dir"/>
+            </function>
+            <!-- create target lib dir if not there -->
+            <expression name="lib dir">
+               <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/lib</value>
+               </operator>
+            </expression>
+            <if>
+               <expression>
+                  <operator name="eq">
+                     <function name ="timestamp">
+                        <parameter variable="lib dir" type="path"/>
+                     </function>
+                     <value/>
+                  </operator>
+               </expression>
+               <then>
+                  <function name="mkd">
+                     <parameter variable="lib dir"/>
+                 </function>
+               </then>
+            </if>     
+            <!-- zip classes and remove -->
+            <expression name="classes dir">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/classes/*</value>
+                </operator>
+            </expression>
+            <expression name="classes jar">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/lib/from-classes.jar</value>
+                </operator>
+            </expression>
+            <!-- TODO check it in <if> -->
+            <variable name="classes count">0</variable>
+            <expression name="class files">
+                <value variable="classes dir" type="file"/>
+            </expression>
+            <for name="classes loop" variable="cf" in="class files">
+                <block>
+                    <expression name="classes count">
+                        <function name="calc">
+                            <parameter variable="classes count"/>
+                            <parameter>+</parameter>
+                            <parameter>1</parameter>
+                        </function>
+                    </expression>
+                    <interrupt name="classes loop"/>
+                </block>
+            </for>
+            <if>
+                <expression>
+                    <operator name="lt">
+                        <value variable="classes count"/>
+                        <value>1</value>
+                    </operator>
+                </expression>
+                <else>
+                    <echo>Zipping app classes</echo>
+                    <function name="zip">
+                        <parameter variable="classes jar"/>
+                        <parameter variable="classes dir" type="file"/>
+                    </function>
+                    <expression name="classes dir">
+                        <operator name="append">
+                            <value variable="classes dir"></value>
+                            <value>/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*</value>
+                        </operator>
+                    </expression>
+                    <function name="rm">
+                        <parameter variable="classes dir"></parameter>
+                    </function>
+                </else>
+            </if>
+            <!-- scan for websocket endpoints  -->
+            <expression name="web-inf">
+               <operator name="append">
+                  <value variable="unwar dir"/>
+                  <value>/WEB-INF</value>
+               </operator>
+            </expression>    
+            <expression name="ws-info">
+               <operator name="append">
+                  <value variable="unwar dir"/>
+                  <value>/META-INF/websocket</value>
+               </operator>
+            </expression>    
+            <function name="mkd">
+                <parameter variable="ws-info"/>
+            </function>
+            <expression name="ws-info">
+               <operator name="append">
+                  <value variable="ws-info"/>
+                  <value>/websocket.info</value>
+               </operator>
+            </expression>    
+            <expression name="scanner path">
+               <operator name="append">
+                  <value>&tjws_wskt_lib;</value>
+                  <value name="path.separator" type="property"/> 
+                  <value>&fast_scan_lib;</value>
+                  <value name="path.separator" type="property"/>
+                  <value type="repo_artifact">maven:javax.websocket:javax.websocket-api:1.1</value>
+               </operator>
+            </expression>
+            <echo>Processing server endpoints</echo>
+            <task name="scan" code="rogatkin.wskt.EndPointScanner" path="scanner path">
+                <parameter variable="web-inf"/>
+                <parameter variable="ws-info"/>
+            </task>
+            <!--  take care JSP  -->
+            <expression name="jsp dir">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/META-INF/jsp-classes</value>
+                </operator>
+            </expression>
+            <function name="mkd">
+                <parameter variable="jsp dir"/>
+            </function>
+            <echo>Compiling JSP</echo>
+            <task name="compile jsp" code="org.apache.jasper.JspC" path="jasper path">
+                <parameter>-classpath</parameter>
+                <parameter variable="jasper path"/>
+                <parameter>-webapp</parameter>
+                <parameter variable="unwar dir"/>
+                <parameter>-d</parameter>
+                <parameter variable="jsp dir"/>
+                <parameter>-compile</parameter>
+                <onexception>
+                    <block>
+                        <echo>Exception at jsp pre-compile</echo>
+                        <function name="stop">
+                            <parameter value="-1"/>
+                        </function>
+                    </block>
+                </onexception>
+            </task>
+            <expression name="jsp jar">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/lib/jsp-classes.jar</value>
+                </operator>
+            </expression>
+            <if>
+                <expression>
+                    <operator name="neq">
+                        <function name ="timestamp">                            
+                            <parameter>
+                               <operator name = "append">
+                                  <value variable="jsp dir"/>
+                                  <value>/org</value>
+                               </operator>           
+                            </parameter>
+                        </function>
+                        <value></value>
+                    </operator>
+                </expression>
+                <then>
+                    <expression name="jsp dir">
+                        <operator name="append">
+                            <value variable="jsp dir"/>
+                            <value>/*</value>
+                        </operator>
+                    </expression>
+                    <echo>Zipping JSP classes</echo>
+                    <function name="zip">
+                        <parameter variable="jsp jar"/>
+                        <parameter variable="jsp dir" type="file"/>
+                    </function>
+                    <!-- keep JSP .class files here to make JSP engine think they are actual -->                    
+                </then>
+                <else>
+                    <echo>No JSP</echo>
+                </else>
+            </if>
+            <!-- process all jars, and zips -->
+            <expression name="jars dir">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/lib</value>
+                </operator>
+            </expression>
+            <expression name="all jars">
+                <operator name="append">
+                    <value variable="jars dir"/>
+                    <value>/*</value>
+                </operator>
+            </expression>
+            <expression name="all jars">
+                <value variable="all jars" type="file"/>
+            </expression>
+            <!-- <echo variable="all jars"/> -->
+            <expression name="dex lib">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/WEB-INF/lib-dex</value>
+                </operator>
+            </expression>
+            <function name="mkd">
+                <parameter variable="dex lib"/>
+            </function>
+            <variable name="app archive"/>
+            <if>
+                <expression>
+                    <operator name="neq">
+                        <value>true</value>
+                        <value name="recover" type="property"/>
+                    </operator>
+                </expression>
+                <then>
+                    <for variable="app archive" in="all jars">
+                        <echo variable="app archive"/>
+                        <task name="dex_do" code="com.android.dx.command.Main" path="dx path">
+                            <parameter>--dex</parameter>
+                            <parameter>
+                                <operator name="append">
+                                    <value>--output=</value>
+                                    <value variable="dex lib"/>
+                                    <value name="file.separator" type="property"/>
+                                    <expression>
+                                        <function name="filename">
+                                            <parameter variable="app archive"/>
+                                        </function>
+                                    </expression>
+                                    <value>.jar</value>
+                                </operator>
+                            </parameter>
+                            <parameter variable="app archive"/>
+                        </task>
+                    </for>
+                </then>
+            </if>
+            <expression name="all jars">
+                <!-- work around 'rm' doesn't understand arrays -->
+                <operator name="append">
+                    <value variable="jars dir"/>
+                    <value>/*</value>
+                </operator>
+            </expression>
+            <if>
+                <expression>
+                    <function name="rm">
+                        <parameter variable="all jars"/>
+                    </function>
+                </expression>
+                <else>
+                    <echo>Couldn't remove original jars from web-inf/lib, restart script with recover option : bee -Drecover=true -- &lt;war file&gt; [other used params]</echo>
+                    <interrupt/>
+                </else>
+            </if>
+            <expression name="all dexs">
+                <operator name="append">
+                    <value variable="dex lib"/>
+                    <value>/*</value>
+                </operator>
+            </expression>
+            <expression name="all dexs">
+                <value variable="all dexs" type="file"/>
+            </expression>
+            <for variable="app archive" in="all dexs">
+                <expression>
+                    <function name="mv">
+                        <parameter variable="app archive"/>
+                        <parameter variable="jars dir"/>
+                    </function>
+                </expression>
+            </for>
+            <!-- zip back in war -->
+            <if>
+                <expression>
+                    <operator name="eq">
+                        <value variable="dest war"/>
+                        <value/>
+                    </operator>
+                </expression>
+                <then>
+                    <expression name="dest war">
+                        <operator name="append">
+                            <value name="user.dir" type="property"/>
+                            <value name="file.separator" type="property"/>
+                            <function name="filename">
+                                <parameter variable="source war"/>
+                            </function>
+                            <value>.war</value>
+                        </operator>
+                    </expression>
+                </then>
+            </if>
+            <expression name="unwar dir">
+                <operator name="append">
+                    <value variable="unwar dir"/>
+                    <value>/*</value>
+                </operator>
+            </expression>
+            <function name="zip">
+                <parameter variable="dest war"/>
+                <parameter variable="unwar dir" type="file"/>
+            </function>
+            <echo>Completed.</echo>
+        </block>
+    </target>
+</bee>

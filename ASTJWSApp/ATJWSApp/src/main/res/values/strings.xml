@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ATJWSApp</string>
+    <string name="title">ATJWS - An Android Web Container</string>
+    
+    <!-- Progress Bar Settings -->
+    <string name="loading">Loading</string>
+    <string name="please_wait">Please wait ...</string>
+    
+    <!-- Error Messages -->
+    <string name="errorDialogTitle">Error Message</string>
+    <string name="errorMessage">Error Occurred! Please Check Logs for More Info!</string>
+    <string name="fatalErrorMessage">Error!!!</string>
+
+</resources>

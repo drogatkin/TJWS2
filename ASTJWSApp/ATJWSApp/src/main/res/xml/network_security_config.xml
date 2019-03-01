@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config
+        cleartextTrafficPermitted="false"
+        hstsEnforced="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <trust-anchors>
+            <certificates src="@raw/client" />
+        </trust-anchors>
+        
+        <!-- Certificate Pinning -->
+        <!--pin-set expiration="03/31/2019">
+            <pin digest=sha256>x5EOaimw1oHnoC/H9UzX3LiBMmnEFumBWNpiHvCZxOI=</pin>
+        </pin-set-->
+    </domain-config>
+    
+    <base-config cleartextTrafficPermitted="false"
+        hstsEnforced="true">
+        <trust-anchors>
+            <certificates src="@raw/client" overridePins="false" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

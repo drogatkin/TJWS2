@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.rslakra.android.atjwsapp"
+    android:versionCode="1"
+    android:versionName="1.0">
+    
+    <uses-sdk
+        android:minSdkVersion="22"
+        android:targetSdkVersion="22" />
+    
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    
+    <!-- Bluetooth Permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!--android:networkSecurityConfig="@xml/network_security_config" -->
+    <application
+        android:name="com.rslakra.android.atjwsapp.TJWSApp"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:usesCleartextTraffic="false">
+        
+        <!-- Splash Activity -->
+        <activity android:name="com.rslakra.android.atjwsapp.SplashActivity">
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        
+        <!-- Main Activity -->
+        <activity
+            android:name="com.rslakra.android.atjwsapp.MainActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Light.NoTitleBar"
+            android:windowSoftInputMode="stateAlwaysHidden">
+            <!--
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+    
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            -->
+        </activity>
+        
+        <service
+            android:name="com.rslakra.android.server.TJWSService"
+            android:enabled="true"
+            android:exported="false" />
+    
+    </application>
+
+</manifest>

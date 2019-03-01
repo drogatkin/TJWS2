@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/******************************************************************************
+ * Copyright (C) Devamatre Inc. 2009-2018. All rights reserved.
+ * 
+ * This code is licensed to Devamatre under one or more contributor license 
+ * agreements. The reproduction, transmission or use of this code, in source 
+ * and binary forms, with or without modification, are permitted provided 
+ * that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright
+ * 	  notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *      
+ * Devamatre reserves the right to modify the technical specifications and or 
+ * features without any prior notice.
+ *****************************************************************************/
+-->
+<!--
+/******************************************************************************
+ * Module		: Ant Build Script
+ * Author		: Rohtash Lakra (rohtash.lakra@devamatre.com)
+ * Author		: Rohtash Singh Lakra (rohtash.singh@gmail.com)
+ * Created On	: 2018-03-18 12:41:50 PM
+ * Updated On	: 2018-03-18 12:41:50 PM
+ * Version		: 1.0.0
+ * Since		: 1.0.0
+ * 
+ * NOTE: -
+ * The target defined in this build process are self-explanatory. The more 
+ * details or information about each target is provided with the defination of 
+ * target.
+ *
+ * The cotents of this file should not be modified if there are not change in 
+ * the structure of the project. But if the structure changes, the target 
+ * should be udpated as per the structure changes.
+ *****************************************************************************/
+ -->
+<project name="tjws" default="all" basedir=".">
+	<echo />
+	<echo message="Building '${ant.project.name}' Project ..." />
+
+	<!-- set date & time properties to use later -->
+	<property name="nowPattern" value="EEE, MMM dd, yyyy HH:mm:ss" />
+	<tstamp>
+		<format property="NOW" pattern="${nowPattern}" />
+		<format property="distTimestamp" pattern="yyyyMMMddEEEHHmmss" />
+	</tstamp>
+	<echo message="Build Process started at '${NOW}'" />
+	<echo />
+
+	<!-- display splash screen -->
+	<splash progressRegExp="Progress: (.*)%" showduration="10" displayText="Building ${ant.project.name} ..." />
+
+	<!-- build.properties file inclusion. -->
+	<property file="${basedir}/build.properties" />
+
+	<!-- Basic Structure Settings -->
+	<property name="src.dir" value="${basedir}/src" />
+	<property name="jar.file" value="${ant.project.name}-v${impl-version}.jar" />
+
+	<!-- Libraries -->
+	<property name="libs.dir" value="${basedir}/libs" />
+
+	<!-- Build Paths -->
+	<property name="build.dir" value="${basedir}/build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+
+	<!-- Create Targets -->
+	<!-- Build CLASSPATH Settings -->
+	<path id="build.classpath">
+		<fileset dir="${libs.dir}" includes="**/*.jar" />
+	</path>
+
+	<!-- = = = = = = = = = = = = = = = = =
+	macrodef: echopath
+	= = = = = = = = = = = = = = = = = -->
+	<macrodef name="echopath">
+		<attribute name="pathid" />
+		<sequential>
+			<property name="line.pathprefix" value="|-- " />
+			<!-- get given path in a printable form -->
+			<pathconvert pathsep="${line.separator}${line.pathprefix}" property="echo.@{pathid}" refid="@{pathid}">
+			</pathconvert>
+			<echo />
+			<echo message="Path '@{pathid}'" />
+			<echo message="${line.pathprefix}${echo.@{pathid}}" />
+		</sequential>
+	</macrodef>
+
+	<!-- 
+	<pre>
+		Macro to build all sub-projects:
+		Syntax: <iterate target="compile"/>
+	</pre>
+	-->
+	<macrodef name="iterate">
+		<attribute name="target" />
+		<sequential>
+			<subant target="@{target}">
+				<fileset dir="Modules" includes="*/build.xml" />
+			</subant>
+		</sequential>
+	</macrodef>
+
+	<!-- create a property containing all .jar files, 
+		 prefix lib/, and seperated with a space -->
+	<pathconvert property="lib.classpath" pathsep=" ">
+		<mapper>
+			<chainedmapper>
+				<!-- remove absolute path -->
+				<flattenmapper />
+				<globmapper from="*" to="*" />
+			</chainedmapper>
+		</mapper>
+		<path>
+			<fileset dir="${libs.dir}" includes="**/*.jar" />
+		</path>
+	</pathconvert>
+
+	<!-- Default Target -->
+	<!--<target name="all" description="Default Target" depends="clean, build" /> -->
+	<target name="all" description="Default Target" depends="clean, build" />
+
+	<!-- Remove /build Directory and its sub-directories... -->
+	<target name="clean" description="Removing Directories...">
+		<delete dir="${build.dir}" />
+		<delete dir="${deploy.dir}" />
+		<delete file="${basedir}/dLogs.log" />
+		<delete file="${basedir}/result.txt" />
+		<delete file="${basedir}/result.xml" />
+		<!-- Delete .jar files, if any. -->
+		<delete>
+			<fileset dir="${basedir}" includes="*.jar" />
+		</delete>
+	</target>
+
+	<!-- Creates Directories.... -->
+	<target name="init">
+		<mkdir dir="${classes.dir}" />
+	</target>
+
+	<!-- Compiles all .java classes under the build folder. -->
+	<target name="compile" depends="init" description="Compiling .java files">
+		<echo message="Compiling '${src.dir}' into '${build.dir}'" />
+		<javac fork="${javac.fork}" srcdir="${src.dir}" destdir="${classes.dir}" optimize="${javac.optimize}" debug="${javac.debug}" debuglevel="${javac.debug.level}" listfiles="${javac.listfiles}" includeantruntime="false" source="${javac.source}" target="${javac.target}" classpathref="build.classpath" />
+	</target>
+
+	<!-- Copies Logger.jar file into /../Libs Directory. -->
+	<target name="build" depends="compile">
+		<!-- Create logger jar file and put in /deploy.dir/ directory -->
+		<mkdir dir="${deploy.dir}" />
+		<jar destfile="${deploy.dir}/${jar.file}">
+			<fileset dir="${classes.dir}" includes="**" excludes="javax/**" />
+			<fileset dir="${basedir}" includes="realm.properties" />
+
+			<!-- MANIFEST.MF Properties -->
+			<manifest>
+				<attribute name="Built-By" value="${built-by}" />
+				<section name="Vendor Details">
+					<attribute name="Implementation-Title" value="${ant.project.name}" />
+					<attribute name="Implementation-Vendor" value="${impl-vendor}" />
+					<attribute name="Implementation-Vendor-Id" value="${impl-vendor-id}" />
+					<attribute name="Implementation-Version" value="v${impl-version} ${TODAY}" />
+					<attribute name="Specification-Title" value="${ant.project.name}" />
+					<attribute name="Specification-Vendor" value="${impl-vendor}" />
+					<attribute name="Specification-Version" value="v${impl-version}" />
+				</section>
+			</manifest>
+		</jar>
+
+		<!-- copy .jar file into base directory -->
+		<copy file="${deploy.dir}/${jar.file}" todir="${basedir}" overwrite="true" />
+
+		<tstamp>
+			<format property="NOW" pattern="${nowPattern}" />
+			<format property="distTimestamp" pattern="yyyyMMMddEEEHHmmss" />
+		</tstamp>
+		<echo message="Build Succeeded at '${NOW}'" />
+	</target>
+
+</project>

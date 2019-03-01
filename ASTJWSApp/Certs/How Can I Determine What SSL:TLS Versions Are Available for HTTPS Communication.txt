@@ -1,0 +1,14 @@
+http://thenubbyadmin.com/2014/02/17/how-can-i-determine-what-ssltls-versions-are-available-for-https-communication/
+
+=> Not Enabled or
+TJWS: IO error: javax.net.ssl.SSLHandshakeException: Client requested protocol SSLv3 not enabled or not supported in processing a request (NULL) from /127.0.0.1:9161 / sun.security.ssl.SSLSocketImpl
+
+openssl s_client -connect localhost:9161 -ssl3
+openssl s_client -connect localhost:9161 -ssl2
+openssl s_client -connect localhost:9161 -tls1
+
+
+openssl s_client -connect localhost:9161  -fallback_scsv -no_tls1
+
+
+openssl s_client -connect localhost:9161  -serverpref
