@@ -378,6 +378,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							instance.init(ServletAccessDescr.this);
 						} catch (ServletException se) {
 							exHolder[0] = se;
+						} catch (Exception e) {
+							exHolder[0] = new ServletException(e);
 						}
 					}
 				};
