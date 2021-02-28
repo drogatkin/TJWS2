@@ -126,7 +126,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		container = c;
 		container.addSession(this);
 		buf = ByteBuffer.allocate(c.getDefaultMaxBinaryMessageBufferSize());
-		buf.mark();
+		((java.nio.Buffer)buf).mark();  // an explanation is here https://issues.apache.org/jira/browse/MRESOLVER-85
 		state = FrameState.prepare;
 		handlers = new HashSet<SimpleMessageHandler>();
 		userProperties = new HashMap<String, Object>();
