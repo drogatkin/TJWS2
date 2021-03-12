@@ -9,7 +9,7 @@
 
 <!-- 
   The 7Bee build script used for TJWS project
-   Copyright (c) 2005-2017 Dmitriy Rogatkin  
+   Copyright (c) 2005-2021 Dmitriy Rogatkin  
   -->
 
 <bee name="tjws" type="project">
@@ -185,8 +185,11 @@
         <value variable="WEBSOCKET_SERVER_LIB"/>
         <value variable="PATH SEPARATOR"/>
         <value variable="CLASS_SCAN_LIB"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="corba deps"/>
      </operator>
   </expression>
+  
   
   <expression variable="IDL sources">
     <function name="anynewer">
@@ -293,16 +296,40 @@
   <target name="idl" dir="TJWS_HOME" comment="IDL files creation for JNDI (app module)">
      <dependency variable="IDL sources"/>
      <echo>IDL compilation...</echo>
-     <task name="idl compilation" exec="idl compiler">
-         <parameter value="-keep"/>
-         <parameter value="-fall"/>
-         <parameter value="-td"/>
-         <parameter value="src"/>
-         <parameter value="-pkgTranslate"/>
-         <parameter value="app"/>
-         <parameter value="rogatkin.app.remote"/>
-         <parameter value="idl/remotecontext.idl"/>
-     </task>
+     <block>
+	     <if>
+	          <expression>
+	              <operator name="eq">
+	                 <value variable="eclipse_corba"/>
+	                 <value>yes</value>
+	             </operator>
+	          </expression>
+	          <then>
+	              <task name="idl compilation" code="com.sun.tools.corba.ee.idl.toJavaPortable.Compile" path="corba deps">
+			         <parameter value="-keep"/>
+			         <parameter value="-fall"/>
+			         <parameter value="-td"/>
+			         <parameter value="src"/>
+			         <parameter value="-pkgTranslate"/>
+			         <parameter value="app"/>
+			         <parameter value="rogatkin.app.remote"/>
+			         <parameter value="idl/remotecontext.idl"/>
+			     </task> 
+	          </then>
+	          <else>
+			     <task name="idl compilation" exec="idl compiler">
+			         <parameter value="-keep"/>
+			         <parameter value="-fall"/>
+			         <parameter value="-td"/>
+			         <parameter value="src"/>
+			         <parameter value="-pkgTranslate"/>
+			         <parameter value="app"/>
+			         <parameter value="rogatkin.app.remote"/>
+			         <parameter value="idl/remotecontext.idl"/>
+			     </task>
+			 </else>
+		 </if>
+     </block>
   </target>
 
   <variable name="j2ee sources"/>
@@ -1408,6 +1435,8 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
       <parameter>-dataSource</parameter>
       <parameter>datasource.properties</parameter>
       <!-- ***************  ================ ****************  -->
+    \ <parameter value="-a"/>
+      <parameter value="aliases.properties"/>
       <parameter>-p</parameter>
       <parameter>
         <expression>
