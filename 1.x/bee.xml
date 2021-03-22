@@ -254,6 +254,22 @@
                    <value variable="target runtime"/>
                  </operator>
               </block>
+              <block type="else">
+                   <if>
+                      <expression>
+			              <operator name="eq">
+	                        <value variable="android"/>
+	                        <value>yes</value>
+	                      </operator>
+                      </expression>
+		              <block type="then">
+		                 <operator name="array">
+		                   <value>-bootclasspath</value>
+		                   <value variable="ANDROID_RT"/>
+		                 </operator>
+		              </block>
+                  </if>
+              </block>
             </if>   
           </expression>
        </parameter> 
