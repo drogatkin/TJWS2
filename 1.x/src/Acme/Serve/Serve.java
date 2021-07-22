@@ -716,7 +716,7 @@ public class Serve implements ServletContext, Serializable {
     	} catch (Throwable t) {
     	    if (t instanceof ThreadDeath)
     		throw (ThreadDeath) t;
-    	    log("TJWS: Problem initializing websocket provider", t);
+    	    log("TJWS: Problem initializing websocket provider for TJWS itself", t);
     	}
     }
 
@@ -1729,7 +1729,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface Identification {
 	public static final String serverName = "D. Rogatkin's TJWS (+Android, JSR340, JSR356) https://github.com/drogatkin/TJWS2.git";
 
-	public static final String serverVersion = "Version 1.115 (nightly)";
+	public static final String serverVersion = "Version 1.115";
 
 	public static final String serverUrl = "http://tjws.sourceforge.net";
 
@@ -4186,9 +4186,9 @@ public class Serve implements ServletContext, Serializable {
 	    StringBuffer sb = new StringBuffer(100);
 	    int lsp = resMessage.indexOf('\n');
 	    sb.append("<HTML><HEAD>")
-		    .append("<TITLE>" + resCode + " " + (lsp < 0 ? resMessage : resMessage.substring(0, lsp))
+		    .append("<TITLE>" + resCode + " " + Utils.htmlEncode(lsp < 0 ? resMessage : resMessage.substring(0, lsp), false)
 			    + "</TITLE>").append("</HEAD><BODY " + BGCOLOR)
-		    .append("><H2>" + resCode + " " + (lsp < 0 ? resMessage : resMessage.substring(0, lsp)) + "</H2>");
+		    .append("><H2>" + resCode + " " + Utils.htmlEncode(lsp < 0 ? resMessage : resMessage.substring(0, lsp), false) + "</H2>");
 	    if (lsp > 0)
 		sb.append("<PRE>").append(Utils.htmlEncode(resMessage.substring(lsp), false)).append("</PRE>");
 	    sb.append("<HR>");
