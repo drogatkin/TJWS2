@@ -492,9 +492,9 @@
     <echo>Compiling checker...</echo>
     <task exec="javac">
        <parameter value="-source"/>
-       <parameter>1.5</parameter>
+       <parameter variable="target version"/>
        <parameter value="-target"/>
-       <parameter>1.5</parameter>
+       <parameter variable="target version"/>
        <parameter value="-d"/>
        <parameter value="&build_directory;" type="dir"/>
        <parameter variable="checker sources"/>
@@ -510,7 +510,7 @@
               <parameter value="&build_directory;/war.jar" type="file"/>
            </function>
     </dependency>
-    <task name="jar_do" code="sun.tools.jar.Main">
+    <task name="jar_do" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cf"/>
        <parameter value="&build_directory;/war.jar" type="file"/>
        <parameter value="-C"/>
@@ -529,7 +529,7 @@
               <parameter value="&build_directory;/wskt.jar" type="file"/>
            </function>
     </dependency>
-    <task name="jar_do" code="sun.tools.jar.Main">
+    <task name="jar_do" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cf"/>
        <parameter value="&build_directory;/wskt.jar" type="file"/>
        <parameter value="-C"/>
@@ -551,7 +551,7 @@
               <parameter value="&build_directory;/app.jar" type="file"/>
            </function>
     </dependency>
-    <task name="jar_do" code="sun.tools.jar.Main">
+    <task name="jar_do" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cf"/>
        <parameter value="&build_directory;/app.jar" type="file"/>
        <parameter value="-C"/>
@@ -576,7 +576,7 @@
      </dependency>
      <echo>Jarring checker....</echo>
      <task 
-       name="jar_chk_do" code="sun.tools.jar.Main">
+       name="jar_chk_do" code="sun.tools.jar.Main" tool="jar">
          <parameter value="-cf"/>
          <parameter value="&build_directory;/conn_chk.jar" type="file"/>
          <parameter value="-C"/>
@@ -615,7 +615,7 @@
               <parameter value="&build_directory;\webserver.jar" type="file"/>
            </function>
     </dependency>
-    <task name="jar_do" code="sun.tools.jar.Main">
+    <task name="jar_do" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cmf"/>
        <parameter value="src/manifest.mf" type="file"/>
        <parameter value="&build_directory;/webserver.jar" type="file"/>
@@ -786,7 +786,7 @@
            </function>
     </dependency>
     <block>
-    <task name="jar launcher" code="sun.tools.jar.Main">
+    <task name="jar launcher" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cmf"/>
        <parameter value="src/webapp.mf" type="file"/>
        <parameter value="&build_directory;/&launchername;.jar" type="file"/>
@@ -883,7 +883,7 @@
       </expression>
       <block type="then">
        <echo>Adding Jasper</echo>
-       <task name="jar jasper" code="sun.tools.jar.Main">
+       <task name="jar jasper" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-uf"/>
        <parameter value="&build_directory;/&launchername;.jar" type="file"/>
        <parameter value="-C"/>
@@ -936,7 +936,7 @@
            </function>
     </dependency>
     <block>
-    <task name="jar aslauncher" code="sun.tools.jar.Main">
+    <task name="jar aslauncher" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cmf"/>
        <parameter value="src/appserver.mf" type="file"/>
        <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
@@ -1033,7 +1033,7 @@
       </expression>
       <block type="then">
        <echo>Adding Jasper</echo>
-       <task name="jar jasper" code="sun.tools.jar.Main">
+       <task name="jar jasper" code="sun.tools.jar.Main" tool="jar">
          <parameter value="-uf"/>
          <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
          <parameter value="-C"/>
@@ -1110,7 +1110,7 @@ bee -- -webapp &lt;web app dir&gt; -v -d &lt;target dir&gt;  -compile</echo>
          </parameter>
          <parameter>.war</parameter>
        </function>
-       <task name="jar launcher" code="sun.tools.jar.Main">
+       <task name="jar launcher" code="sun.tools.jar.Main" tool="jar">
           <parameter value="-uf"/>
           <parameter value="&build_directory;/&launchername;.jar" type="file"/>
           <parameter>rundescriptor</parameter>
@@ -1191,7 +1191,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
          </parameter>
          <parameter>.war</parameter>
        </function>
-       <task name="as jar launcher" code="sun.tools.jar.Main">
+       <task name="as jar launcher" code="sun.tools.jar.Main" tool="jar">
           <parameter value="-uf"/>
           <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
           <parameter>rundescriptor</parameter>
