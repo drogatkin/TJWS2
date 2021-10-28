@@ -30,6 +30,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 import org.apache.jasper.JasperException;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -177,9 +180,18 @@ public class BeeCompiler extends Compiler {
 
 		boolean compilationErrors = false;
 		String errorCapture = null;
-		if (javaCompiler != null)
+		if (javaCompiler != null || (newerJava()))
 			try {
 				Integer success;
+				if (newerJava()) {
+					JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+					//log.error("comp "+compiler);
+					//for(String ps:parameters)
+					  // log.error(ps);
+              			         success = compiler.run(System.in, System.out, System.err, parameters
+							.toArray(new String[parameters.size()]));
+					//log.error("Compiled "+parameters+" with "+success);
+				} else {
 				Method cm = javaCompiler.getMethod("compile", new Class[] { String[].class });
 				if (ctxt.getOptions().getFork()) {
 					success = (Integer) cm.invoke(null, new Object[] { parameters
@@ -190,6 +202,7 @@ public class BeeCompiler extends Compiler {
 								.size()]) });
 					}
 				}
+}
 				if (success.intValue() != 0)
 					compilationErrors = true;
 			} catch (Throwable t) {
@@ -242,6 +255,14 @@ public class BeeCompiler extends Compiler {
 		if (!options.isSmapSuppressed()) {
 			log.debug("Install Smap " + (smap == null ? "null" : Arrays.toString(smap)));
 			SmapUtil.installSmap(smap);
+		}
+	}
+	
+	final boolean newerJava() {
+	     try {
+			return Integer.parseInt(System.getProperty("java.version")) > 10;
+		} catch(Exception e) {
+			return false;
 		}
 	}
 
