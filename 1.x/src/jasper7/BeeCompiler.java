@@ -260,7 +260,7 @@ public class BeeCompiler extends Compiler {
 	
 	final boolean newerJava() {
 	     try {
-			return Integer.parseInt(System.getProperty("java.version")) > 10;
+			return Integer.parseInt(System.getProperty("java.specification.version")) > 10;
 		} catch(Exception e) {
 			return false;
 		}
