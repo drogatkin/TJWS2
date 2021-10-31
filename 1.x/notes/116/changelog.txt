@@ -1,0 +1,6 @@
+TJWS  version 1.116
+
+1. Jasper 7.7x modified to work on JDK 17 and up
+2. Using JACORB 3.9 for JDK 11 and up (https://www.jacorb.org/download.html)
+3. A security risk related to CSS is addressed. The problem happened in case  of an error reporting
+

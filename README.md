@@ -1,9 +1,13 @@
-TJWS2
-=====
+TJWS
+====
 
-Tiny Java Web and App server second generation
+#Tiny Java Web and App server
 
-Since the version development wasn't started yet, you can
-access source codes from first generation here.
+The server sources hosting on sourceforge is currently stopped.
+All sources are available here.
 
-Please check releases at <a href="http:// tjws.sf.net">Source Forge</a>
+However a general documentation can be still accessed from <a href="http://tjws.sf.net">Source Forge</a>
+
+#Releases
+
+Check release notes and a change log in corresponding release number directory: TJWS2/1.x/notes/

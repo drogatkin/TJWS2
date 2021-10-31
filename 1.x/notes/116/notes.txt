@@ -1,0 +1,11 @@
+TJWS release 1.116
+
+This release is targeting JDK 11 and up compatibility.
+Oracle pushed Java 17 recently as LTS unsupporting all
+previous releases for free. This move required addressing from TJWS development team.
+Since CORBA was removed from JDK 10 and up, 3rd party CORBA implementations
+have to be used. Eclipse Glassfish CORBA stopped working in JDK 14, so only JACORB remained
+to be an option. This release of TJWS completely can utilize JACORB, and it is recommended.
+Currently the server can be used from JDK 8 to JDK 17. It can still be working on older JDKs too,
+but it should be rebuilt, since Java 8 is used as the target for all binaries.
+
