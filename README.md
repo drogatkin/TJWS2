@@ -10,4 +10,4 @@ However a general documentation can be still accessed from <a href="http://tjws.
 
 # Releases
 
-Check release notes and a change log in corresponding release number directory: TJWS2/1.x/notes/
+Check release notes and a change log in a corresponding release number directory: TJWS2/1.x/notes/
