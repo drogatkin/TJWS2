@@ -308,42 +308,62 @@
       </onexit>
     </task>
   </target>
-
+  
   <target name="idl" dir="TJWS_HOME" comment="IDL files creation for JNDI (app module)">
      <dependency variable="IDL sources"/>
      <echo>IDL compilation...</echo>
      <block>
-	     <if>
+        <if>
 	          <expression>
 	              <operator name="eq">
-	                 <value variable="eclipse_corba"/>
+	                 <value variable="jacorb_corba"/>
 	                 <value>yes</value>
 	             </operator>
 	          </expression>
 	          <then>
-	              <task name="idl compilation" code="com.sun.tools.corba.ee.idl.toJavaPortable.Compile" path="corba deps">
-			         <parameter value="-keep"/>
-			         <parameter value="-fall"/>
-			         <parameter value="-td"/>
+	              <task name="idl compilation" code="emb idl compiler" path="corba deps">
+			        
+			         <parameter value="-d"/>
 			         <parameter value="src"/>
-			         <parameter value="-pkgTranslate"/>
-			         <parameter value="app"/>
-			         <parameter value="rogatkin.app.remote"/>
+			         <parameter value="-i2jpackage"/>
+			         <parameter value="app:rogatkin.app.remote"/>
 			         <parameter value="idl/remotecontext.idl"/>
 			     </task> 
 	          </then>
 	          <else>
-			     <task name="idl compilation" exec="idl compiler">
-			         <parameter value="-keep"/>
-			         <parameter value="-fall"/>
-			         <parameter value="-td"/>
-			         <parameter value="src"/>
-			         <parameter value="-pkgTranslate"/>
-			         <parameter value="app"/>
-			         <parameter value="rogatkin.app.remote"/>
-			         <parameter value="idl/remotecontext.idl"/>
-			     </task>
-			 </else>
+			     <if>
+			          <expression>
+			              <operator name="eq">
+			                 <value variable="eclipse_corba"/>
+			                 <value>yes</value>
+			             </operator>
+			          </expression>
+			          <then>
+			              <task name="idl compilation" code="emb idl compiler" path="corba deps">
+					         <parameter value="-keep"/>
+					         <parameter value="-fall"/>
+					         <parameter value="-td"/>
+					         <parameter value="src"/>
+					         <parameter value="-pkgTranslate"/>
+					         <parameter value="app"/>
+					         <parameter value="rogatkin.app.remote"/>
+					         <parameter value="idl/remotecontext.idl"/>
+					     </task> 
+			          </then>
+			          <else>
+					     <task name="idl compilation" exec="idl compiler">
+					         <parameter value="-keep"/>
+					         <parameter value="-fall"/>
+					         <parameter value="-td"/>
+					         <parameter value="src"/>
+					         <parameter value="-pkgTranslate"/>
+					         <parameter value="app"/>
+					         <parameter value="rogatkin.app.remote"/>
+					         <parameter value="idl/remotecontext.idl"/>
+					     </task>
+					 </else>
+				 </if> 
+			</else>
 		 </if>
      </block>
   </target>
