@@ -25,10 +25,12 @@
 package rogatkin.wskt;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ServiceLoader;
@@ -70,6 +72,8 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	
 	long idleTimeout;
 	long asyncTimeout;
+	
+	static final int threshHold = 1024;
 
 	public SimpleServerContainer(SimpleProvider simpleProvider) {
 		provider = simpleProvider;
@@ -82,18 +86,20 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	public void addEndpoint(Class<?> arg0) throws DeploymentException {
 		if (arg0.isAssignableFrom(ServerEndpointConfig.class)) {
 			try {
-				addEndpoint((ServerEndpointConfig) arg0.newInstance());
+				addEndpoint((ServerEndpointConfig) arg0.getConstructor().newInstance());
 			} catch (InstantiationException e) {
-				throw new DeploymentException("Error in deployment end point", e);
-			} catch (IllegalAccessException e) {
-				throw new DeploymentException("Error in deployment end point", e);
+				throw new DeploymentException("Error in deployment of an endpoint", e);
+			} catch (IllegalAccessException|NoSuchMethodException e) {
+				throw new DeploymentException("Error in deployment of an endpoint", e);
+			} catch(InvocationTargetException e){
+				throw new DeploymentException("Error in calling constructor at deployment of an endpoint", e);
 			}
 		} else {
 			ServerEndpoint sep = arg0.getAnnotation(ServerEndpoint.class);
 			Configurator configurator = null;
 			if (ServerEndpointConfig.Configurator.class !=sep.configurator())
 				try {
-					configurator = sep.configurator().newInstance();
+					configurator = sep.configurator().getConstructor().newInstance();
 				} catch(Exception e) {
 					throw new DeploymentException("Can't instantiate custom Configurator for "+sep.configurator(), e);
 				}
@@ -106,8 +112,13 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public void addEndpoint(ServerEndpointConfig arg0) throws DeploymentException {
-		if (endpoints.containsKey(arg0.getPath()))
-			throw new DeploymentException("More than one end points use same path " + arg0.getPath());
+		//if (endpoints.containsKey(arg0.getPath()))
+			//throw new DeploymentException("More than one endpoint uses the same path " + arg0.getPath());
+		if (containsKeyAdv(arg0.getPath())) {
+			//System.err.printf("match to %s fount%n", arg0.getPath());
+			throw new DeploymentException("More than one endpoint uses the same path " + arg0.getPath());
+		}
+		
 		endpoints.put(arg0.getPath(), arg0);
 	}
 
@@ -179,8 +190,48 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 
 	@Override
 	public void setDefaultMaxTextMessageBufferSize(int arg0) {
-		if (arg0 > 1024)
+		if (arg0 > threshHold)
 			defBufSize = arg0;
+	}
+	
+	enum RFC_6570 {FirstPart, Transn}
+	
+	/**
+	 * 
+	 * @param key path in RFC 6570
+	 * @return true if already such provided
+	 * 
+	 * @see SimpleProvider.parseTemplate
+	 */
+	boolean containsKeyAdv(String key) {
+		allset: for (String entry : endpoints.keySet()) {
+			//System.err.printf("looking for %s in %s%n", key, entry);
+			RFC_6570 sta = RFC_6570.FirstPart;
+			for (int k = 0, n=entry.length(), m=key.length(); k < n; k++) {
+				if (k >= m)
+					continue allset;
+				switch(sta) {
+				case FirstPart:
+					if (entry.charAt(k) != key.charAt(k)) {
+						continue allset;
+					}
+					if (entry.charAt(k) == '/')
+						sta = RFC_6570.Transn;
+					break;
+				case Transn:
+					if (entry.charAt(k) != key.charAt(k)) {
+						continue allset;
+					}
+					if (entry.charAt(k) == '{')
+						return true;
+					if (entry.charAt(k) != '/')
+						sta = RFC_6570.FirstPart;
+					break;
+				}
+				
+			}
+		}
+		return false;
 	}
 
 	void log(String msg, Object... params) {

@@ -306,7 +306,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	}
 
 	@Override
-	public void deploy(final ServletContext servCtx, final List cp) {
+	public void deploy(final ServletContext servCtx, final List cp) throws ServletException {
 		final SimpleServerContainer ssc = new SimpleServerContainer(this);
 		final HashSet<ServerApplicationConfig> appCfgs = new HashSet<ServerApplicationConfig>();
 		final HashSet<Class<?>> annSeps = new HashSet<Class<?>>();
@@ -379,14 +379,14 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						ssc.addEndpoint(se);
 						serve.log("Deployed ServerEndpoint " + se);
 					} catch (DeploymentException de) {
-
+						throw new ServletException("A problem in deplyment a websocket server endpint", de);
 					}
 				for (ServerEndpointConfig epc : sac.getEndpointConfigs(endps))
 					try {
 						ssc.addEndpoint(epc);
 						serve.log("Deployed ServerEndpointConfig " + epc);
 					} catch (DeploymentException de) {
-
+						throw new ServletException("A problem in deplyment a websocket server endpint", de);
 					}
 			}
 		} else {
@@ -395,7 +395,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					ssc.addEndpoint(se);
 					serve.log("Deployed ServerEndpoint " + se);
 				} catch (DeploymentException de) {
-
+					throw new ServletException("A problem in deplyment a websocket server endpint", de);
 				}
 		}
 		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);

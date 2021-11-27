@@ -934,7 +934,7 @@ public class Serve implements ServletContext, Serializable {
     	
     	public void destroy();
     	
-    	public void deploy(ServletContext servletCtx, List classpathFiles);
+    	public void deploy(ServletContext servletCtx, List classpathFiles) throws ServletException;
     }
 
     protected Acceptor createAcceptor() throws IOException {
