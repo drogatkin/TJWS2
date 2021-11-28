@@ -1,0 +1,3 @@
+TJWS  version 1.117
+
+1. Correct detection of a deployment conflict of a server endpoint
