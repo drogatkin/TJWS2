@@ -1401,7 +1401,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 				initEncoders();
 			Encoder ec = encoders.get(arg0.getClass());
 			if (ec == null)
-				throw new EncodeException(arg0, "There is no encoder");
+				throw new EncodeException(arg0, "There is no encoder for "+arg0.getClass());
 			if (ec instanceof Encoder.Text) {
 				sendText(((Encoder.Text) ec).encode(arg0));
 			} else if (ec instanceof Encoder.TextStream) {
@@ -1541,9 +1541,11 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		}
 
 		void destroy() {
-			if (encoders != null)
+			if (encoders != null) {
 				for (Encoder ec : encoders.values())
 					ec.destroy();
+				encoders = null;
+			}
 		}
 
 	}
