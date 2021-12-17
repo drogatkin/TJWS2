@@ -14,3 +14,5 @@ Check release notes and a change log in a corresponding release number directory
 
 # Good news
 The project doesn't use Log4J, and other not reliable open source libraries.
+
+![alt this project Log4j free](https://github.com/drogatkin/TJWS2/blob/master/log4j2-logo.jpg?raw=true)
