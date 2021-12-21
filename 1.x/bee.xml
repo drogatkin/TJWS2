@@ -648,7 +648,7 @@
     </task>
   </target>
 
-  <target name="conv res" dir="TJWS_HOME" comment="convert properties with national charcters to Java properties encoding">
+  <target name="conv res" dir="TJWS_HOME" comment="convert properties with national characters to Java properties encoding">
      <dependency>
         <expression name="res list">
            <function name="newerthan">
@@ -658,21 +658,14 @@
         </expression>
      </dependency>
      <block>
-        <echo>Converting resources</echo>
+        <echo>Converting resources (just copying for Java 11 and up)</echo>
         <expression variable="prop files">
               <value type="file">src/rogatkin/resource/*.asis</value>
         </expression>
-        <expression variable="java tool classes">
-           <operator name="append">
-             <value variable="JAVA_HOME"/>
-             <value>/lib/tools.jar</value>
-           </operator>
-        </expression>
         
         <for variable="prop file" in="prop files">
-          <task name="main" code="sun.tools.native2ascii.Main" path="java tool classes">
-              <parameter value="-encoding"/>
-              <parameter value="utf-8"/>
+          <block>
+            <function name="cp">
               <parameter variable="prop file"/>
               <parameter>
                  <operator name="append">
@@ -684,7 +677,8 @@
                     <value>.properties</value>
                  </operator>
               </parameter>
-          </task>
+            </function> 
+          </block>   
         </for>
      </block>
   </target>
@@ -956,6 +950,27 @@
            </function>
     </dependency>
     <block>
+    <expression name="SERVLET_LIB_30_JAR">
+       <operator name="append">
+         <value variable="SERVLET_LIB_30"/>
+         <value>!.</value>
+       </operator>
+    </expression>
+    <expression name="WEBSOCKET_SERVER_LIB_JAR">
+       <operator name="append">
+         <value variable="WEBSOCKET_SERVER_LIB"/>
+         <value>!.</value>
+       </operator>
+    </expression>
+    <expression name="CLASS_SCAN_LIB_JAR">
+       <operator name="append">
+         <value variable="CLASS_SCAN_LIB"/>
+         <value>!.</value>
+       </operator>
+    </expression>
+    <function name="rm">
+        <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+    </function>
     <task name="jar aslauncher" code="sun.tools.jar.Main" tool="jar">
        <parameter value="-cmf"/>
        <parameter value="src/appserver.mf" type="file"/>
@@ -976,74 +991,17 @@
        <parameter value="src" type="file"/>
        <parameter>Acme/Resource/mime.properties</parameter>
        <parameter value="-C"/>
-       <parameter variable="SERVLET_BUILD" type="dir"/>
-       <parameter value="javax" type="dir"/>
-       <parameter>
-           <expression variable="resources">
-              <variable name="resources"/>
-              <for variable="resource name" in="resource list">
-                  <operator name="array" variable="resources">
-                      <value variable="resources"/>
-                      <value>-C</value>
-                      <value variable="servlet res root"/>
-                      <value variable="resource name"/>
-                  </operator>
-               </for>
-           </expression>
-       </parameter>
-       <parameter>
-           <expression variable="resources">
-              <variable name="resources"/>
-              <for variable="resource name" in="resource http list">
-                  <operator name="array" variable="resources">
-                      <value variable="resources"/>
-                      <value>-C</value>
-                      <value variable="servlet res root"/>
-                      <value variable="resource name"/>
-                  </operator>
-               </for>
-           </expression>
-       </parameter>
-       <parameter>
-           <expression variable="properties">
-              <variable name="properties"/>
-              <for variable="resource name" in="systray properties">
-                  <operator name="array" variable="properties">
-                      <value variable="properties"/>
-                      <value>-C</value>
-                      <value variable="src"/>
-                      <value variable="resource name"/>
-                  </operator>
-               </for>
-           </expression>
-       </parameter>
-       <parameter value="-C"/>
-       <parameter>
-         <expression>
-             <operator name="append">
-                <value variable="WEBSOCKET_API" type="dir"/>
-                <value>/client/lib</value>
-             </operator>
-         </expression>
-       </parameter>    
-       <parameter value="javax/websocket" type="dir"/>
-       <parameter value="-C"/>
-       <parameter>
-         <expression>
-             <operator name="append">
-                <value variable="WEBSOCKET_API" type="dir"/>
-                <value>/server/lib</value>
-             </operator>
-         </expression>
-       </parameter>    
-       <parameter value="javax/websocket/server" type="dir"/>
-       <parameter value="-C"/>
-       <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
-       <parameter value="io" type="dir"/>
-       <parameter value="-C"/>
        <parameter value="resources" type="dir"/>
        <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
+       <!-- all standard jars content will be added in a zip function -->
     </task>
+    <function name="zip">
+       <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+       <parameter variable="SERVLET_LIB_30_JAR"/>
+       <parameter variable="WEBSOCKET_SERVER_LIB_JAR"/>
+       <parameter variable="CLASS_SCAN_LIB_JAR"/>
+       <!-- add corba jars -->
+    </function>   
     <if>
       <expression>
          <operator name="neq">
@@ -1052,30 +1010,24 @@
          </operator>
       </expression>
       <block type="then">
-       <echo>Adding Jasper</echo>
-       <task name="jar jasper" code="sun.tools.jar.Main" tool="jar">
-         <parameter value="-uf"/>
-         <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
-         <parameter value="-C"/>
-         <parameter variable="JASPER_BUILD" type="dir"/>
-         <parameter value="org" type="dir"/>
-         <parameter value="-C"/>
-         <parameter variable="JASPER_BUILD" type="dir"/>
-         <parameter value="javax/servlet/jsp" type="dir"/>
-         <parameter value="-C"/>
-         <parameter variable="JASPER_BUILD" type="dir"/>
-         <parameter value="javax/el" type="dir"/>
-         <parameter value="-C"/>
-         <parameter variable="JASPER_SRC" type="dir"/>
-         <parameter>org/apache/jasper/resources</parameter>
-       </task>
+       <expression name="JASPER JAR">
+             <operator name="append">
+                <value variable="JASPER" type="dir"/>
+                <value>!.</value>
+             </operator>
+       </expression>
+       <echo>Adding Jasper jar</echo>
+       <function name="zip">
+           <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+           <parameter variable="JASPER JAR"/>
+       </function>
       </block>
       <else>
          <echo>No JSP support added in the launcher</echo>
       </else>
     </if>
     </block>
-    <echo>App Server Launcher's been built.</echo>
+    <echo>An app Server Launcher's been built.</echo>
   </target>
 
   <target name="embedded" dir="TJWS_HOME" comment="build one jar web application">
