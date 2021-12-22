@@ -819,35 +819,7 @@
        <parameter value="-C"/>
        <parameter value="src" type="file"/>
        <parameter>rogatkin/resource/splash.gif</parameter>
-       <parameter value="-C"/>
-       <parameter variable="SERVLET_BUILD" type="dir"/>
-       <parameter value="javax" type="dir"/>
-       <parameter>
-           <expression variable="resources">
-              <variable name="resources"/>
-              <for variable="resource name" in="resource list">
-                  <operator name="array" variable="resources">
-                      <value variable="resources"/>
-                      <value>-C</value>
-                      <value variable="servlet res root"/>
-                      <value variable="resource name"/>
-                  </operator>
-               </for>
-           </expression>
-       </parameter>
-       <parameter>
-           <expression variable="resources">
-              <variable name="resources"/>
-              <for variable="resource name" in="resource http list">
-                  <operator name="array" variable="resources">
-                      <value variable="resources"/>
-                      <value>-C</value>
-                      <value variable="servlet res root"/>
-                      <value variable="resource name"/>
-                  </operator>
-               </for>
-           </expression>
-       </parameter>
+ 
        <parameter>
            <expression variable="properties">
               <variable name="properties"/>
@@ -861,29 +833,7 @@
                </for>
            </expression>
        </parameter>
-       <parameter value="-C"/>
-       <parameter>
-         <expression>
-             <operator name="append">
-                <value variable="WEBSOCKET_API" type="dir"/>
-                <value>/client/lib</value>
-             </operator>
-         </expression>
-       </parameter>    
-       <parameter value="javax/websocket" type="dir"/>
-       <parameter value="-C"/>
-       <parameter>
-         <expression>
-             <operator name="append">
-                <value variable="WEBSOCKET_API" type="dir"/>
-                <value>/server/lib</value>
-             </operator>
-         </expression>
-       </parameter>    
-       <parameter value="javax/websocket/server" type="dir"/>
-       <parameter value="-C"/>
-       <parameter variable="CLASS_SCAN_CLASSES" type="dir"/>
-       <parameter value="io" type="dir"/>
+       
        <parameter value="-C"/>
        <parameter value="resources" type="dir"/>
        <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
@@ -896,30 +846,25 @@
          </operator>
       </expression>
       <block type="then">
-       <echo>Adding Jasper</echo>
-       <task name="jar jasper" code="sun.tools.jar.Main" tool="jar">
-       <parameter value="-uf"/>
-       <parameter value="&build_directory;/&launchername;.jar" type="file"/>
-       <parameter value="-C"/>
-       <parameter variable="JASPER_BUILD" type="dir"/>
-       <parameter value="org" type="dir"/>
-       <parameter value="-C"/>
-       <parameter variable="JASPER_BUILD" type="dir"/>
-       <parameter value="javax/servlet/jsp" type="dir"/>
-       <parameter value="-C"/>
-       <parameter variable="JASPER_BUILD" type="dir"/>
-       <parameter value="javax/el" type="dir"/>
-       <parameter value="-C"/>
-       <parameter variable="JASPER_SRC" type="dir"/>
-       <parameter>org/apache/jasper/resources</parameter>
-       <parameter value="-C"/>
-       <parameter variable="JASPER_SRC" type="dir"/>
-       <parameter>javax/servlet/resources</parameter>
-       </task>
+       <expression name="JASPER JAR">
+             <operator name="append">
+                <value variable="JASPER" type="dir"/>
+                <value>!.</value>
+             </operator>
+       </expression>
+       <echo>Adding Jasper jar</echo>
+       <function name="zip">
+           <parameter value="&build_directory;/&launchername;.jar" type="file"/>
+           <parameter variable="JASPER JAR"/>
+       </function>
       </block>
+      <else>
+         <echo>No JSP support added in the launcher</echo>
+      </else>
     </if>
+    
     </block>
-    <echo>Launcher's been built.</echo>
+    <echo>A launcher's been built.</echo>
   </target>
 
   <target name="aslauncher" dir="TJWS_HOME" comment="build one jar web app launcher with services">
@@ -987,12 +932,27 @@
        <parameter value="-C"/>
        <parameter value="src" type="file"/>
        <parameter>rogatkin/resource/splash.gif</parameter>
+       <parameter>
+           <expression variable="properties">
+              <variable name="properties"/>
+              <for variable="resource name" in="systray properties">
+                  <operator name="array" variable="properties">
+                      <value variable="properties"/>
+                      <value>-C</value>
+                      <value variable="src"/>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
        <parameter value="-C"/>
        <parameter value="src" type="file"/>
        <parameter>Acme/Resource/mime.properties</parameter>
+       
        <parameter value="-C"/>
        <parameter value="resources" type="dir"/>
        <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
+       
        <!-- all standard jars content will be added in a zip function -->
     </task>
     <function name="zip">
@@ -1026,6 +986,36 @@
          <echo>No JSP support added in the launcher</echo>
       </else>
     </if>
+    <!-- CORBA for Java 11 and up -->
+     <if>
+      <expression>
+         <operator name="lt">
+           <value>10</value>
+           <value variable="j2ee target version"/>
+         </operator>
+      </expression>
+      <then>
+         <variable name="jars list"/>
+         <for variable="jar name" in="jacorb deps" separator="PATH SEPARATOR">
+           <expression name="zip jar name">
+              <operator name="append">
+                 <value variable="jar name"/>
+                 <value>!.</value>
+              </operator>
+           </expression>
+           <expression name="jars list">
+	           <operator name="array">
+	               <value variable="jars list"/>
+	               <value variable="zip jar name"/>
+	           </operator>
+	       </expression>
+         </for>
+         <function name="zip">
+            <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+            <parameter variable="jars list"/>
+         </function>
+      </then>
+      </if>
     </block>
     <echo>An app Server Launcher's been built.</echo>
   </target>
