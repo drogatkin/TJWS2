@@ -48,6 +48,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -556,6 +557,19 @@ public class Utils {
 		newLength = Math.min(original.length-from, newLength);		
 		System.arraycopy(original, from, copy, 0, newLength);
 		return copy;
+	}
+	
+	/** merge two arrays
+	 * 
+	 * @param <T>
+	 * @param first
+	 * @param second
+	 * @return
+	 */
+	public static <T> T[] concat(T[] first, T[] second) {
+		  T[] result = Arrays.copyOf(first, first.length + second.length);
+		  System.arraycopy(second, 0, result, first.length, second.length);
+		  return result;
 	}
 
 	/*

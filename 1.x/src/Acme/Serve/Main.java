@@ -78,7 +78,7 @@ public class Main extends Serve {
 
 		int argc = args.length;
 		int argn;
-		// TODO merge command arguments and from the file, error if both sources are empty
+		// TODO merge command arguments and from the file, error if both sources are empty. Decide on merge priority if any
 		String[] args2 = readArguments(workPath, CLI_FILENAME);
 		if (args2 == null && argc == 0) {
 			messages = appendMessage(messages, "Can't read from CLI file ("+CLI_FILENAME+") at "+workPath+"\n");
