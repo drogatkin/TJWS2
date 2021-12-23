@@ -39,12 +39,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
+import java.util.stream.Stream;
 
 import Acme.Utils;
 
@@ -76,12 +78,14 @@ public class Main extends Serve {
 
 		int argc = args.length;
 		int argn;
-		if (argc == 0) { // a try to read from file for java -jar server.jar
-			args = readArguments(workPath, CLI_FILENAME);
-			if (args == null) {
-				messages = appendMessage(messages, "Can't read from CLI file ("+CLI_FILENAME+") at "+workPath+"\n");
-			} else
-				argc = args.length;
+		// TODO merge command arguments and from the file, error if both sources are empty
+		String[] args2 = readArguments(workPath, CLI_FILENAME);
+		if (args2 == null && argc == 0) {
+			messages = appendMessage(messages, "Can't read from CLI file ("+CLI_FILENAME+") at "+workPath+"\n");
+		} else if (args2 != null) {
+			args = Stream.concat(Arrays.stream(args), Arrays.stream(args2))
+                      .toArray(String[]::new);
+			argc = args.length;
 		}
 
 		Map arguments = new HashMap(20);

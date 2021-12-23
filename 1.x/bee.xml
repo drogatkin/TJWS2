@@ -751,6 +751,25 @@
               <parameter>src</parameter>
            </function>
   </expression>
+  
+     <expression name="SERVLET_LIB_30_JAR">
+       <operator name="append">
+         <value variable="SERVLET_LIB_30"/>
+         <value>!.</value>
+       </operator>
+    </expression>
+    <expression name="WEBSOCKET_SERVER_LIB_JAR">
+       <operator name="append">
+         <value variable="WEBSOCKET_SERVER_LIB"/>
+         <value>!.</value>
+       </operator>
+    </expression>
+    <expression name="CLASS_SCAN_LIB_JAR">
+       <operator name="append">
+         <value variable="CLASS_SCAN_LIB"/>
+         <value>!.</value>
+       </operator>
+    </expression>
 
   <target name="launcher" dir="TJWS_HOME" comment="build one jar web app launcher">
     <dependency target="jar"/>
@@ -839,7 +858,7 @@
        <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
     </task>
     <function name="zip">
-       <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+       <parameter value="&build_directory;/&launchername;.jar" type="file"/>
        <parameter variable="SERVLET_LIB_30_JAR"/>
        <parameter variable="WEBSOCKET_SERVER_LIB_JAR"/>
        <parameter variable="CLASS_SCAN_LIB_JAR"/>
@@ -901,24 +920,6 @@
            </function>
     </dependency>
     <block>
-    <expression name="SERVLET_LIB_30_JAR">
-       <operator name="append">
-         <value variable="SERVLET_LIB_30"/>
-         <value>!.</value>
-       </operator>
-    </expression>
-    <expression name="WEBSOCKET_SERVER_LIB_JAR">
-       <operator name="append">
-         <value variable="WEBSOCKET_SERVER_LIB"/>
-         <value>!.</value>
-       </operator>
-    </expression>
-    <expression name="CLASS_SCAN_LIB_JAR">
-       <operator name="append">
-         <value variable="CLASS_SCAN_LIB"/>
-         <value>!.</value>
-       </operator>
-    </expression>
     <function name="rm">
         <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
     </function>
