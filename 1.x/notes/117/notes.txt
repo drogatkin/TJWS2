@@ -1,3 +1,7 @@
 TJWS release 1.117
 
 The release has several improvements and bug fixes.
+It also lifts minimal JDK requirement to Java 8. It seems
+a reasonable move, since even version 8 is considered as an obsolete now.
+Android development is also shifted to Java 11, so no any impact
+for a mobile use.
