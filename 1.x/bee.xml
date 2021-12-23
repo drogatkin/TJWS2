@@ -838,6 +838,12 @@
        <parameter value="resources" type="dir"/>
        <parameter value="META-INF/services/javax.websocket.server.ServerEndpointConfig$Configurator" type="dir"/>
     </task>
+    <function name="zip">
+       <parameter value="&build_directory;/as&launchername;.jar" type="file"/>
+       <parameter variable="SERVLET_LIB_30_JAR"/>
+       <parameter variable="WEBSOCKET_SERVER_LIB_JAR"/>
+       <parameter variable="CLASS_SCAN_LIB_JAR"/>
+    </function> 
     <if>
       <expression>
          <operator name="neq">
