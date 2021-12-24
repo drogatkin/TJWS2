@@ -1,6 +1,6 @@
 TJWS  version 1.117
 
-1. Correct a detection of a deployment conflict of a server endpoint
-2. Changed a way of a building one jar server
+1. Corrected a detection of a deployment conflicts of a server endpoints
+2. Changed a way of a building one jar server (launcher and embedded goals)
 3. Server parameters can be taken from a command line and cmdparams file
 4. Minimal JDK requirement changed to Java 8

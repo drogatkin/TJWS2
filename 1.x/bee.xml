@@ -35,9 +35,7 @@
                     = </value>
         <value variable="SERVLET_SRC"/>
         <value>
-      SERVLET_BUILD - fully qualified path to binaries of classes of JSS, used only for 
-                      packaging JSS in a launcher (correct version of JSS
-                      has to be used for target applications (optional) 
+      SERVLET_BUILD - not in use anymore, since a different approach is used to build the launcher 
                     = </value>
         <value variable="SERVLET_BUILD"/>
         <value>
@@ -46,7 +44,7 @@
                     = </value>
         <value variable="JSP_LIB"/>
         <value>
-      JASPER (optional)
+      JASPER - Jasper JSP library (optional)
                     = </value>
         <value variable="JASPER"/> 
         <value>
@@ -60,7 +58,7 @@
         <value> </value>
         <value variable="WEBSOCKET_SERVER_LIB"/> 
         <value>
-      WEBSOCKET_API - fully qualified path to websocket spec source api directory (optional)
+      WEBSOCKET_API - not in use currently
                    =</value>
         <value variable="WEBSOCKET_API"/> 
         <value>
@@ -609,7 +607,7 @@
   </target>
   
   <target name="jar" dir="TJWS_HOME" comment="Creation jar of main server">
-    <echo>Jarring...</echo>
+    <echo>Jarring server...</echo>
     <dependency target="compile"/>
     <dependency>
            <function name="allnewer">
