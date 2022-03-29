@@ -69,7 +69,7 @@ public class Multipart {
 			String encoding = request.getCharacterEncoding(); // TODO request.getLocale(); and calculate encoding
 			if (encoding == null)
 				encoding = Serve.UTF8;
-			ServletInputStream sis = request.getInputStream();
+			ServletInputStream sis = new BufferedServletInputStream(request.getInputStream());
 
 			parts = new LinkedList<PartImpl>();
 			long bytesRead = 0;
