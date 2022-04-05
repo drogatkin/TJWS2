@@ -936,19 +936,6 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 								+ " can't be created due an error.", e);
 					}
 			}
-			// restore sessions for this context
-			// serve.sessions.restore for the current context
-
-			// notify context listeners
-			if (result.listeners != null)
-				for (EventListener listener : result.listeners) {
-					if (listener instanceof ServletContextListener) {
-						final ServletContextListener contListener = (ServletContextListener) listener;
-						contListener
-								.contextInitialized(new ServletContextEvent(
-										result));
-					}
-				}
 			
 			// read global multi part
 			Node mp = (Node)xp.evaluate(prefix + "multipart-form", document, XPathConstants.NODE);
@@ -1300,7 +1287,21 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		List<File> appClasses = getAppClasses(deployDir);
 		if (!result.noAnnot)
 			deployFromAnnotations(result, appClasses);
-		return deploywebsocket(result, appClasses);
+		deploywebsocket(result, appClasses);
+		// restore sessions for this context
+		// serve.sessions.restore for the current context
+
+		// notify context listeners
+					if (result.listeners != null)
+						for (EventListener listener : result.listeners) {
+							if (listener instanceof ServletContextListener) {
+								final ServletContextListener contListener = (ServletContextListener) listener;
+								contListener
+										.contextInitialized(new ServletContextEvent(
+												result));
+							}
+						}
+		return result;
 	}
         
         public static void deployFromAnnotations(final WebAppServlet webApp, final List<File> appClasses) throws ServletException {
