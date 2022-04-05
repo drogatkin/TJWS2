@@ -1469,7 +1469,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
        <parameter name="tjws.wardeploy.as-root.localhost" value="redirector"/>
        <parameter name="tjws.serve.log.encoding" value="UTF-8"/>
        <parameter name="tjws.wardeploy.dynamically" value="10"/>
-<!--parameter name="tjws.webappdir">/temp/tjws-web-apps</parameter-->
+       <parameter name="tjws.webappdir">./webapps-test</parameter>
        <!--parameter name="tjws.fileservlet.suppressindex" value=""/-->
        <parameter name="org.apache.commons.logging.LogFactory" value="org.apache.commons.logging.impl.LogFactoryImpl"/>
        <parameter name="org.apache.commons.logging.simplelog.defaultlog" value="error" type="property"/>
@@ -1521,7 +1521,7 @@ for Jasper enabled application [-nohup -p 80 -dataSource datasource.properties]?
                      </operator>
                   </expression>
                   <then>
-                     <variable name="port">8080</variable>
+                     <variable name="port">8000</variable>
                   </then>
                   <else>
                     <variable name="port">80</variable>

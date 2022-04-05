@@ -28,6 +28,7 @@ package rogatkin.web;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,6 +42,7 @@ import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLDecoder;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,6 +98,8 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.UnavailableException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebListener;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServlet;
@@ -107,6 +111,7 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
 import javax.servlet.http.Part;
+import javax.websocket.server.ServerEndpoint;
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
@@ -121,6 +126,9 @@ import org.xml.sax.InputSource;
 import Acme.Utils;
 import Acme.Serve.FileServlet;
 import Acme.Serve.Serve;
+
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.ClassAnnotationMatchProcessor;
 
 /**
  * @author dmitriy
@@ -634,9 +642,17 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				if (contextDef.exists())
 					appContextDelegator.add(context, new WebApp.MetaContext(contextDef.getPath(), result.ucl));
 			}
+			result.virtualHost = virtualHost;
+			File webXmlFile = new File(deployDir,
+					"WEB-INF/web.xml");
+			if (!webXmlFile.exists() || !webXmlFile.isFile()) {
+				result.noAnnot = false;
+				error = false;
+				throw new FileNotFoundException(); // can be considered a dedicated exception
+				
+			}
 			Node document = (Node) xp.evaluate("/*",
-					 new InputSource(webxml = new FileInputStream(new File(deployDir,
-							"WEB-INF/web.xml"))), XPathConstants.NODE);
+					 new InputSource(webxml = new FileInputStream(webXmlFile)), XPathConstants.NODE);
 			// TODO process "web-fragment.xml" as well
 			final String namespaceURI = document.getNamespaceURI();
 			String prefix = namespaceURI == null ? "" : "j2ee:";
@@ -684,7 +700,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				result.contextPath = "";
 				result.contextName = "";
 			}
-			result.virtualHost = virtualHost;
+			
 			Node metadataAttr = document.getAttributes().getNamedItem(
 					"metadata-complete");
 			if (metadataAttr != null)
@@ -1260,8 +1276,13 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					XPathConstants.NODESET);
 			nodesLen = nodes.getLength();
 			error = false;
+		} catch (FileNotFoundException ioe) {
+			if (result.noAnnot) {
+				error = true;
+				throw new ServletException("web.xml not found.", ioe);
+			}
 		} catch (IOException ioe) {
-			throw new ServletException("A problem in reading web.xml.", ioe);
+			    throw new ServletException("A problem in reading web.xml.", ioe);
 		} catch (XPathExpressionException xpe) {
 			//server.log("", xpe);
 			throw new ServletException("A problem in parsing web.xml.", xpe);
@@ -1276,28 +1297,211 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				} catch(Exception e) {}
 		}
 		result.scc = new SessionCookieConfigImpl(result);
-		return deploywebsocket(result, deployDir, context, server, virtualHost);
+		List<File> appClasses = getAppClasses(deployDir);
+		if (!result.noAnnot)
+			deployFromAnnotations(result, appClasses);
+		return deploywebsocket(result, appClasses);
 	}
         
-        public static WebAppServlet deploywebsocket(final WebAppServlet webApp, final File deployDir, String context, final Serve server, String virtualHost)
+        public static void deployFromAnnotations(final WebAppServlet webApp, final List<File> appClasses) throws ServletException {
+        	// TODO make this class common for websocket too
+        	new FastClasspathScanner("") {
+    			@Override
+    			public List<File> getUniqueClasspathElements() {
+    				if (appClasses != null)
+    					return appClasses;
+					ClassLoader ccl = webApp.getClass().getClassLoader();
+					//webApp.server.log("Class loader :"+ccl);
+					if (ccl instanceof URLClassLoader) {
+						URL[] urls = ((URLClassLoader) ccl).getURLs();
+						if (urls != null && urls.length > 0) {
+							ArrayList<File> result = new ArrayList<File>(urls.length);
+							for (URL url : urls)
+								try {
+									webApp.server.log("Adding :"+new File(URLDecoder.decode(url.getFile(), "UTF-8")));
+									result.add(new File(URLDecoder.decode(url.getFile(), "UTF-8")));
+								} catch (UnsupportedEncodingException e) {
+									webApp.server.log("Can't add path component " + url + " :" + e);
+								}
+							return result;
+						}
+					}
+					return super.getUniqueClasspathElements();
+    			}
+
+    			@Override
+    			public ClassLoader getClassLoader() {
+    				if (webApp != null)
+    					try {
+    						return (ClassLoader) webApp.getClass().getMethod("getClassLoader").invoke(webApp);
+    					} catch (Exception e) {
+    						return webApp.getClass().getClassLoader();
+    					}
+    				return null;
+    			}
+    		}.matchClassesWithAnnotation(WebServlet.class, new ClassAnnotationMatchProcessor() {
+    			public void processMatch(Class<?> matchingClass) {
+    				if(HttpServlet.class.isAssignableFrom(matchingClass)) {
+    					ServletAccessDescr sad = webApp.createDescriptor();
+    					
+    					WebServlet wsa = matchingClass.getAnnotation(WebServlet.class);
+    					sad.name = wsa.name();
+    					sad.className = matchingClass.getName();
+    					sad.asyncSupported = wsa.asyncSupported();
+    					sad.loadOnStart = wsa.loadOnStartup();
+    					if (wsa.value().length > 0) {
+    						sad.mapping = new MappingEntry[wsa.value().length];
+    						for (int e =0, len = wsa.value().length; e < len; e++) {
+    							sad.mapping[e] = new MappingEntry(clearPath(wsa.value()[e]),
+    									buildREbyPathPatt(wsa.value()[e]));
+    						}
+    					} else if (wsa.urlPatterns().length > 0) {
+    						sad.mapping = new MappingEntry[wsa.urlPatterns().length];
+    						for (int e =0, len = wsa.urlPatterns().length; e < len; e++) {
+    							sad.mapping[e] = new MappingEntry(clearPath(wsa.urlPatterns()[e]),
+    									buildREbyPathPatt(wsa.urlPatterns()[e]));
+    						}
+    					} else {
+    						webApp.server.log("Inconsistent URL definition for "+sad.name, null);
+    						throw new RuntimeException();
+    					}
+    					// order with other servlets in post deploy step
+    					//if (sad.loadOnStart > 0) 
+    					//	sad.instance = sad.newInstance(); //(HttpServlet)matchingClass.getConstructor().newInstance();
+    					if (wsa.initParams().length > 0) {
+    						sad.initParams = new HashMap<String, String>();
+    						for (WebInitParam param: wsa.initParams()) {
+    							sad.initParams.put(param.name(), param.value());
+    						}
+    					}
+    					addSecurityAnnotatoins(sad, matchingClass);
+    					if (webApp.servlets == null)
+    						webApp.servlets = new ArrayList<ServletAccessDescr>();
+    					webApp.servlets.add(sad);
+    				}
+    			}
+    		}).matchClassesWithAnnotation(WebFilter.class, new ClassAnnotationMatchProcessor() {
+    			public void processMatch(Class<?> matchingClass) {
+    				webApp.server.log("found filter: "+matchingClass);
+    				if(Filter.class.isAssignableFrom(matchingClass)) {
+	    				FilterAccessDescriptor fad = webApp.createFilterDescriptor(); 
+	    				// since the descriptor inherited from ServletAccessDescr it is worth to use a common code to fill the common part
+	    				WebFilter wfa = matchingClass.getAnnotation(WebFilter.class);
+	    				fad.name = wfa.filterName();
+	    				fad.className = matchingClass.getName();
+	    				if (wfa.servletNames().length > 0) {
+	    					for (int e =0, len = wfa.servletNames().length; e < len; e++) {
+	    					fad.servletNames[e] = wfa.servletNames()[e];
+	    					}
+	    				}
+	    				if (wfa.value().length > 0) {
+    						fad.mapping = new MappingEntry[wfa.value().length];
+    						for (int e =0, len = wfa.value().length; e < len; e++) {
+    							fad.mapping[e] = new MappingEntry(clearPath(wfa.value()[e]),
+    									buildREbyPathPatt(wfa.value()[e]));
+    						}
+    					} else if (wfa.urlPatterns().length > 0) {
+    						fad.mapping = new MappingEntry[wfa.urlPatterns().length];
+    						for (int e =0, len = wfa.urlPatterns().length; e < len; e++) {
+    							fad.mapping[e] = new MappingEntry(clearPath(wfa.urlPatterns()[e]),
+    									buildREbyPathPatt(wfa.urlPatterns()[e]));
+    						}
+    					} else {
+    						webApp.server.log("Inconsistent URL definition for "+fad.name, null);
+    						throw new RuntimeException();
+    					}
+	    				fad.asyncSupported = wfa.asyncSupported();
+	    				if (wfa.dispatcherTypes().length > 0) {
+	    					fad.dispatchTypes = new DispatcherType[wfa.dispatcherTypes().length];
+	    					for (int e =0, len = wfa.dispatcherTypes().length; e < len; e++) {
+	    						fad.dispatchTypes[e] = wfa.dispatcherTypes()[e];
+	    					}
+	    				}
+	    				if (wfa.initParams().length > 0) {
+    						fad.initParams = new HashMap<String, String>();
+    						for (WebInitParam param: wfa.initParams()) {
+    							fad.initParams.put(param.name(), param.value());
+    						}
+    					}
+	    				try {
+		    				fad.newFilterInstance();
+		    				// TODO add security annot 
+		    				addSecurityAnnotatoins(fad, matchingClass);
+		    				if (webApp.filters == null)
+		    				     webApp.filters = new ArrayList<FilterAccessDescriptor>();
+		    				webApp.filters.add(fad);
+	    				} catch(Exception e) {
+    						webApp.server.log("Problen in creation of a filter for "+matchingClass, e);
+    						throw new RuntimeException();
+    					}
+    				}
+    			}
+    		}).matchClassesWithAnnotation(WebListener.class, new ClassAnnotationMatchProcessor() {
+    			public void processMatch(Class<?> matchingClass) {
+    				if(EventListener.class.isAssignableFrom(matchingClass)) {
+    					try {
+	    					if (webApp.listeners == null)
+	    	    				webApp.listeners = new ArrayList<EventListener>();
+	    					EventListener eventListener = (EventListener) matchingClass.getConstructor().newInstance();
+									
+							if (eventListener instanceof HttpSessionListener
+									|| eventListener instanceof HttpSessionAttributeListener) {
+								if (webApp.sessionListeners == null)
+									webApp.sessionListeners = new ArrayList<EventListener>();
+								webApp.sessionListeners
+										.add((EventListener) eventListener);
+							}
+	
+							if (eventListener instanceof ServletRequestListener) {
+								if (webApp.requestListeners == null)
+									webApp.requestListeners = new ArrayList<ServletRequestListener>();
+								webApp.requestListeners
+										.add((ServletRequestListener) eventListener);
+							}
+	
+							if (eventListener instanceof ServletRequestAttributeListener) {
+								if (webApp.attributeListeners == null)
+									webApp.attributeListeners = new ArrayList<ServletRequestAttributeListener>();
+								webApp.attributeListeners
+										.add((ServletRequestAttributeListener) eventListener);
+							}
+							webApp.listeners.add(eventListener);
+    					} catch(Exception e) {
+    						webApp.server.log("Problen in creation of a listener for "+matchingClass, e);
+    						throw new RuntimeException();
+    					}
+    				}
+    			}
+    		}).scan();
+        }
+        
+        protected static void addSecurityAnnotatoins(ServletAccessDescr descr, Class<?> _class) {
+        	
+        }
+        
+        public static WebAppServlet deploywebsocket(final WebAppServlet webApp, final List<File> appClasses)
         	    throws ServletException {
         	if (webApp.server.websocketProvider != null) {
-        		File file = new File(deployDir, "WEB-INF/lib");
-    			ArrayList <File> result = file.exists() && file.isDirectory()?new ArrayList<File>(Arrays.asList(file.listFiles(new FileFilter() {
-
-					@Override
-					public boolean accept(File pathname) {
-						String name = pathname.getName().toLowerCase();
-						return pathname.isFile()  && (name.endsWith(".jar") || name.endsWith(".zip"));
-					}}))):new ArrayList<File>();
-    			file = new File(deployDir, "WEB-INF/classes");
-    			if (file.exists() && file.isDirectory())
-    				result.add(file);
     			if (webApp.listeners == null)
     				webApp.listeners = new ArrayList<EventListener>(2);
-    			webApp.server.websocketProvider.deploy(webApp, result);
+    			webApp.server.websocketProvider.deploy(webApp, appClasses);
         	}
         	return webApp;
+        }
+        
+        protected static List<File> getAppClasses(final File deployDir) {
+        	File file = new File(deployDir, "WEB-INF/lib");
+			ArrayList <File> result = file.exists() && file.isDirectory()?new ArrayList<File>(Arrays.asList(file.listFiles(new FileFilter() {
+
+				@Override
+				public boolean accept(File pathname) {
+					String name = pathname.getName().toLowerCase();
+					return pathname.isFile()  && (name.endsWith(".jar") || name.endsWith(".zip"));
+				}}))):new ArrayList<File>();
+			file = new File(deployDir, "WEB-INF/classes");
+			if (file.exists() && file.isDirectory())
+				result.add(file);
+			return result;
         }
         
     static String toNormalizedString(Object o) {
@@ -1396,10 +1600,11 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							.sendError(HttpServletResponse.SC_NOT_FOUND);
 					return;
 				}
-				for (FilterAccessDescriptor fad : filters)
-					if (fad.matchDispatcher(DispatcherType.REQUEST)
-							&& fad.matchPath(path) >= 0)
-						sfc.add(fad);
+				if (filters != null)
+					for (FilterAccessDescriptor fad : filters)
+						if (fad.matchDispatcher(DispatcherType.REQUEST)
+								&& fad.matchPath(path) >= 0)
+							sfc.add(fad);
 				for (ServletAccessDescr sad : servlets) {
 					if (_DEBUG)
 						System.err.println("Trying matching " + path + " to "
@@ -1867,7 +2072,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 
 	@Override
 	public String getServerInfo() {
-		return "TJWS/J2EE container, Copyright &copy; 2010 - 2016 Dmitriy Rogatkin";
+		return "TJWS/J2EE container, Copyright &copy; 2010 - 2022 Dmitriy Rogatkin";
 	}
 
 	@Override

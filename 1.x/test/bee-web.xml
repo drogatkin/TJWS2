@@ -13,7 +13,7 @@
       ]>
 <!-- $Id: bee-web.xml,v 1.13 2012/04/17 22:52:48 dmitriy Exp $
    make file used for "generic" project
-   Copyright (c) 2004-2007 Dmitriy Rogatkin    -->
+   Copyright (c) 2004-2022 Dmitriy Rogatkin    -->
 
 <bee name="&project;" type="project">
   &env;
@@ -120,7 +120,7 @@
            </function>
     </dependency>
 
-    <task name="jar_do" code="sun.tools.jar.Main">
+    <task name="jar_do" code="sun.tools.jar.Main" tool="jar">
        <parameter>
           <expression>
             <if>
@@ -196,6 +196,48 @@
       </block>
   </target>
   
+  <target name="pwar" dir="PROJECT_HOME">
+    <dependency target="jar"/>
+    <dependency>
+       <expression>
+          <operator name="not">
+             <function name ="timestamp">
+                <parameter value="&build_directory;/&webapp_file;" type="path"/>
+             </function>
+          </operator>
+       </expression>
+    </dependency>
+    <!-- add more resource change dependencies
+     -->
+     <dependency>
+       <expression>
+          <function name="anynewer">
+             <parameter value="html-js" type="path"/>
+             <parameter value="&build_directory;/&webapp_file;" type="path"/>
+          </function>
+       </expression>
+    </dependency>
+    <block>
+      <echo value="...->&build_directory;/&webapp_file;"/>
+      <function name="warit">
+         <parameter value="&build_directory;/&webapp_file;" type="path"/>
+         <parameter/>
+         <parameter>C &domain;</parameter>
+         <parameter type="path">&build_directory;/&domain;</parameter>
+         <parameter/>
+         <parameter>L</parameter>
+         <parameter type="path">&build_directory;/&build_file;</parameter>
+         <parameter/>
+         <parameter>L</parameter>
+         <parameter type="path" variable="JSON_LIB"></parameter>
+         <parameter/>
+         <parameter>A</parameter>
+         <parameter>html-js/*.html</parameter>
+         <parameter>A</parameter>
+         <parameter>html-js/*.js</parameter>
+      </function>
+    </block>
+  </target>
   <target name="war" dir="PROJECT_HOME">
     <dependency target="jar"/>
     <dependency>
