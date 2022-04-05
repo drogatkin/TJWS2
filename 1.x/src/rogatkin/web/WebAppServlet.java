@@ -80,6 +80,7 @@ import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -96,7 +97,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.UnavailableException;
+import javax.servlet.annotation.HandlesTypes;
 import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebListener;
@@ -512,6 +515,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 			} catch (ClassNotFoundException cnfe) {
 				throw new ServletException("Filter class " + className
 						+ " not found. ", cnfe);
+			} catch(Exception e) {
+				throw new ServletException("Filter init exception", e);
 			}
 			return filterInstance;
 		}
@@ -1292,15 +1297,15 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		// serve.sessions.restore for the current context
 
 		// notify context listeners
-					if (result.listeners != null)
-						for (EventListener listener : result.listeners) {
-							if (listener instanceof ServletContextListener) {
-								final ServletContextListener contListener = (ServletContextListener) listener;
-								contListener
-										.contextInitialized(new ServletContextEvent(
-												result));
-							}
-						}
+		if (result.listeners != null)
+			for (EventListener listener : result.listeners) {
+				if (listener instanceof ServletContextListener) {
+					final ServletContextListener contListener = (ServletContextListener) listener;
+					contListener
+							.contextInitialized(new ServletContextEvent(
+									result));
+				}
+			}
 		return result;
 	}
         
@@ -1375,7 +1380,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     							sad.initParams.put(param.name(), param.value());
     						}
     					}
-    					addSecurityAnnotatoins(sad, matchingClass);
+    					addSecurityAnnotatoins(webApp, sad, matchingClass);
     					if (webApp.servlets == null)
     						webApp.servlets = new ArrayList<ServletAccessDescr>();
     					webApp.servlets.add(sad);
@@ -1383,7 +1388,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     			}
     		}).matchClassesWithAnnotation(WebFilter.class, new ClassAnnotationMatchProcessor() {
     			public void processMatch(Class<?> matchingClass) {
-    				webApp.server.log("found filter: "+matchingClass);
+    				//webApp.server.log("found filter: "+matchingClass);
     				if(Filter.class.isAssignableFrom(matchingClass)) {
 	    				FilterAccessDescriptor fad = webApp.createFilterDescriptor(); 
 	    				// since the descriptor inherited from ServletAccessDescr it is worth to use a common code to fill the common part
@@ -1427,7 +1432,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	    				try {
 		    				fad.newFilterInstance();
 		    				// TODO add security annot 
-		    				addSecurityAnnotatoins(fad, matchingClass);
+		    				addSecurityAnnotatoins(webApp, fad, matchingClass);
 		    				if (webApp.filters == null)
 		    				     webApp.filters = new ArrayList<FilterAccessDescriptor>();
 		    				webApp.filters.add(fad);
@@ -1473,11 +1478,20 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     					}
     				}
     			}
+    		}).matchClassesWithAnnotation(HandlesTypes.class, new ClassAnnotationMatchProcessor() {  
+    			public void processMatch(Class<?> matchingClass) {
+    				if (ServletContainerInitializer.class.isAssignableFrom(matchingClass)) {
+    					
+    				}
+    			}
     		}).scan();
         }
         
-        protected static void addSecurityAnnotatoins(ServletAccessDescr descr, Class<?> _class) {
-        	
+        protected static void addSecurityAnnotatoins(final WebAppServlet webApp, final ServletAccessDescr descr, final Class<?> _class) {
+        	ServletSecurity ssa = _class.getAnnotation(ServletSecurity.class);
+        	if (ssa != null) {
+        		webApp.server.log("A security annotations are not supported yet at deployment of "+_class);
+        	}
         }
         
         public static WebAppServlet deploywebsocket(final WebAppServlet webApp, final List<File> appClasses)

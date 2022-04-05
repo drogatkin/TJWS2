@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import java.io.PrintWriter;
 import java.util.Date;
+import java.util.Set;
 
 import javax.servlet.annotation.WebServlet;
 
@@ -13,18 +14,27 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebListener;
+import javax.servlet.annotation.HttpMethodConstraint;
+import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
+import javax.servlet.annotation.HandlesTypes;
+import javax.servlet.annotation.HttpConstraint;
 
 @WebServlet(name = "AnnotatedServlet", description = "A sample annotated servlet", urlPatterns = {
 		"/TestServlet" }, initParams = { @WebInitParam(name = "foo", value = "Hello "),
 				@WebInitParam(name = "bar", value = " World!") })
+@ServletSecurity()
 public class SelfDeployServlet extends HttpServlet {
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -95,5 +105,18 @@ public class SelfDeployServlet extends HttpServlet {
 		public void contextDestroyed(ServletContextEvent event) {
 			System.out.println("The application stopped");
 		}
+	}
+	
+	@HandlesTypes({
+	    javax.servlet.http.HttpServlet.class,
+	    javax.servlet.Filter.class
+	})
+	public static class AppInitializer implements ServletContainerInitializer {
+	 
+	    @Override
+	    public void onStartup(Set<Class<?>> classes, ServletContext context)
+	            throws ServletException {
+	    	System.out.println("Classes "+classes+" getting initialized.");
+	    }
 	}
 }

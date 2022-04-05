@@ -1,3 +1,4 @@
 TJWS  version 1.118
 
 1. Improved performance of file upload operations
+2. Added web.xml less web app deployment based on annotations
