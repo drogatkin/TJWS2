@@ -959,6 +959,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 
 					}
 			}
+			// it was a point to send a context initialized event //
+			////////////////////////////////////////////////////////
 			// process filters
 			nodes = (NodeList) xp.evaluate(prefix + "filter", document,
 					XPathConstants.NODESET);
@@ -1041,7 +1043,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 						fad.add(clarifications.item(j).getTextContent());
 					}
 				}
-				fad.newFilterInstance();
+				// defer it doing there
+				// fad.newFilterInstance();
 			}
 			// servlets
 			nodes = (NodeList) xp.evaluate(prefix + "servlet", document,
@@ -1181,6 +1184,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 					}
 				// System.err.printf("Servlet %s, path:%s\n", sad,
 				// sad.servPath);
+				// defer it
 				if (sad.loadOnStart >= 0)
 					sad.newInstance();
 			}
@@ -1295,7 +1299,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		deploywebsocket(result, appClasses);
 		// restore sessions for this context
 		// serve.sessions.restore for the current context
-
+		ServletException errorsChain = null;
 		// notify context listeners
 		if (result.listeners != null)
 			for (EventListener listener : result.listeners) {
@@ -1306,6 +1310,16 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 									result));
 				}
 			}
+		// init servlets and filters
+		for (FilterAccessDescriptor fad:result.filters) {
+			fad.newFilterInstance();
+		}
+		result.servlets.sort((s1, s2) -> s1.loadOnStart-s2.loadOnStart);
+		for (ServletAccessDescr sad:result.servlets) {
+			if (sad.loadOnStart >= 0)
+				sad.newInstance();
+		}
+		
 		return result;
 	}
         
@@ -1430,7 +1444,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     						}
     					}
 	    				try {
-		    				fad.newFilterInstance();
+	    					// defer
+		    				//fad.newFilterInstance();
 		    				// TODO add security annot 
 		    				addSecurityAnnotatoins(webApp, fad, matchingClass);
 		    				if (webApp.filters == null)
