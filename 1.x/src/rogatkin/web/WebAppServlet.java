@@ -1,5 +1,5 @@
 /* tjws - WebAppServlet.java
- * Copyright (C) 1999-2010 Dmitriy Rogatkin.  All rights reserved.
+ * Copyright (C) 1999-2022 Dmitriy Rogatkin.  All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -19,7 +19,6 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- *  $Id: WebAppServlet.java,v 1.120 2013/06/08 06:07:45 cvs Exp $
  * Created on Dec 14, 2004
  */
 
@@ -1493,12 +1492,10 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     					}
     				}
     			}
-    		}).matchClassesWithAnnotation(HandlesTypes.class, new ClassAnnotationMatchProcessor() {  
-    			public void processMatch(Class<?> matchingClass) {
+    		}).matchClassesWithAnnotation(HandlesTypes.class, (matchingClass) -> {
     				if (ServletContainerInitializer.class.isAssignableFrom(matchingClass)) {
     					
     				}
-    			}
     		}).scan();
         }
         
