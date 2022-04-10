@@ -1451,7 +1451,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		    				     webApp.filters = new ArrayList<FilterAccessDescriptor>();
 		    				webApp.filters.add(fad);
 	    				} catch(Exception e) {
-    						webApp.server.log("Problen in creation of a filter for "+matchingClass, e);
+    						webApp.server.log("Problem in creation of a filter for "+matchingClass, e);
     						throw new RuntimeException();
     					}
     				}
@@ -1487,14 +1487,14 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 							}
 							webApp.listeners.add(eventListener);
     					} catch(Exception e) {
-    						webApp.server.log("Problen in creation of a listener for "+matchingClass, e);
+    						webApp.server.log("Problem in creation of a listener for "+matchingClass, e);
     						throw new RuntimeException();
     					}
     				}
     			}
     		}).matchClassesWithAnnotation(HandlesTypes.class, (matchingClass) -> {
     				if (ServletContainerInitializer.class.isAssignableFrom(matchingClass)) {
-    					
+    					// otherwise such class needs to be defined in /META-INF/services/javax.servlet.ServletContainerInitializer
     				}
     		}).scan();
         }
