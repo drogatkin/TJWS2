@@ -27,10 +27,10 @@
 // fine Java utilities: http://www.acme.com/java/
 //
 
-// All enhancements Copyright (C)1998-2014 by Dmitriy Rogatkin
-// This version is compatible with JSDK 2.5
+// All enhancements Copyright (C)1998-2022 by Dmitriy Rogatkin
+// This version is compatible with JSDK 3.1
 // http://tjws.sourceforge.net
-// $Id: Serve.java,v 1.269 2013/08/20 04:11:09 cvs Exp $
+// 
 
 package Acme.Serve;
 
@@ -4186,6 +4186,7 @@ public class Serve implements ServletContext, Serializable {
 	    StringBuffer sb = new StringBuffer(100);
 	    int lsp = resMessage.indexOf('\n');
 	    sb.append("<HTML><HEAD>")
+	    .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
 		    .append("<TITLE>" + resCode + " " + Utils.htmlEncode(lsp < 0 ? resMessage : resMessage.substring(0, lsp), false)
 			    + "</TITLE>").append("</HEAD><BODY " + BGCOLOR)
 		    .append("><H2>" + resCode + " " + Utils.htmlEncode(lsp < 0 ? resMessage : resMessage.substring(0, lsp), false) + "</H2>");
