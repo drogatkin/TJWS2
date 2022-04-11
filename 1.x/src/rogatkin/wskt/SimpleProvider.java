@@ -379,14 +379,14 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						ssc.addEndpoint(se);
 						serve.log("Deployed ServerEndpoint " + se);
 					} catch (DeploymentException de) {
-						throw new ServletException("A problem in deplyment a websocket server endpint", de);
+						throw new ServletException("A problem in deployment a websocket server endpint", de);
 					}
 				for (ServerEndpointConfig epc : sac.getEndpointConfigs(endps))
 					try {
 						ssc.addEndpoint(epc);
 						serve.log("Deployed ServerEndpointConfig " + epc);
 					} catch (DeploymentException de) {
-						throw new ServletException("A problem in deplyment a websocket server endpint", de);
+						throw new ServletException("A problem in deployment a websocket server endpint", de);
 					}
 			}
 		} else {
@@ -395,7 +395,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					ssc.addEndpoint(se);
 					serve.log("Deployed ServerEndpoint " + se);
 				} catch (DeploymentException de) {
-					throw new ServletException("A problem in deplyment a websocket server endpint", de);
+					throw new ServletException("A problem in deployment a websocket server endpint", de);
 				}
 		}
 		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);
@@ -419,8 +419,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	}
 
 	Map<String, String> matchTemplate(String uri, String template) {
-		//System.err.printf("Matching %s to %s%n", uri, template);
 		Map<Integer, String> parsed = parseTemplate(template);
+		//System.err.printf("Matching %s to %s and regexp: %s%n", uri, template, parsed.get(0));
+		// use https://regex101.com/ for testing regexp
 		Pattern p = Pattern.compile(parsed.get(0));
 		Matcher m = p.matcher(uri);
 		if (m.matches()) {
@@ -459,7 +460,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			case s_invar:
 				if (c == '}') {
 					vi++;
-					regExp += "((?:[a-zA-Z0-9-\\._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
+					regExp += "((?:[a-zA-Z0-9-\\._~!$&'(\\s)\\[\\]{}*+,;=:@/]|%[0-9A-F]{2})*)";
 					st = s_inuri;
 					result.put(vi, varName);
 				} else {

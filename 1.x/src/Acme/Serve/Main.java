@@ -263,6 +263,7 @@ public class Main extends Serve {
 			System.setErr((PrintStream) arguments.get(ARG_ERR));
 		} else {
 			System.setErr(printstream);
+			System.setOut(printstream);
 		}
 		if (messages != null)
 			System.err.println(messages);
@@ -406,14 +407,15 @@ public class Main extends Serve {
 					String line;
 					while (true) {
 						try {
-							System.out.print("Press \"q\" <ENTER>, for gracefully stopping the server ");
-							line = in.readLine();
-							if (line != null && line.length() > 0 && line.charAt(0) == 'q') {
+							System.console().writer().print("Press \"q\" <ENTER>, for gracefully stopping the server ");
+							System.console().writer().flush();
+							char ui = (char) System.console().reader().read();
+							if (ui == 'q') {
 								serve.notifyStop();
 								break;
 							}
 						} catch (IOException e) {
-							serve.log("Exception in reading from console ", e);
+							serve.log("Exception in reading from a console ", e);
 							break;
 						}
 					}
