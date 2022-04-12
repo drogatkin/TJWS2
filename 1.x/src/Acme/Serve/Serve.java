@@ -2267,6 +2267,7 @@ public class Serve implements ServletContext, Serializable {
 		reqUriPathUn = reqUriPathUn.substring(0, mark);
 	    } 
 	    reqUriPath = Utils.decode(reqUriPathUn, UTF8);
+	    // System.out.println("Decode "+reqUriPathUn+"\n to    "+reqUriPath);
 	    // TDOD check if reqUriPathUn starts with http://host:port
 	    if (CHUNKED.equalsIgnoreCase(getHeader(TRANSFERENCODING))) {
 		setHeader(CONTENTLENGTH, null);
@@ -2308,7 +2309,7 @@ public class Serve implements ServletContext, Serializable {
 			websocketUpgrade = false;
 			if (serve.websocketProvider != null)
 				try {
-					serve.websocketProvider.handshake(socket, reqUriPath, servlet = (HttpServlet) os[0], this, this);
+					serve.websocketProvider.handshake(socket, reqUriPathUn, servlet = (HttpServlet) os[0], this, this);
 					websocketUpgrade = resCode == SC_SWITCHING_PROTOCOLS;
 					// System.err.println("hs code:"+resCode);
 				} catch(Exception wse) {					

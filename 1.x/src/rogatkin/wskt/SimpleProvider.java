@@ -25,7 +25,6 @@
 package rogatkin.wskt;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
@@ -34,6 +33,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -50,27 +53,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 
-import Acme.Utils;
-import Acme.Serve.Serve;
-import Acme.Serve.Serve.ServeConnection;
-import Acme.Serve.Serve.WebsocketProvider;
-
+import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.ServletException;
 import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
@@ -80,8 +70,14 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import io.github.lukehutch.fastclasspathscanner.*;
-import io.github.lukehutch.fastclasspathscanner.matchprocessor.*;
+import Acme.Utils;
+import Acme.Serve.Serve;
+import Acme.Serve.Serve.ServeConnection;
+import Acme.Serve.Serve.WebsocketProvider;
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.ClassAnnotationMatchProcessor;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.InterfaceMatchProcessor;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.SubclassMatchProcessor;
 
 public class SimpleProvider implements WebsocketProvider, Runnable {
 	public static final String WSKT_KEY = "Sec-WebSocket-Key";
@@ -182,6 +178,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No matching endpoint found for " + path);
 			return;
 		}
+		
 		ServerEndpointConfig epc = container.endpoints.get(found);
 		//Objects.requireNonNull(epc.getConfigurator());
 		if (epc.getConfigurator().checkOrigin(req.getHeader(WSKT_ORIGIN)) == false) {
@@ -204,6 +201,9 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
 	}
 
+	/** the path is given as encoded
+	 *  
+	 */
 	@Override
 	public void upgrade(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
@@ -230,7 +230,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		ss.pathParamsMap = (Map<String, String>) req.getAttribute("javax.websocket.server.PathParametersMap");
 		if (req.getSession(false) != null) {
 			ss.id = req.getSession(false).getId();
-			// TODO this approach isn't robust and flexible, so consider as temporarly 
+			// TODO this approach isn't robust and flexible, so consider as a temporary 
 			req.getSession(false).setAttribute("javax.websocket.server.session", new HttpSessionBindingListener() {
 
 				@Override
@@ -426,8 +426,15 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 		Matcher m = p.matcher(uri);
 		if (m.matches()) {
 			HashMap<String, String> result = new HashMap<String, String>();
-			for (int i = 0; i < m.groupCount(); i++)
-				result.put(parsed.get(i + 1), m.group(i + 1));
+			for (int i = 0; i < m.groupCount(); i++) {
+				try {
+					// System.err.printf("Putting %s as %s%n", parsed.get(i + 1), Utils.decode(m.group(i + 1), Serve.UTF8));
+					// path can be decoded then
+					result.put(parsed.get(i + 1), Utils.decode(m.group(i + 1), Serve.UTF8));
+				} catch(UnsupportedEncodingException uee) {
+					throw new RuntimeException("No UTF-8 decoder in the system");
+				}
+			}
 			//System.err.printf("Success %s%n", result);
 			return result;
 		}
@@ -460,7 +467,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			case s_invar:
 				if (c == '}') {
 					vi++;
-					regExp += "((?:[a-zA-Z0-9-\\._~!$&'(\\s)\\[\\]{}*+,;=:@/]|%[0-9A-F]{2})*)";
+					regExp += "((?:[a-zA-Z0-9-\\\\._~!$&'()*+,;=:@/]|%[0-9A-F]{2})*)";
 					st = s_inuri;
 					result.put(vi, varName);
 				} else {
