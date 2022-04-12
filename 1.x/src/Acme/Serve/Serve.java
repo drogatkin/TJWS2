@@ -743,7 +743,10 @@ public class Serve implements ServletContext, Serializable {
     }
 
     protected void console(String msg) {
-	System.out.println(msg);
+    	if (System.console() != null)
+    		System.console().writer().println(msg);
+    	else
+    		System.out.println(msg);
     }
 
     // Run the server. Returns only on errors.

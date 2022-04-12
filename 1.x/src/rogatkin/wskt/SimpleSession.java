@@ -1160,7 +1160,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 							getBasicRemote().sendText(result.toString());
 					}
 				} catch (Exception e) {
-					container.log(e, "Exception in text message processing");
+					container.log(e, "Exception in a text message processing");
 				}
 			} else
 				container.log("No handler for text message %s", t);
