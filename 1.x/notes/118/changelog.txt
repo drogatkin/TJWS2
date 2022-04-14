@@ -5,3 +5,4 @@ TJWS  version 1.118
 3. Made error pages a mobile friendly
 4. Corrected parsing URL templates for websockets when special
    symbols and national characters are used in URLs
+5. Redirect system out in a log
