@@ -259,11 +259,11 @@ public class Main extends Serve {
 				System.err.println("I/O problem at setting a log stream " + e);
 			}
 		}
+		System.setOut(printstream);
 		if (arguments.get(ARG_ERR) != null) {
 			System.setErr((PrintStream) arguments.get(ARG_ERR));
 		} else {
 			System.setErr(printstream);
-			System.setOut(printstream);
 		}
 		if (messages != null)
 			System.err.println(messages);
