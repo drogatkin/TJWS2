@@ -1,0 +1,6 @@
+TJWS release 1.118
+
+TJWS is currently in a maintenance mode with 6 months cadence of
+bug fixing releases. There are some new features mostly from the backlog 
+of not implemented features due a low demand.Check the change log
+to see if something worth of your interest is there.
