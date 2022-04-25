@@ -10,7 +10,7 @@ However a general documentation can be still accessed from <a href="http://tjws.
 
 # Releases
 
-Check release notes and a change log in a corresponding release number directory: TJWS2/1.x/notes/
+Check release notes and a change log in a corresponding release number directory: [TJWS2/1.x/notes/](https://github.com/drogatkin/TJWS2/tree/master/1.x/notes)
 
 # Good news
 The project doesn't use Log4J, and other not reliable open source libraries.
