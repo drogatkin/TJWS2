@@ -1,8 +1,10 @@
 TJWS  version 1.118
 
 1. Improved performance of file upload operations
-2. Added web.xml less web an app deployment based on annotations
+2. Added web.xml less an app deployment based on annotations only
 3. Made error pages a mobile friendly
 4. Corrected parsing URL templates for websockets when special
    symbols and national characters are used in URLs
 5. Redirect system out in a log
+6. JSR356 extension allowing access a servlet context and
+   a request in websocket environment

@@ -29,11 +29,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,11 +40,11 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
+import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Extension;
 import javax.websocket.Session;
-import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -274,6 +271,12 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
 		context = event.getServletContext();
+	}
+	
+	public <T> T getAssociatedContext(Class<T> contextClass) {
+		if (contextClass == ServletContext.class)
+			return (T) context;
+		return null;
 	}
 
 	void addSession(SimpleSession ss) {
