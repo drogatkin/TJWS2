@@ -1,6 +1,8 @@
 TJWS release 1.118
 
-TJWS is currently in a maintenance mode with 6 months cadence of
+TJWS is currently in a maintenance mode with a 6 months cadence of
 bug fixing releases. There are some new features mostly from the backlog 
-of not implemented features due a low demand.Check the change log
-to see if something worth of your interest is there.
+of not implemented features due a low demand. Check the change log
+to see if something worth of your interest is there. Java 11 or higher
+ is preferred for running the server. However the server wasn't tested
+ on Java 18 yet.

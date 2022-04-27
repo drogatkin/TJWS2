@@ -2460,8 +2460,8 @@ public class Serve implements ServletContext, Serializable {
 		String user = credentials.substring(0, i);
 		String password = credentials.substring(i + 1);
 		remoteUser = user;
-		authType = "BASIC"; // support only basic authenification (FORM,
-				    // CLIENT_CERT, DIGEST )
+		authType = BASIC_AUTH; // support only basic authentication
+		// others: FORM_AUTH, CLIENT_CERT_AUTH, DIGEST_AUTH are not supported yet
 		String realPassword = (String) realm.get(user);
 		// System.err.println("User "+user+" Password "+password+" real
 		// "+realPassword);

@@ -122,6 +122,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	@Override
 	public void handshake(Socket socket, String path, Servlet servlet, HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
+		
 		if (socket.getChannel() == null) {
 			resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "Websockets implemented only with SelectorAcceptor");
 			return;
@@ -157,7 +158,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			container = (SimpleServerContainer) serve.getAttribute("javax.websocket.server.ServerContainer");
 
 		if (container == null) {
-			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with path " + path);
+			resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No end points associated with the path " + path);
 			return;
 		}
 
@@ -323,7 +324,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 								ArrayList<File> result = new ArrayList<File>(urls.length);
 								for (URL url : urls)
 									try {
-										result.add(new File(URLDecoder.decode(url.getFile(), "UTF-8")));
+										result.add(new File(URLDecoder.decode(url.getFile(), Serve.UTF8)));
 									} catch (UnsupportedEncodingException e) {
 										serve.log("Can't add path component " + url + " :" + e);
 									}
@@ -352,12 +353,10 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					@Override
 					public void processMatch(Class<? extends ServerApplicationConfig> arg0) {
 						try {
-							appCfgs.add(arg0.newInstance());
-						} catch (InstantiationException e) {
-							serve.log(e, "Error at deployment");
-						} catch (IllegalAccessException e) {
-							serve.log(e, "Error at deployment");
-						}
+							appCfgs.add(arg0.getConstructor().newInstance());
+						} catch (Exception e) {
+							serve.log(e, "Error at deployment: "+arg0);
+						} 
 					}
 
 				}).matchClassesWithAnnotation(ServerEndpoint.class, new ClassAnnotationMatchProcessor() {
@@ -379,14 +378,14 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 						ssc.addEndpoint(se);
 						serve.log("Deployed ServerEndpoint " + se);
 					} catch (DeploymentException de) {
-						throw new ServletException("A problem in deployment a websocket server endpint", de);
+						throw new ServletException("A problem in deployment a websocket server endpoint", de);
 					}
 				for (ServerEndpointConfig epc : sac.getEndpointConfigs(endps))
 					try {
 						ssc.addEndpoint(epc);
 						serve.log("Deployed ServerEndpointConfig " + epc);
 					} catch (DeploymentException de) {
-						throw new ServletException("A problem in deployment a websocket server endpint", de);
+						throw new ServletException("A problem in deployment a websocket server endpoint", de);
 					}
 			}
 		} else {
@@ -395,7 +394,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 					ssc.addEndpoint(se);
 					serve.log("Deployed ServerEndpoint " + se);
 				} catch (DeploymentException de) {
-					throw new ServletException("A problem in deployment a websocket server endpint", de);
+					throw new ServletException("A problem in deployment a websocket server endpoint", de);
 				}
 		}
 		servCtx.setAttribute("javax.websocket.server.ServerContainer", ssc);

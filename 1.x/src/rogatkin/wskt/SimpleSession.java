@@ -36,6 +36,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -655,13 +656,22 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		SimpleMessageHandler() {
 			Class<?> epc = endpointConfig.getEndpointClass();
 			try {
-				endpoint = epc.newInstance();
+				endpoint = epc.getConstructor().newInstance();
 				endpointConfig.getConfigurator().getEndpointInstance(epc);
 			} catch (InstantiationException e) {
 				container.log(e, "Can't instantiate end point for %s", epc);
 			} catch (IllegalAccessException e) {
 				container.log(e, "Can't instantiate end point for %s", epc);
+			} catch (IllegalArgumentException e) {
+				container.log(e, "Can't instantiate end point for %s", epc);
+			} catch (InvocationTargetException e) {
+				container.log(e, "Can't instantiate end point for %s", epc);
+			} catch (NoSuchMethodException e) {
+				container.log(e, "Can't instantiate end point for %s", epc);
+			} catch (SecurityException e) {
+				container.log(e, "Can't instantiate end point for %s", epc);
 			}
+			
 			Method[] ms = epc.getDeclaredMethods();
 			for (Method m : ms) {
 				if (m.getAnnotation(OnMessage.class) != null) {
@@ -944,7 +954,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					try {
 						dm = dc.getDeclaredMethod("decode", param);
 						if (dm.getReturnType() == type) {
-							Decoder decoder = dc.newInstance();
+							Decoder decoder = dc.getConstructor().newInstance();
 							decoder.init(endpointConfig);
 							result.add(decoder);
 						}
@@ -1432,7 +1442,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					if (rt == String.class) {
 						if (pts.length == 1) {
 							try {
-								Encoder e = ec.newInstance();
+								Encoder e = ec.getConstructor().newInstance();
 								e.init(endpointConfig);
 								encoders.put(pts[0], e);
 							} catch (Exception e) {

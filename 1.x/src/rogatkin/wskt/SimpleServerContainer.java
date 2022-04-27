@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.ClientEndpointConfig;
@@ -65,6 +66,8 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 	SimpleProvider provider;
 
 	HashSet<SimpleSession> sessions;
+	
+	ServletContext context;
 
 	ExecutorService asyncService;
 	
@@ -262,13 +265,15 @@ public class SimpleServerContainer implements ServerContainer, ServletContextLis
 			} catch (IOException e) {
 
 			}
+		context = null;
 		sessions.clear();
+		endpoints.clear();
 		asyncService.shutdown();
 	}
 
 	@Override
-	public void contextInitialized(ServletContextEvent arg0) {
-
+	public void contextInitialized(ServletContextEvent event) {
+		context = event.getServletContext();
 	}
 
 	void addSession(SimpleSession ss) {

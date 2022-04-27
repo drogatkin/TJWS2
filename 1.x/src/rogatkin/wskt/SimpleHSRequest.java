@@ -92,5 +92,10 @@ public class SimpleHSRequest implements HandshakeRequest {
 	public boolean isUserInRole(String arg0) {
 		return request.isUserInRole(arg0);
 	}
+	
+	// not portable, just internal hack
+	public HttpServletRequest getHttpRequest() {
+		return request;
+	}
 
 }
