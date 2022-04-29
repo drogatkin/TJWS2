@@ -65,6 +65,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
@@ -84,7 +85,7 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 	public static final String WSKT_ORIGIN = "Origin";
 	public static final String WSKT_PROTOCOL = "Sec-WebSocket-Protocol";
 	public static final String WSKT_VERSION = "Sec-WebSocket-Version";
-	public static final String WSKT_ACEPT = "Sec-WebSocket-Accept";
+	public static final String WSKT_ACEPT = HandshakeResponse.SEC_WEBSOCKET_ACCEPT;
 	public static final String WSKT_EXTS = "Sec-WebSocket-Extensions"; // HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS
 
 	public static final String WSKT_RFC4122 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -186,19 +187,29 @@ public class SimpleProvider implements WebsocketProvider, Runnable {
 			resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Origin check failed : " + req.getHeader(WSKT_ORIGIN));
 			return;
 		}
-		epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), new SimpleHSResponse(resp));
+		
+		
 
 		req.setAttribute("javax.websocket.server.ServerEndpointConfig", epc);
 		req.setAttribute("javax.websocket.server.PathParametersMap", foundVarMap);
 
-		resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
-		resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
+		SimpleHSResponse ws_resp = new SimpleHSResponse(resp);
+		
+		ws_resp.getHeaders().put(HandshakeResponse.SEC_WEBSOCKET_ACCEPT, new ArrayList<String>() { {add(getSHA1Base64(key.trim() + WSKT_RFC4122));} });
+		//resp.setHeader(WSKT_ACEPT, getSHA1Base64(key.trim() + WSKT_RFC4122));
+		ws_resp.getHeaders().put(Serve.ServeConnection.UPGRADE, new ArrayList<String>() { {add(Serve.ServeConnection.WEBSOCKET);} });
+		//resp.setHeader(Serve.ServeConnection.UPGRADE, Serve.ServeConnection.WEBSOCKET);
 		//resp.setHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.KEEPALIVE + ", "
 			//	+ Serve.ServeConnection.UPGRADE);
 		//resp.addHeader(Serve.ServeConnection.CONNECTION, Serve.ServeConnection.UPGRADE);
 		if (container.getDefaultMaxSessionIdleTimeout() > 0)
-			resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=" + container.getDefaultMaxSessionIdleTimeout()
-					/ 1000);
+			ws_resp.getHeaders().put(Serve.ServeConnection.KEEPALIVE, 
+					new ArrayList<String>() { {add("timeout=" + container.getDefaultMaxSessionIdleTimeout()
+					/ 1000);} });
+			//resp.setHeader(Serve.ServeConnection.KEEPALIVE, "timeout=" + container.getDefaultMaxSessionIdleTimeout()
+				//	/ 1000);
+		epc.getConfigurator().modifyHandshake(epc, new SimpleHSRequest(req), ws_resp);
+		ws_resp.apply();
 		resp.setStatus(resp.SC_SWITCHING_PROTOCOLS);
 	}
 

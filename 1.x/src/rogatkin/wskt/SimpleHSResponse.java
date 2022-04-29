@@ -24,7 +24,6 @@
 */
 package rogatkin.wskt;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,17 +35,25 @@ public class SimpleHSResponse implements HandshakeResponse {
 
 	HttpServletResponse response;
 	
+	HashMap<String, List<String>> headersMap;
+	
 	SimpleHSResponse(HttpServletResponse r) {
 		response = r;
+		headersMap = new HashMap<String, List<String>>();
 	}
 	
 	@Override
 	public Map<String, List<String>> getHeaders() {
-		HashMap<String, List<String>> headersMap = new HashMap<String, List<String>>();
-		for(String name: response.getHeaderNames()) {
-			headersMap.put(name, new ArrayList<String>(response.getHeaders(name)));
-		}
+		//for(String name: response.getHeaderNames()) {
+			//headersMap.put(name, new ArrayList<String>(response.getHeaders(name)));
+		//}
 		return headersMap;
 	}
-
+	
+	void apply() {
+		for(String name: headersMap.keySet()) {
+			for(String value: headersMap.get(name))
+				response.addHeader(name, value);
+		}
+	}
 }
