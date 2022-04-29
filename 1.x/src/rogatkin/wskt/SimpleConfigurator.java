@@ -40,26 +40,26 @@ public class SimpleConfigurator extends Configurator {
 	@Override
 	public <T> T getEndpointInstance(Class<T> arg0) throws InstantiationException {
 		try {
-			return arg0.newInstance();
-		} catch (IllegalAccessException e) {
-			throw new InstantiationException();
+			return arg0.getConstructor().newInstance();
+		} catch (Exception e) {
+			throw (InstantiationException)new InstantiationException("Can't instantiate the endpoint "+arg0).initCause( e);
 		}
 	}
 
 	@Override
-	public List<Extension> getNegotiatedExtensions(List<Extension> arg0, List<Extension> arg1) {
-		return Arrays.asList(firstMatch(arg0, arg1));
+	public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested) {
+		return Arrays.asList(firstMatch(installed, requested));
 	}
 
 	@Override
-	public String getNegotiatedSubprotocol(List<String> arg0, List<String> arg1) {
-		return firstMatch(arg0, arg1);
+	public String getNegotiatedSubprotocol(List<String> supported, List<String> requested) {
+		return firstMatch(supported, requested);
 	}
 
 	<T> T firstMatch(List<T> l1, List<T> l2) {
 		for (T t:l2) {
-			for(T t2:l2) {
-				if (t.equals(l2))
+			for(T t2:l1) {
+				if (t.equals(t2))
 					return t;
 			}
 		}

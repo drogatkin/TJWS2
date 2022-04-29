@@ -651,25 +651,13 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		Object endpoint;
 		Object result;
 
-		// ServerEndpointConfig endpointConfig;
-
-		SimpleMessageHandler() {
+		SimpleMessageHandler() throws IllegalStateException {
 			Class<?> epc = endpointConfig.getEndpointClass();
 			try {
-				endpoint = epc.getConstructor().newInstance();
-				endpointConfig.getConfigurator().getEndpointInstance(epc);
+				endpoint = endpointConfig.getConfigurator().getEndpointInstance(epc);
 			} catch (InstantiationException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
-			} catch (IllegalAccessException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
-			} catch (IllegalArgumentException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
-			} catch (InvocationTargetException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
-			} catch (NoSuchMethodException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
-			} catch (SecurityException e) {
-				container.log(e, "Can't instantiate end point for %s", epc);
+				container.log(e, "Can't instantiate an end point for %s", epc);
+				throw new IllegalStateException(e);
 			}
 			
 			Method[] ms = epc.getDeclaredMethods();
