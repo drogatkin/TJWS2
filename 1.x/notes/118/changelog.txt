@@ -5,6 +5,7 @@ TJWS  version 1.118
 3. Made error pages a mobile friendly
 4. Corrected parsing URL templates for websockets when special
    symbols and national characters are used in URLs
-5. Redirect system out in a log
+5. Redirected system out in a log
 6. JSR356 extension allowing access a servlet context and
    a request in websocket environment
+7. Improved robustness of the JSR356 implementation
