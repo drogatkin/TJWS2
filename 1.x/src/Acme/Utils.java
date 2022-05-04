@@ -87,6 +87,8 @@ public class Utils {
 	public static final int COPY_BUF_SIZE = 4096 * 2;
 
 	public final static String ISO_8859_1 = "ISO-8859-1";
+	
+	public final static String UTF_8 = "UTF-8";
 
 	public static final Class[] EMPTY_CLASSES = {};
 

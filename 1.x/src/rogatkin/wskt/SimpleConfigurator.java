@@ -48,6 +48,7 @@ public class SimpleConfigurator extends Configurator {
 
 	@Override
 	public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested) {
+		// or use retainAll of a mutable copy
 		return Arrays.asList(firstMatch(installed, requested));
 	}
 
