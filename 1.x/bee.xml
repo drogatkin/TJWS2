@@ -228,7 +228,7 @@
                </expression>
                <then>
                   <expression name="target version">
-                      <value>1.7</value>
+                      <value>1.8</value>
                   </expression>
                </then>
                <else>

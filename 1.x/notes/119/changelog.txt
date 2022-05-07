@@ -1,0 +1,3 @@
+TJWS  version 1.119
+
+1. Restored Java 8 compatibility for an Android use

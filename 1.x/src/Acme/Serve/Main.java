@@ -39,14 +39,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
-import java.util.stream.Stream;
 
 import Acme.Utils;
 
@@ -83,8 +81,7 @@ public class Main extends Serve {
 		if (args2 == null && argc == 0) {
 			messages = appendMessage(messages, "Can't read from CLI file ("+CLI_FILENAME+") at "+workPath+"\n");
 		} else if (args2 != null) {
-			args = Stream.concat(Arrays.stream(args), Arrays.stream(args2))
-                      .toArray(String[]::new);
+			args = Utils.concat(args, args2);
 			argc = args.length;
 		}
 
