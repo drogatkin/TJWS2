@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -62,10 +63,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
-import java.util.jar.JarFile;
-import java.util.jar.JarEntry;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -113,7 +114,6 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
 import javax.servlet.http.Part;
-import javax.websocket.server.ServerEndpoint;
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
@@ -128,7 +128,6 @@ import org.xml.sax.InputSource;
 import Acme.Utils;
 import Acme.Serve.FileServlet;
 import Acme.Serve.Serve;
-
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import io.github.lukehutch.fastclasspathscanner.matchprocessor.ClassAnnotationMatchProcessor;
 
@@ -1313,7 +1312,13 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 		for (FilterAccessDescriptor fad:result.filters) {
 			fad.newFilterInstance();
 		}
-		result.servlets.sort((s1, s2) -> s1.loadOnStart-s2.loadOnStart);
+		//result.servlets.sort((s1, s2) -> s1.loadOnStart-s2.loadOnStart);
+		Collections.sort(result.servlets, new Comparator<ServletAccessDescr>(){
+			   @Override
+			   public int compare(final ServletAccessDescr s1,ServletAccessDescr s2) {
+				   return s1.loadOnStart-s2.loadOnStart;
+			     }
+			 });
 		for (ServletAccessDescr sad:result.servlets) {
 			if (sad.loadOnStart >= 0)
 				sad.newInstance();
