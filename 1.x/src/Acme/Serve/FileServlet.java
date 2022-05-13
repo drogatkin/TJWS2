@@ -365,8 +365,9 @@ public class FileServlet extends HttpServlet {
 				return;
 			}
 			PrintStream p = new PrintStream(new BufferedOutputStream(out), false, charSet); // 1.4
-			p.println("<HTML><HEAD>");
+			p.println("<!DOCTYPE HTML><HTML><HEAD>");
 			p.println("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=" + charSet + "\">");
+			p.println("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
 			p.println("<TITLE>Index of " + path + "</TITLE>");
 			p.println("</HEAD><BODY " + Serve.BGCOLOR);
 			p.println("><H2>Index of " + path + "</H2>");
@@ -406,7 +407,6 @@ public class FileServlet extends HttpServlet {
 					aFileDate += " ";
 				String aFileDirsuf = (aFile.isDirectory() ? "/" : "");
 				String aFileSuf = (aFile.isDirectory() ? "/" : "");
-// TODO HTML encode file name
 				p.println(aFileType + aFileRead + aFileWrite + aFileExe + "  " + aFileSize + "  " + aFileDate + "  "
 						+ "<A HREF=\"" + URLEncoder.encode(names[i], charSet) /* 1.4 */
 						+ aFileDirsuf + "\">" + Utils.htmlEncode(names[i], false) + aFileSuf + "</A>");
