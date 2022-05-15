@@ -1,3 +1,4 @@
 TJWS  version 1.119
 
 1. Restored Java 7 compatibility for an Android use
+2. Integrated with Jasper 7.109 (the last version in 7 line)

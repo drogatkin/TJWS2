@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <!DOCTYPE bee PUBLIC "-//Dmitriy Rogatkin//DTD Bee Project Builder 1.0//EN"
+    "https://raw.githubusercontent.com/drogatkin/7Bee/master/bee.dtd" [
+      <!ENTITY env SYSTEM "./env.xml">
+      <!ENTITY project "Jasper">
+      <!ENTITY build_directory "build">
+      <!ENTITY source_directory "java"> <!-- change if differs -->
+      <!ENTITY doc_directory "doc"> <!-- change if differs -->
+      <!ENTITY build_file "jasper.jar">
+      <!ENTITY domain "org">
+      <!ENTITY manifestf "">
+      <!ENTITY main_class "org.apache.jasper.JspC">
+      ]>
+<!-- 
+   make file used for "Jasper(7.109) for TJWS" project
+   Copyright (c) 2006-2022 Dmitriy Rogatkin    -->
+
+<bee name="&project;" type="project">
+  &env;
+
+  <expression variable="javac">
+     <operator name="append">
+        <value>${JAVA_HOME}/bin/javac</value>
+     </operator>
+  </expression>
+
+  <expression  variable="JavaDoc">     
+     <operator name="append">
+        <value>${JAVA_HOME}/bin/javadoc</value>
+     </operator>
+  </expression>
+
+  <target name="help">
+     <echo>
+       ******** &project; Build Process ********
+********* Available targets:  *************************************
+*  compile  - do Java compilation                                 *
+*  jar      - build &build_file; file                             *
+*  run      - run application &main_class;                        *
+*******************************************************************
+    </echo>
+  </target>
+
+  <target name="check build" dir="PROJECT_HOME">
+     <dependency>
+        <expression>
+          <operator name="eq">
+            <function name ="timestamp">
+               <parameter value="&build_directory;"/>
+            </function>
+            <value></value>
+          </operator>
+        </expression>
+     </dependency>
+     <block>
+       <function name="mkd">
+         <parameter value="&build_directory;"/>
+       </function>
+     </block>
+  </target>
+
+  <target name="check doc" dir="PROJECT_HOME">
+     <dependency>
+        <expression>
+          <operator name="eq">
+            <function name ="timestamp">
+               <parameter value="&doc_directory;"/>
+            </function>
+            <value></value>
+          </operator>
+        </expression>
+     </dependency>
+     <task exec="mkdir">
+       <parameter value="&doc_directory;"/>
+     </task>
+  </target>
+
+  <expression variable="class path">
+     <operator name="append">
+        <value variable="PROJECT_HOME"/>
+        <value>/&build_directory;</value>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="CUSTOM CP"/>
+     </operator>
+  </expression>
+
+  <expression variable="javax sources">
+        <function name="newerwithdependency">
+           <parameter value="&source_directory;\javax\.java"/>
+           <parameter value="&build_directory;\javax\.class"/>
+	   <parameter/>
+	   <parameter value="javax"/>
+        </function>
+  </expression>
+
+  <target name="compilex" dir="PROJECT_HOME">
+    <dependency target="check build"/>
+    <dependency variable="javax sources"/>
+    <echo>Compiling javax...</echo>
+    <task exec="javac">
+       <parameter value="-classpath"/>
+       <parameter variable="class path"/>
+       <parameter value="-source"/>
+       <parameter value="1.6"/>
+       <parameter value="-target"/>
+       <parameter variable="comp target"/>
+       <parameter value="-d"/>
+       <parameter value="&build_directory;" type="dir"/>
+       <parameter variable="javax sources"/>>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation of javax</echo>
+                 <function name="stop">
+			<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+	<block>
+                 <echo>Exception at compilation of javax</echo>
+                 <function name="stop">
+			<parameter value="-1"/>
+                 </function>
+	</block>
+      </onexception>
+    </task>
+  </target>
+
+  <expression variable="java sources">
+        <function name="newerwithdependency">
+           <parameter value="&source_directory;\&domain;\.java"/>
+           <parameter value="&build_directory;\&domain;\.class"/>
+	   <parameter/>
+	   <parameter value="&domain;"/>
+        </function>
+  </expression>
+
+  <target name="compile" dir="PROJECT_HOME">
+    <dependency target="check build"/>
+    <dependency target="compilex"/>
+    <dependency variable="java sources"/>
+    <echo>Compiling... &project;</echo>
+    <task exec="javac">
+       <parameter value="-classpath"/>
+       <parameter variable="class path"/>
+       <parameter value="-source"/>
+       <parameter value="1.6"/>
+       <parameter value="-target"/>
+       <parameter variable="comp target"/>
+       <parameter value="-d"/>
+       <parameter value="&build_directory;" type="dir"/>
+       <parameter variable="java sources"/>>
+      <onexit>
+        <if>
+          <expression>
+             <operator name="neq"><value variable="resultcode"/><value>0</value></operator>
+          </expression>
+          <block type="then">
+                 <echo>Error(s) at compilation of &project;</echo>
+                 <function name="stop">
+			<parameter value="1"/>
+                 </function>
+          </block>
+       </if>
+      </onexit>
+      <onexception>
+	<block>
+                 <echo>Exception at compilation of &project;</echo>
+                 <function name="stop">
+			<parameter value="-1"/>
+                 </function>
+	</block>
+      </onexception>
+    </task>
+  </target>
+
+  <expression variable="manifest file">
+     <value type="path">&manifestf;</value>
+  </expression>
+
+  <target name="doc" dir="PROJECT_HOME">
+    <dependency target="check doc"/>
+    <dependency>true</dependency>
+    <!--task name="JavaDoc" code="com.sun.tools.javadoc.Main" path="compiler classes"-->
+    <task exec="JavaDoc">
+      <!--parameter name="env.class.path" variable="compiler classes"/-->
+      <parameter>-d</parameter>
+      <parameter value="&doc_directory;"/>
+      <parameter>-sourcepath</parameter>  
+      <parameter value="&source_directory;"/>
+      <parameter>-classpath</parameter>  
+      <parameter value="&build_directory;"/>
+      <parameter>&domain;</parameter>
+    </task>  
+  </target>
+
+  <expression variable="http resource list">
+           <function name="cropname">
+              <parameter value="&source_directory;/javax/servlet/http/LocalStrings*.properties"/>
+              <parameter value="&source_directory;/"/>
+           </function>
+  </expression>
+
+  <expression variable="servlet resource list">
+           <function name="cropname">
+              <parameter value="&source_directory;/javax/servlet/LocalStrings*.properties"/>
+              <parameter value="&source_directory;/"/>
+           </function>
+  </expression>
+
+  <expression variable="el resource list">
+           <function name="cropname">
+              <parameter value="&source_directory;/javax/el/LocalStrings*.properties"/>
+              <parameter value="&source_directory;"/>
+           </function>
+  </expression>
+
+  <expression variable="descriptor resource list">
+           <function name="cropname">
+              <parameter value="&source_directory;/org/apache/tomcat/util/descriptor/LocalStrings*.properties"/>
+              <parameter value="&source_directory;"/>
+           </function>
+  </expression>
+
+  <expression variable="util resource list">
+           <function name="cropname">
+              <parameter value="&source_directory;/org/apache/tomcat/util/LocalStrings*.properties"/>
+              <parameter value="&source_directory;"/>
+           </function>
+  </expression>
+
+
+  <target name="copy resources">
+     <block>
+         <function name="cp">
+           <!-- JSP resources -->
+             <parameter>&source_directory;/javax/servlet/jsp/resources/jsp*.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/jsp/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/jsp/resources/jsp*.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/jsp/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/jsp/resources/web-jsp*.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/jsp/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/jsp/resources/web-jsp*.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/jsp/resources</parameter>
+          <!-- Servlet resources -->
+             <parameter>&source_directory;/javax/servlet/resources/j2ee*.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/j2ee*.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/javaee_*.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/web-app*.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/web-*.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/datatypes.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/xml.xsd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+             <parameter>&source_directory;/javax/servlet/resources/XMLSchema.dtd</parameter>
+             <parameter>&build_directory;/javax/servlet/resources</parameter>
+         </function>
+     </block>
+  </target>
+
+  <expression variable="resource list">
+    <function name="cropname">
+      <parameter value="java\org/apache/jasper/resources/*.properties"/>
+      <parameter value="java\\"/>
+    </function>
+  </expression>
+
+  <target name="jar" dir="PROJECT_HOME">
+    <echo>Jarring...</echo>
+    <dependency target="compile"/>
+    <dependency>
+           <function name="allnewer">
+              <parameter value="&build_directory;/&domain;" type="dir"/>
+              <parameter value="&build_directory;/&build_file;" type="file"/>
+           </function>
+    </dependency>
+    <dependency>
+           <function name="allnewer">
+              <parameter variable="~#build-file#~" type="dir"/>
+              <parameter value="&build_directory;/&build_file;" type="file"/>
+           </function>
+    </dependency>
+    <dependency target="copy resources"/>
+    <task name="jar_do" code="sun.tools.jar.Main">
+       <parameter>
+          <expression>
+            <if>
+              <expression>
+                <operator name="eq">
+                  <value/>
+                  <value variable="manifest file"/>
+                </operator>
+              </expression>
+              <block type="then">
+                <value>-cf</value>
+              </block>
+              <block type="else">
+                <operator name="array">
+	           <value>-cmf</value>
+                   <value variable="manifest file"/>
+                 </operator>
+              </block>
+            </if>
+          </expression>
+       </parameter>   
+       <parameter value="&build_directory;/&build_file;" type="file"/>
+       <parameter value="-C"/>
+       <parameter value="&build_directory;" type="dir"/>
+       <parameter value="&domain;" type="dir"/>
+       <parameter value="-C"/>
+       <parameter value="&build_directory;" type="dir"/>
+       <parameter value="javax" type="dir"/>
+       <parameter value="-C"/>
+       <parameter>java</parameter>
+       <parameter>org/apache/jasper/resources</parameter>
+       <parameter>
+           <expression variable="resources">
+              <variable name="resources"/>
+              <for variable="resource name" in="http resource list">
+                  <operator name="array" variable="resources">
+                      <value variable="resources"/>
+                      <value>-C</value>
+                      <value type="dir">&source_directory;</value>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
+       <parameter>
+           <expression variable="resources">
+              <variable name="resources"/>
+              <for variable="resource name" in="servlet resource list">
+                  <operator name="array" variable="resources">
+                      <value variable="resources"/>
+                      <value>-C</value>
+                      <value type="dir">&source_directory;</value>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
+       <parameter>
+           <expression variable="resources">
+              <variable name="resources"/>
+              <for variable="resource name" in="el resource list">
+                  <operator name="array" variable="resources">
+                      <value variable="resources"/>
+                      <value>-C</value>
+                      <value type="path">&source_directory;</value>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
+
+       <parameter>
+           <expression variable="resources">
+              <variable name="resources"/>
+              <for variable="resource name" in="descriptor resource list">
+                  <operator name="array" variable="resources">
+                      <value variable="resources"/>
+                      <value>-C</value>
+                      <value type="path">&source_directory;</value>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
+       <parameter>
+           <expression variable="resources">
+              <variable name="resources"/>
+              <for variable="resource name" in="util resource list">
+                  <operator name="array" variable="resources">
+                      <value variable="resources"/>
+                      <value>-C</value>
+                      <value type="path">&source_directory;</value>
+                      <value variable="resource name"/>
+                  </operator>
+               </for>
+           </expression>
+       </parameter>
+
+
+       <onexception>
+          <block>
+                 <echo>Exception at jarring</echo>
+                 <function name="stop">
+			<parameter value="-1"/>
+                 </function>
+          </block>
+       </onexception>
+    </task>
+  </target>
+
+  <target name="clean" dir="PROJECT_HOME">
+    <dependency>
+       <expression>
+         <operator name="eq">
+            <value>y</value>  
+            <function name="ask">
+               <parameter value="Are you sure to remove all files in &build_directory; [n]?"/>
+               <parameter value="n"/>
+            </function>
+        </operator>
+      </expression>
+    </dependency>
+    <block>
+      <echo>Cleaning...</echo>
+      <function name="rm">
+         <parameter value="&build_directory;/*/*/*/*/*/*/*.class" type="dir"/>
+         <parameter value="&build_directory;/&build_file;" type="file"/>
+         <parameter value="&build_directory;/*/*/*/*/*.xsd" type="dir"/>
+         <parameter value="&build_directory;/*/*/*/*/*.dtd" type="dir"/>
+      </function>
+    </block>
+  </target>
+
+  <expression variable="run class path">
+     <operator name="append">
+        <value variable="PROJECT_HOME"/>
+        <value>/&build_directory;/&build_file;</value>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="CUSTOM CP"/>
+        <value variable="PATH SEPARATOR"/>
+        <value variable="JAVA_HOME"/>
+        <value>/lib/tools.jar</value>
+     </operator>
+  </expression>
+
+  <target name="run" dir="PROJECT_HOME">
+    <echo>Running...</echo>
+    <dependency target="jar"/>
+    <dependency value="true"/>
+    <task name="main" code="&main_class;" path="run class path">
+       <parameter>-classpath</parameter>
+       <parameter variable="run class path"/>
+       <parameter variable="~#args#~"/>
+    </task>
+  </target>  
+</bee>
+
