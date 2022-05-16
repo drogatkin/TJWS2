@@ -11,8 +11,7 @@
       <!ENTITY main_class "&domain;.&project;.Main">  <!-- type main class for run -->
       <!ENTITY webapp_file "&project;.war"> <!-- change if differs -->
       ]>
-<!-- $Id: bee-web.xml,v 1.13 2012/04/17 22:52:48 dmitriy Exp $
-   make file used for "generic" project
+<!-- a make file for test  projects
    Copyright (c) 2004-2022 Dmitriy Rogatkin    -->
 
 <bee name="&project;" type="project">
@@ -270,9 +269,9 @@
 &lt;/welcome-file-list&gt;
          &lt;/web-app&gt;
 </parameter>
-         <parameter>C &domain;</parameter>
+         <!--parameter>C &domain;</parameter>
          <parameter type="path">&build_directory;/&domain;</parameter>
-         <parameter/>
+         <parameter/-->
          <parameter>L</parameter>
          <parameter type="path">&build_directory;/&build_file;</parameter>
          <parameter/>
