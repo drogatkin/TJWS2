@@ -246,6 +246,8 @@ public class Serve implements ServletContext, Serializable {
     public static final String BGCOLOR = "BGCOLOR=\"#D1E9FE\"";
     
     public final static String LINE_SEP = System.getProperty("line.separator", "\n");
+    
+    public static final String RUNTIMEENV_ATTR = "##RuntimeEnv";
 
     /**
      * max number of alive connections default value
@@ -302,6 +304,8 @@ public class Serve implements ServletContext, Serializable {
     private byte[] uniqer = new byte[20]; // TODO consider configurable strength
 
     private SecureRandom srandom;
+    
+	private static Object runtimeEnv;
 
     protected HttpSessionContextImpl sessions;
 
@@ -913,6 +917,15 @@ public class Serve implements ServletContext, Serializable {
 	    }
 	}
     }
+    
+    public static synchronized void setRuntime(Object runtime) {
+    	if (runtimeEnv == null)
+    		runtimeEnv = runtime; // kind of a singleton
+    }
+    
+    public static Object getRuntime( ) {
+    	return runtimeEnv;
+    }
 
     public static interface Acceptor {
 	public void init(Map inProperties, Map outProperties) throws IOException;
@@ -1230,6 +1243,8 @@ public class Serve implements ServletContext, Serializable {
     // additional information about the service, not already provided by
     // the other methods in this interface.
     public Object getAttribute(String name) {
+    	if (getRuntime() != null && RUNTIMEENV_ATTR.equals(name))
+			return getRuntime();
 	return attributes.get(name);
     }
 

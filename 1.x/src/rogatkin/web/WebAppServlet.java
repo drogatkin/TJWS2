@@ -143,8 +143,6 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 
 	public static final String WAR_DEPLOY_IN_ROOT = "tjws.wardeploy.as-root";
 	
-	public static final String RUNTIMEENV_ATTR = "##RuntimeEnv";
-
 	static final String MULTIPART_ERR_MSQ = "Request isn't multipart/form-data type or processing it is not enabled in deplyment descriptor web.xml";
 
 	protected static final String WEBAPPCLASSLOADER = "rogatkin.webapp.AppClassLoader";
@@ -161,8 +159,6 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	ClassLoader ucl;
 
 	private static AppContextDelegator appContextDelegator;
-	
-	private static Object runtimeEnv;
 
 	File deployDir;
 
@@ -1545,7 +1541,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     }
         
 	static public void setRuntimeEnv(Object rte) {
-		runtimeEnv = rte;
+		Serve.setRuntime(rte) ;
 	}
 	
 	static <D extends ServletAccessDescr> void addMultiple(NodeList list, D d) {
@@ -2097,8 +2093,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	@Override
 	public Object getAttribute(String name) {
 		// log("context: "+this+" return attr:"+name+" as "+attributes.get(name));
-		if (runtimeEnv != null && RUNTIMEENV_ATTR.equals(name))
-			return runtimeEnv;
+		if (Serve.getRuntime() != null && Serve.RUNTIMEENV_ATTR.equals(name))
+			return Serve.getRuntime();
 		return attributes.get(name);
 	}
 
