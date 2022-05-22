@@ -50,33 +50,37 @@ public class SelectorAcceptor implements Acceptor {
 
 	public Socket accept() throws IOException {
 		do {
-			if (readyItor == null) {
-				if (selector.select() > 0)
-					readyItor = selector.selectedKeys().iterator();
-				else
-					throw new IOException();
-			}
-
-			if (readyItor.hasNext()) {
-
-				// Get key from set
-				SelectionKey key = (SelectionKey) readyItor.next();
-
-				// Remove current entry
-				readyItor.remove();
-				// TODO add processing CancelledKeyException
-				if (key.isValid() && key.isAcceptable()) {
-					// Get channel
-					ServerSocketChannel keyChannel = (ServerSocketChannel) key.channel();
-
-					// Get server socket
-					ServerSocket serverSocket = keyChannel.socket();
-
-					// Accept request
-					return serverSocket.accept();
+			try {
+				if (readyItor == null) {
+					if (selector.select() > 0)
+						readyItor = selector.selectedKeys().iterator();
+					else
+						throw new IOException();
 				}
-			} else
-				readyItor = null;
+
+				if (readyItor.hasNext()) {
+
+					// Get key from set
+					SelectionKey key = (SelectionKey) readyItor.next();
+
+					// Remove current entry
+					readyItor.remove();
+					// TODO add processing CancelledKeyException
+					if (key.isValid() && key.isAcceptable()) {
+						// Get channel
+						ServerSocketChannel keyChannel = (ServerSocketChannel) key.channel();
+
+						// Get server socket
+						ServerSocket serverSocket = keyChannel.socket();
+
+						// Accept request
+						return serverSocket.accept();
+					}
+				} else
+					readyItor = null;
+			} catch (IOException ioe) {
+				throw new Error("Can't recover from io", ioe);
+			}
 		} while (true);
 	}
 
@@ -116,15 +120,15 @@ public class SelectorAcceptor implements Acceptor {
 
 		// Register interest in when connection
 		channel.register(selector, SelectionKey.OP_ACCEPT);
-		if (outProperties != null) {			 
+		if (outProperties != null) {
 			if (channel.socket().isBound())
 				outProperties.put(Serve.ARG_BINDADDRESS, channel.socket().getInetAddress().getHostName());
-			else 
+			else
 				outProperties.put(Serve.ARG_BINDADDRESS, InetAddress.getLocalHost().getHostName());
 		}
 	}
 
 	public String toString() {
-		return "SelectorAcceptor - "+(channel == null ?"unset":""+channel.socket());
+		return "SelectorAcceptor - " + (channel == null ? "unset" : "" + channel.socket());
 	}
 }

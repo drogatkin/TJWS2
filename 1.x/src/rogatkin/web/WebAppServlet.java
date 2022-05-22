@@ -56,6 +56,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -1320,6 +1321,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 				sad.newInstance();
 		}
 		
+		callContainerInitializers(result);
+		
 		return result;
 	}
         
@@ -1498,6 +1501,21 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
     					// otherwise such class needs to be defined in /META-INF/services/javax.servlet.ServletContainerInitializer
     				}
     		}).scan();
+        }
+        
+        static void  callContainerInitializers(ServletContext context) throws ServletException {
+        	ServletContainerInitializer result = null;
+
+            ServiceLoader<ServletContainerInitializer> serviceLoader =
+                    ServiceLoader.load(ServletContainerInitializer.class);
+
+            Iterator<ServletContainerInitializer> iter = serviceLoader.iterator();
+            while (result == null && iter.hasNext()) {
+                result = iter.next();
+            }
+
+            if (result != null)
+            	result.onStartup(null, context);
         }
         
         protected static void addSecurityAnnotatoins(final WebAppServlet webApp, final ServletAccessDescr descr, final Class<?> _class) {
@@ -2650,7 +2668,8 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 	 */
 	@Override
 	public JspConfigDescriptor getJspConfigDescriptor() {
-		throw new UnsupportedOperationException();
+		//throw new UnsupportedOperationException();
+		return null;
 	}
 
 	/**
