@@ -28,6 +28,7 @@
  */
 package Acme.Serve;
 
+import java.io.IOError;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -52,6 +53,8 @@ public class SelectorAcceptor implements Acceptor {
 		do {
 			try {
 				if (readyItor == null) {
+					if (!selector.isOpen())
+						throw new IOError(new IOException("Selector isn't opened"));
 					if (selector.select() > 0)
 						readyItor = selector.selectedKeys().iterator();
 					else
@@ -71,9 +74,13 @@ public class SelectorAcceptor implements Acceptor {
 						ServerSocketChannel keyChannel = (ServerSocketChannel) key.channel();
 
 						// Get server socket
+						if (!keyChannel.isOpen())
+							throw new IOError(new IOException("Channel isn't opened"));
 						ServerSocket serverSocket = keyChannel.socket();
 
 						// Accept request
+						if (serverSocket.isClosed())
+								throw new IOError(new IOException("Socket closed"));
 						return serverSocket.accept();
 					}
 				} else

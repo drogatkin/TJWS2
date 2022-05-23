@@ -28,6 +28,7 @@
  */
 package Acme.Serve;
 
+import java.io.IOError;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -36,7 +37,10 @@ import java.net.Socket;
 import java.util.Map;
 
 public class SimpleAcceptor implements Serve.Acceptor {
+	
 	public Socket accept() throws IOException {
+		if (socket.isClosed())
+			throw new IOError(new IOException("Socket closed"));
 		return socket.accept();
 	}
 
