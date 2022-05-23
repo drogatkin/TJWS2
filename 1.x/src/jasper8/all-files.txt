@@ -382,7 +382,7 @@ ContextBind.java                JarScannerCallback.java
 InstanceManagerBindings.java    JarScanner.java
 InstanceManager.java            JarScanType.java
 InstrumentableClassLoader.java  PeriodicEventListener.java
-Jar.java                        SimpleInstanceManager.java
+Jar.java                        
 JarScanFilter.java              util
 
 ./java/org/apache/tomcat/util:
