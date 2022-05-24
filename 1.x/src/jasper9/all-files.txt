@@ -1,0 +1,1061 @@
+.:
+total 36
+-rwxrwxrwx 1 dmitriy dmitriy 17164 May 23 17:00 bee-jasper.xml
+drwxrwxr-x 2 dmitriy dmitriy  4096 May 23 18:23 build
+-rwxrwxrwx 1 dmitriy dmitriy  1563 May 20 17:10 env.xml
+drwxrwxr-x 4 dmitriy dmitriy  4096 May 22 21:16 java
+drwxrwxr-x 3 dmitriy dmitriy  4096 May 23 16:59 test
+
+./build:
+total 1496
+-rw-rw-r-- 1 dmitriy dmitriy 1528017 May 23 18:13 jasper.jar
+
+./java:
+total 8
+drwxr-xr-x 12 dmitriy dmitriy 4096 May 22 21:14 javax
+drwxrwxr-x  3 dmitriy dmitriy 4096 May 22 21:16 org
+
+./java/javax:
+total 40
+drwxr-xr-x 4 dmitriy dmitriy 4096 May 22 21:14 annotation
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 ejb
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 el
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:14 mail
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 persistence
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:14 security
+drwxr-xr-x 7 dmitriy dmitriy 4096 May 22 21:14 servlet
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 transaction
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:14 websocket
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:14 xml
+
+./java/javax/annotation:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 1771 May 11 00:52 Generated.java
+-rw-r--r-- 1 dmitriy dmitriy 1216 May 11 00:52 ManagedBean.java
+-rw-r--r-- 1 dmitriy dmitriy 1206 May 11 00:52 PostConstruct.java
+-rw-r--r-- 1 dmitriy dmitriy 1203 May 11 00:52 PreDestroy.java
+-rw-r--r-- 1 dmitriy dmitriy 1241 May 11 00:52 Priority.java
+-rw-r--r-- 1 dmitriy dmitriy 2468 May 11 00:52 Resource.java
+-rw-r--r-- 1 dmitriy dmitriy 1288 May 11 00:52 Resources.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 security
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 sql
+
+./java/javax/annotation/security:
+total 20
+-rw-r--r-- 1 dmitriy dmitriy 1278 May 11 00:52 DeclareRoles.java
+-rw-r--r-- 1 dmitriy dmitriy 1229 May 11 00:52 DenyAll.java
+-rw-r--r-- 1 dmitriy dmitriy 1231 May 11 00:52 PermitAll.java
+-rw-r--r-- 1 dmitriy dmitriy 1306 May 11 00:52 RolesAllowed.java
+-rw-r--r-- 1 dmitriy dmitriy 1277 May 11 00:52 RunAs.java
+
+./java/javax/annotation/sql:
+total 8
+-rw-r--r-- 1 dmitriy dmitriy 2654 May 11 00:52 DataSourceDefinition.java
+-rw-r--r-- 1 dmitriy dmitriy 1236 May 11 00:52 DataSourceDefinitions.java
+
+./java/javax/ejb:
+total 8
+-rw-r--r-- 1 dmitriy dmitriy 1439 May 11 00:52 EJB.java
+-rw-r--r-- 1 dmitriy dmitriy 1093 May 11 00:52 EJBs.java
+
+./java/javax/el:
+total 320
+-rw-r--r-- 1 dmitriy dmitriy  4886 May 11 00:52 ArrayELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy 12519 May 11 00:52 BeanELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  4827 May 11 00:52 BeanNameELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  2790 May 11 00:52 BeanNameResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  7559 May 11 00:52 CompositeELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  1041 May 11 00:52 ELClass.java
+-rw-r--r-- 1 dmitriy dmitriy  1230 May 11 00:52 ELContextEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  9271 May 11 00:52 ELContext.java
+-rw-r--r-- 1 dmitriy dmitriy  1003 May 11 00:52 ELContextListener.java
+-rw-r--r-- 1 dmitriy dmitriy  1961 May 11 00:52 ELException.java
+-rw-r--r-- 1 dmitriy dmitriy  2955 May 11 00:52 ELManager.java
+-rw-r--r-- 1 dmitriy dmitriy 14777 May 11 00:52 ELProcessor.java
+-rw-r--r-- 1 dmitriy dmitriy  6708 May 11 00:52 ELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  1926 May 11 00:52 EvaluationListener.java
+-rw-r--r-- 1 dmitriy dmitriy 13564 May 11 00:52 ExpressionFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  1209 May 11 00:52 Expression.java
+-rw-r--r-- 1 dmitriy dmitriy  1277 May 11 00:52 FunctionMapper.java
+-rw-r--r-- 1 dmitriy dmitriy 21664 May 11 00:52 ImportHandler.java
+-rw-r--r-- 1 dmitriy dmitriy  2821 May 11 00:52 Jre9Compat.java
+-rw-r--r-- 1 dmitriy dmitriy  2298 May 11 00:52 JreCompat.java
+-rw-r--r-- 1 dmitriy dmitriy  3149 May 11 00:52 LambdaExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  5110 May 11 00:52 ListELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  3321 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy  3751 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy  3576 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  3862 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  4397 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  4067 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  3484 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy  3513 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy  4186 May 11 00:52 LocalStrings_ru.properties
+-rw-r--r-- 1 dmitriy dmitriy  3284 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  4356 May 11 00:52 MapELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  3244 May 11 00:52 MethodExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1373 May 11 00:52 MethodInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  1294 May 11 00:52 MethodNotFoundException.java
+-rw-r--r-- 1 dmitriy dmitriy  1304 May 11 00:52 PropertyNotFoundException.java
+-rw-r--r-- 1 dmitriy dmitriy  1317 May 11 00:52 PropertyNotWritableException.java
+-rw-r--r-- 1 dmitriy dmitriy  3986 May 11 00:52 ResourceBundleELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  6548 May 11 00:52 StandardELContext.java
+-rw-r--r-- 1 dmitriy dmitriy  7707 May 11 00:52 StaticFieldELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  1858 May 11 00:52 TypeConverter.java
+-rw-r--r-- 1 dmitriy dmitriy 29807 May 11 00:52 Util.java
+-rw-r--r-- 1 dmitriy dmitriy  4223 May 11 00:52 ValueExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1303 May 11 00:52 ValueReference.java
+-rw-r--r-- 1 dmitriy dmitriy  1040 May 11 00:52 VariableMapper.java
+
+./java/javax/mail:
+total 16
+-rw-r--r-- 1 dmitriy dmitriy  948 May 11 00:52 Authenticator.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 internet
+-rw-r--r-- 1 dmitriy dmitriy 1019 May 11 00:52 PasswordAuthentication.java
+-rw-r--r-- 1 dmitriy dmitriy 1120 May 11 00:52 Session.java
+
+./java/javax/mail/internet:
+total 16
+-rw-r--r-- 1 dmitriy dmitriy  997 May 11 00:52 InternetAddress.java
+-rw-r--r-- 1 dmitriy dmitriy 1210 May 11 00:52 MimeMessage.java
+-rw-r--r-- 1 dmitriy dmitriy 1005 May 11 00:52 MimePartDataSource.java
+-rw-r--r-- 1 dmitriy dmitriy  890 May 11 00:52 MimePart.java
+
+./java/javax/persistence:
+total 28
+-rw-r--r-- 1 dmitriy dmitriy 1415 May 11 00:52 PersistenceContext.java
+-rw-r--r-- 1 dmitriy dmitriy 1131 May 11 00:52 PersistenceContexts.java
+-rw-r--r-- 1 dmitriy dmitriy  899 May 11 00:52 PersistenceContextType.java
+-rw-r--r-- 1 dmitriy dmitriy 1082 May 11 00:52 PersistenceProperty.java
+-rw-r--r-- 1 dmitriy dmitriy 1199 May 11 00:52 PersistenceUnit.java
+-rw-r--r-- 1 dmitriy dmitriy 1125 May 11 00:52 PersistenceUnits.java
+-rw-r--r-- 1 dmitriy dmitriy  904 May 11 00:52 SynchronizationType.java
+
+./java/javax/security:
+total 4
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:14 auth
+
+./java/javax/security/auth:
+total 4
+drwxr-xr-x 5 dmitriy dmitriy 4096 May 22 21:14 message
+
+./java/javax/security/auth/message:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 1130 May 11 00:52 AuthException.java
+-rw-r--r-- 1 dmitriy dmitriy 1449 May 11 00:52 AuthStatus.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 callback
+-rw-r--r-- 1 dmitriy dmitriy 1248 May 11 00:52 ClientAuth.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 23 17:08 config
+-rw-r--r-- 1 dmitriy dmitriy 1149 May 11 00:52 MessageInfo.java
+-rw-r--r-- 1 dmitriy dmitriy 2721 May 11 00:52 MessagePolicy.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 module
+-rw-r--r-- 1 dmitriy dmitriy 1248 May 11 00:52 ServerAuth.java
+
+./java/javax/security/auth/message/callback:
+total 28
+-rw-r--r-- 1 dmitriy dmitriy 1815 May 11 00:52 CallerPrincipalCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 1345 May 11 00:52 CertStoreCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 1454 May 11 00:52 GroupPrincipalCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 1970 May 11 00:52 PasswordValidationCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 3451 May 11 00:52 PrivateKeyCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 1812 May 11 00:52 SecretKeyCallback.java
+-rw-r--r-- 1 dmitriy dmitriy 1301 May 11 00:52 TrustStoreCallback.java
+
+./java/javax/security/auth/message/config:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 6096 Mar 31 09:05 AuthConfigFactory.java
+-rw-r--r-- 1 dmitriy dmitriy 1104 May 11 00:52 AuthConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1292 May 11 00:52 AuthConfigProvider.java
+-rw-r--r-- 1 dmitriy dmitriy 1222 May 11 00:52 ClientAuthConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  965 May 11 00:52 ClientAuthContext.java
+-rw-r--r-- 1 dmitriy dmitriy  952 May 11 00:52 RegistrationListener.java
+-rw-r--r-- 1 dmitriy dmitriy 1223 May 11 00:52 ServerAuthConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  965 May 11 00:52 ServerAuthContext.java
+
+./java/javax/security/auth/message/module:
+total 8
+-rw-r--r-- 1 dmitriy dmitriy 1459 May 11 00:52 ClientAuthModule.java
+-rw-r--r-- 1 dmitriy dmitriy 1459 May 11 00:52 ServerAuthModule.java
+
+./java/javax/servlet:
+total 396
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 annotation
+-rw-r--r-- 1 dmitriy dmitriy  6048 May 11 00:52 AsyncContext.java
+-rw-r--r-- 1 dmitriy dmitriy  4076 May 11 00:52 AsyncEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  2805 May 11 00:52 AsyncListener.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 descriptor
+-rw-r--r-- 1 dmitriy dmitriy  1628 May 11 00:52 DispatcherType.java
+-rw-r--r-- 1 dmitriy dmitriy  1974 May 11 00:52 FilterChain.java
+-rw-r--r-- 1 dmitriy dmitriy  2510 May 11 00:52 FilterConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  5425 May 11 00:52 Filter.java
+-rw-r--r-- 1 dmitriy dmitriy  3708 May 11 00:52 FilterRegistration.java
+-rw-r--r-- 1 dmitriy dmitriy  2636 May 11 00:52 GenericFilter.java
+-rw-r--r-- 1 dmitriy dmitriy  8947 May 11 00:52 GenericServlet.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 http
+-rw-r--r-- 1 dmitriy dmitriy  4595 May 11 00:52 HttpConstraintElement.java
+-rw-r--r-- 1 dmitriy dmitriy  2816 May 11 00:52 HttpMethodConstraintElement.java
+drwxr-xr-x 5 dmitriy dmitriy  4096 May 22 21:14 jsp
+-rw-r--r-- 1 dmitriy dmitriy   846 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy   973 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy  1036 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  1165 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  1220 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  1183 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1105 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy  1085 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  4623 May 11 00:52 MultipartConfigElement.java
+-rw-r--r-- 1 dmitriy dmitriy  1144 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  1948 May 11 00:52 ReadListener.java
+-rw-r--r-- 1 dmitriy dmitriy  4106 May 11 00:52 Registration.java
+-rw-r--r-- 1 dmitriy dmitriy 13969 May 11 00:52 RequestDispatcher.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 resources
+-rw-r--r-- 1 dmitriy dmitriy  2656 May 11 00:52 ServletConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  2289 May 11 00:52 ServletContainerInitializer.java
+-rw-r--r-- 1 dmitriy dmitriy  2506 May 11 00:52 ServletContextAttributeEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  2279 May 11 00:52 ServletContextAttributeListener.java
+-rw-r--r-- 1 dmitriy dmitriy  1611 May 11 00:52 ServletContextEvent.java
+-rw-r--r-- 1 dmitriy dmitriy 50409 May 11 00:52 ServletContext.java
+-rw-r--r-- 1 dmitriy dmitriy  2125 May 11 00:52 ServletContextListener.java
+-rw-r--r-- 1 dmitriy dmitriy  3379 May 11 00:52 ServletException.java
+-rw-r--r-- 1 dmitriy dmitriy  4454 May 11 00:52 ServletInputStream.java
+-rw-r--r-- 1 dmitriy dmitriy  6813 May 11 00:52 Servlet.java
+-rw-r--r-- 1 dmitriy dmitriy 10343 May 11 00:52 ServletOutputStream.java
+-rw-r--r-- 1 dmitriy dmitriy  4394 May 11 00:52 ServletRegistration.java
+-rw-r--r-- 1 dmitriy dmitriy  2721 May 11 00:52 ServletRequestAttributeEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  2458 May 11 00:52 ServletRequestAttributeListener.java
+-rw-r--r-- 1 dmitriy dmitriy  2034 May 11 00:52 ServletRequestEvent.java
+-rw-r--r-- 1 dmitriy dmitriy 20814 May 11 00:52 ServletRequest.java
+-rw-r--r-- 1 dmitriy dmitriy  1834 May 11 00:52 ServletRequestListener.java
+-rw-r--r-- 1 dmitriy dmitriy 14145 May 11 00:52 ServletRequestWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy 16419 May 11 00:52 ServletResponse.java
+-rw-r--r-- 1 dmitriy dmitriy  7981 May 11 00:52 ServletResponseWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy  5491 May 11 00:52 ServletSecurityElement.java
+-rw-r--r-- 1 dmitriy dmitriy  4270 May 11 00:52 SessionCookieConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  1140 May 11 00:52 SessionTrackingMode.java
+-rw-r--r-- 1 dmitriy dmitriy  2027 May 11 00:52 SingleThreadModel.java
+-rw-r--r-- 1 dmitriy dmitriy  7068 May 11 00:52 UnavailableException.java
+-rw-r--r-- 1 dmitriy dmitriy  1749 May 11 00:52 WriteListener.java
+
+./java/javax/servlet/annotation:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 1350 May 11 00:52 HandlesTypes.java
+-rw-r--r-- 1 dmitriy dmitriy 2789 May 11 00:52 HttpConstraint.java
+-rw-r--r-- 1 dmitriy dmitriy 2850 May 11 00:52 HttpMethodConstraint.java
+-rw-r--r-- 1 dmitriy dmitriy 2340 May 11 00:52 MultipartConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 2743 May 11 00:52 ServletSecurity.java
+-rw-r--r-- 1 dmitriy dmitriy 3638 May 11 00:52 WebFilter.java
+-rw-r--r-- 1 dmitriy dmitriy 1948 May 11 00:52 WebInitParam.java
+-rw-r--r-- 1 dmitriy dmitriy 1998 May 11 00:52 WebListener.java
+-rw-r--r-- 1 dmitriy dmitriy 3314 May 11 00:52 WebServlet.java
+
+./java/javax/servlet/descriptor:
+total 12
+-rw-r--r-- 1 dmitriy dmitriy 1730 May 11 00:52 JspConfigDescriptor.java
+-rw-r--r-- 1 dmitriy dmitriy 3646 May 11 00:52 JspPropertyGroupDescriptor.java
+-rw-r--r-- 1 dmitriy dmitriy 1286 May 11 00:52 TaglibDescriptor.java
+
+./java/javax/servlet/http:
+total 268
+-rw-r--r-- 1 dmitriy dmitriy 17379 May 11 00:52 Cookie.java
+-rw-r--r-- 1 dmitriy dmitriy  4447 May 11 00:52 HttpFilter.java
+-rw-r--r-- 1 dmitriy dmitriy 40103 May 11 00:52 HttpServlet.java
+-rw-r--r-- 1 dmitriy dmitriy  1780 May 11 00:52 HttpServletMapping.java
+-rw-r--r-- 1 dmitriy dmitriy 24736 May 11 00:52 HttpServletRequest.java
+-rw-r--r-- 1 dmitriy dmitriy 12666 May 11 00:52 HttpServletRequestWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy 23336 May 11 00:52 HttpServletResponse.java
+-rw-r--r-- 1 dmitriy dmitriy  9078 May 11 00:52 HttpServletResponseWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy  1854 May 11 00:52 HttpSessionActivationListener.java
+-rw-r--r-- 1 dmitriy dmitriy  2078 May 11 00:52 HttpSessionAttributeListener.java
+-rw-r--r-- 1 dmitriy dmitriy  4091 May 11 00:52 HttpSessionBindingEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  2018 May 11 00:52 HttpSessionBindingListener.java
+-rw-r--r-- 1 dmitriy dmitriy  1923 May 11 00:52 HttpSessionContext.java
+-rw-r--r-- 1 dmitriy dmitriy  1509 May 11 00:52 HttpSessionEvent.java
+-rw-r--r-- 1 dmitriy dmitriy  1660 May 11 00:52 HttpSessionIdListener.java
+-rw-r--r-- 1 dmitriy dmitriy 11722 May 11 00:52 HttpSession.java
+-rw-r--r-- 1 dmitriy dmitriy  1743 May 11 00:52 HttpSessionListener.java
+-rw-r--r-- 1 dmitriy dmitriy  1490 May 11 00:52 HttpUpgradeHandler.java
+-rw-r--r-- 1 dmitriy dmitriy  9972 May 11 00:52 HttpUtils.java
+-rw-r--r-- 1 dmitriy dmitriy   959 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy  1484 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  1739 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  2060 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  1874 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1605 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy  1517 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  1539 May 11 00:52 MappingMatch.java
+-rw-r--r-- 1 dmitriy dmitriy  1181 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  5176 May 11 00:52 Part.java
+-rw-r--r-- 1 dmitriy dmitriy  6933 May 11 00:52 PushBuilder.java
+-rw-r--r-- 1 dmitriy dmitriy  1723 May 11 00:52 WebConnection.java
+
+./java/javax/servlet/jsp:
+total 108
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 el
+-rw-r--r-- 1 dmitriy dmitriy  2689 May 11 00:52 ErrorData.java
+-rw-r--r-- 1 dmitriy dmitriy  2532 May 11 00:52 HttpJspPage.java
+-rw-r--r-- 1 dmitriy dmitriy  2743 May 11 00:52 JspApplicationContext.java
+-rw-r--r-- 1 dmitriy dmitriy 10705 May 11 00:52 JspContext.java
+-rw-r--r-- 1 dmitriy dmitriy  1729 May 11 00:52 JspEngineInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  3279 May 11 00:52 JspException.java
+-rw-r--r-- 1 dmitriy dmitriy  5616 May 11 00:52 JspFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  3479 May 11 00:52 JspPage.java
+-rw-r--r-- 1 dmitriy dmitriy  3279 May 11 00:52 JspTagException.java
+-rw-r--r-- 1 dmitriy dmitriy 16702 May 11 00:52 JspWriter.java
+-rw-r--r-- 1 dmitriy dmitriy  1201 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy 19472 May 11 00:52 PageContext.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 resources
+-rw-r--r-- 1 dmitriy dmitriy  2704 May 11 00:52 SkipPageException.java
+drwxr-xr-x 3 dmitriy dmitriy  4096 May 22 21:14 tagext
+
+./java/javax/servlet/jsp/el:
+total 68
+-rw-r--r-- 1 dmitriy dmitriy  2413 May 11 00:52 ELException.java
+-rw-r--r-- 1 dmitriy dmitriy  1609 May 11 00:52 ELParseException.java
+-rw-r--r-- 1 dmitriy dmitriy  5139 May 11 00:52 ExpressionEvaluator.java
+-rw-r--r-- 1 dmitriy dmitriy  2105 May 11 00:52 Expression.java
+-rw-r--r-- 1 dmitriy dmitriy  1658 May 11 00:52 FunctionMapper.java
+-rw-r--r-- 1 dmitriy dmitriy 20716 May 11 00:52 ImplicitObjectELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  1577 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  9371 May 11 00:52 ScopedAttributeELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  1968 May 11 00:52 VariableResolver.java
+
+./java/javax/servlet/jsp/resources:
+total 28
+-rw-r--r-- 1 dmitriy dmitriy  5849 May 11 00:52 jspxml.dtd
+-rw-r--r-- 1 dmitriy dmitriy 17205 May 11 00:52 jspxml.xsd
+
+./java/javax/servlet/jsp/tagext:
+total 200
+-rw-r--r-- 1 dmitriy dmitriy  4128 May 11 00:52 BodyContent.java
+-rw-r--r-- 1 dmitriy dmitriy  7513 May 11 00:52 BodyTag.java
+-rw-r--r-- 1 dmitriy dmitriy  4359 May 11 00:52 BodyTagSupport.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:14 doc-files
+-rw-r--r-- 1 dmitriy dmitriy  2196 May 11 00:52 DynamicAttributes.java
+-rw-r--r-- 1 dmitriy dmitriy  2103 May 11 00:52 FunctionInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  4734 May 11 00:52 IterationTag.java
+-rw-r--r-- 1 dmitriy dmitriy  3658 May 11 00:52 JspFragment.java
+-rw-r--r-- 1 dmitriy dmitriy  1141 May 11 00:52 JspIdConsumer.java
+-rw-r--r-- 1 dmitriy dmitriy  1052 May 11 00:52 JspTag.java
+-rw-r--r-- 1 dmitriy dmitriy  1783 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  1614 May 11 00:52 PageData.java
+-rw-r--r-- 1 dmitriy dmitriy  5806 May 11 00:52 SimpleTag.java
+-rw-r--r-- 1 dmitriy dmitriy  7419 May 11 00:52 SimpleTagSupport.java
+-rw-r--r-- 1 dmitriy dmitriy  5580 May 11 00:52 TagAdapter.java
+-rw-r--r-- 1 dmitriy dmitriy  9172 May 11 00:52 TagAttributeInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  4670 May 11 00:52 TagData.java
+-rw-r--r-- 1 dmitriy dmitriy  5039 May 11 00:52 TagExtraInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  2863 May 11 00:52 TagFileInfo.java
+-rw-r--r-- 1 dmitriy dmitriy 14511 May 11 00:52 TagInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  9643 May 11 00:52 Tag.java
+-rw-r--r-- 1 dmitriy dmitriy  8529 May 11 00:52 TagLibraryInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  5322 May 11 00:52 TagLibraryValidator.java
+-rw-r--r-- 1 dmitriy dmitriy  8125 May 11 00:52 TagSupport.java
+-rw-r--r-- 1 dmitriy dmitriy  3576 May 11 00:52 TagVariableInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  3263 May 11 00:52 TryCatchFinally.java
+-rw-r--r-- 1 dmitriy dmitriy  2935 May 11 00:52 ValidationMessage.java
+-rw-r--r-- 1 dmitriy dmitriy  9258 May 11 00:52 VariableInfo.java
+
+./java/javax/servlet/jsp/tagext/doc-files:
+total 24
+-rw-r--r-- 1 dmitriy dmitriy 4647 May 11 00:52 BodyTagProtocol.gif
+-rw-r--r-- 1 dmitriy dmitriy 3762 May 11 00:52 IterationTagProtocol.gif
+-rw-r--r-- 1 dmitriy dmitriy 4152 May 11 00:52 TagProtocol.gif
+-rw-r--r-- 1 dmitriy dmitriy 2306 May 11 00:52 VariableInfo-1.gif
+
+./java/javax/servlet/resources:
+total 1100
+-rw-r--r-- 1 dmitriy dmitriy  7081 May 11 00:52 datatypes.dtd
+-rw-r--r-- 1 dmitriy dmitriy 50261 May 11 00:52 j2ee_1_4.xsd
+-rw-r--r-- 1 dmitriy dmitriy 15847 May 11 00:52 j2ee_web_services_1_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 10948 May 11 00:52 j2ee_web_services_client_1_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 70798 May 11 00:52 javaee_5.xsd
+-rw-r--r-- 1 dmitriy dmitriy 79130 May 11 00:52 javaee_6.xsd
+-rw-r--r-- 1 dmitriy dmitriy 99127 May 11 00:52 javaee_7.xsd
+-rw-r--r-- 1 dmitriy dmitriy 99106 May 11 00:52 javaee_8.xsd
+-rw-r--r-- 1 dmitriy dmitriy 26758 May 11 00:52 javaee_web_services_1_2.xsd
+-rw-r--r-- 1 dmitriy dmitriy 20093 May 11 00:52 javaee_web_services_1_3.xsd
+-rw-r--r-- 1 dmitriy dmitriy 20228 May 11 00:52 javaee_web_services_1_4.xsd
+-rw-r--r-- 1 dmitriy dmitriy 21230 May 11 00:52 javaee_web_services_client_1_2.xsd
+-rw-r--r-- 1 dmitriy dmitriy 26243 May 11 00:52 javaee_web_services_client_1_3.xsd
+-rw-r--r-- 1 dmitriy dmitriy 26173 May 11 00:52 javaee_web_services_client_1_4.xsd
+-rw-r--r-- 1 dmitriy dmitriy  9877 May 11 00:52 jsp_2_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy  3442 May 11 00:52 jsp_2_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 14535 May 11 00:52 jsp_2_2.xsd
+-rw-r--r-- 1 dmitriy dmitriy 14566 May 11 00:52 jsp_2_3.xsd
+-rw-r--r-- 1 dmitriy dmitriy 16219 May 11 00:52 web-app_2_2.dtd
+-rw-r--r-- 1 dmitriy dmitriy 30251 May 11 00:52 web-app_2_3.dtd
+-rw-r--r-- 1 dmitriy dmitriy 39466 May 11 00:52 web-app_2_4.xsd
+-rw-r--r-- 1 dmitriy dmitriy 45121 May 11 00:52 web-app_2_5.xsd
+-rw-r--r-- 1 dmitriy dmitriy 10820 May 11 00:52 web-app_3_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 12638 May 11 00:52 web-app_3_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 14106 May 11 00:52 web-app_4_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 50798 May 11 00:52 web-common_3_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 47825 May 11 00:52 web-common_3_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 47824 May 11 00:52 web-common_4_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 10854 May 11 00:52 web-fragment_3_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 13042 May 11 00:52 web-fragment_3_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 13041 May 11 00:52 web-fragment_4_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy  5815 May 11 00:52 web-jsptaglibrary_1_1.dtd
+-rw-r--r-- 1 dmitriy dmitriy 12471 May 11 00:52 web-jsptaglibrary_1_2.dtd
+-rw-r--r-- 1 dmitriy dmitriy 31946 May 11 00:52 web-jsptaglibrary_2_0.xsd
+-rw-r--r-- 1 dmitriy dmitriy 10374 May 11 00:52 web-jsptaglibrary_2_1.xsd
+-rw-r--r-- 1 dmitriy dmitriy 16882 May 11 00:52 XMLSchema.dtd
+-rw-r--r-- 1 dmitriy dmitriy  3707 May 11 00:52 xml.xsd
+
+./java/javax/transaction:
+total 60
+-rw-r--r-- 1 dmitriy dmitriy 1114 May 11 00:52 HeuristicCommitException.java
+-rw-r--r-- 1 dmitriy dmitriy 1110 May 11 00:52 HeuristicMixedException.java
+-rw-r--r-- 1 dmitriy dmitriy 1120 May 11 00:52 HeuristicRollbackException.java
+-rw-r--r-- 1 dmitriy dmitriy 1127 May 11 00:52 InvalidTransactionException.java
+-rw-r--r-- 1 dmitriy dmitriy 1102 May 11 00:52 NotSupportedException.java
+-rw-r--r-- 1 dmitriy dmitriy 1092 May 11 00:52 RollbackException.java
+-rw-r--r-- 1 dmitriy dmitriy 1368 May 11 00:52 Status.java
+-rw-r--r-- 1 dmitriy dmitriy  948 May 11 00:52 Synchronization.java
+-rw-r--r-- 1 dmitriy dmitriy 1205 May 11 00:52 SystemException.java
+-rw-r--r-- 1 dmitriy dmitriy 1696 May 11 00:52 Transaction.java
+-rw-r--r-- 1 dmitriy dmitriy 1698 May 11 00:52 TransactionManager.java
+-rw-r--r-- 1 dmitriy dmitriy 1131 May 11 00:52 TransactionRequiredException.java
+-rw-r--r-- 1 dmitriy dmitriy 1137 May 11 00:52 TransactionRolledbackException.java
+-rw-r--r-- 1 dmitriy dmitriy 1165 May 11 00:52 TransactionSynchronizationRegistry.java
+-rw-r--r-- 1 dmitriy dmitriy 1400 May 11 00:52 UserTransaction.java
+
+./java/javax/websocket:
+total 128
+-rw-r--r-- 1 dmitriy dmitriy 4497 May 11 00:52 ClientEndpointConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1392 May 11 00:52 ClientEndpoint.java
+-rw-r--r-- 1 dmitriy dmitriy 3906 May 11 00:52 CloseReason.java
+-rw-r--r-- 1 dmitriy dmitriy 2387 May 11 00:52 ContainerProvider.java
+-rw-r--r-- 1 dmitriy dmitriy 1722 May 11 00:52 DecodeException.java
+-rw-r--r-- 1 dmitriy dmitriy 1749 May 11 00:52 Decoder.java
+-rw-r--r-- 1 dmitriy dmitriy 2437 May 11 00:52 DefaultClientEndpointConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1121 May 11 00:52 DeploymentException.java
+-rw-r--r-- 1 dmitriy dmitriy 1294 May 11 00:52 EncodeException.java
+-rw-r--r-- 1 dmitriy dmitriy 1729 May 11 00:52 Encoder.java
+-rw-r--r-- 1 dmitriy dmitriy 1057 May 11 00:52 EndpointConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1703 May 11 00:52 Endpoint.java
+-rw-r--r-- 1 dmitriy dmitriy 1040 May 11 00:52 Extension.java
+-rw-r--r-- 1 dmitriy dmitriy 1101 May 11 00:52 HandshakeResponse.java
+-rw-r--r-- 1 dmitriy dmitriy 1513 May 11 00:52 MessageHandler.java
+-rw-r--r-- 1 dmitriy dmitriy 1084 May 11 00:52 OnClose.java
+-rw-r--r-- 1 dmitriy dmitriy 1084 May 11 00:52 OnError.java
+-rw-r--r-- 1 dmitriy dmitriy 1124 May 11 00:52 OnMessage.java
+-rw-r--r-- 1 dmitriy dmitriy 1083 May 11 00:52 OnOpen.java
+-rw-r--r-- 1 dmitriy dmitriy 1193 May 11 00:52 PongMessage.java
+-rw-r--r-- 1 dmitriy dmitriy 9947 May 11 00:52 RemoteEndpoint.java
+-rw-r--r-- 1 dmitriy dmitriy  900 May 11 00:52 SendHandler.java
+-rw-r--r-- 1 dmitriy dmitriy 1237 May 11 00:52 SendResult.java
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 server
+-rw-r--r-- 1 dmitriy dmitriy 1187 May 11 00:52 SessionException.java
+-rw-r--r-- 1 dmitriy dmitriy 6689 May 11 00:52 Session.java
+-rw-r--r-- 1 dmitriy dmitriy 4867 May 11 00:52 WebSocketContainer.java
+
+./java/javax/websocket/server:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 3009 May 11 00:52 DefaultServerEndpointConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1860 May 11 00:52 HandshakeRequest.java
+-rw-r--r-- 1 dmitriy dmitriy 1298 May 11 00:52 PathParam.java
+-rw-r--r-- 1 dmitriy dmitriy 2015 May 11 00:52 ServerApplicationConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1230 May 11 00:52 ServerContainer.java
+-rw-r--r-- 1 dmitriy dmitriy 8525 May 11 00:52 ServerEndpointConfig.java
+-rw-r--r-- 1 dmitriy dmitriy 1661 May 11 00:52 ServerEndpoint.java
+
+./java/javax/xml:
+total 4
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 22 21:14 ws
+
+./java/javax/xml/ws:
+total 8
+-rw-r--r-- 1 dmitriy dmitriy 1560 May 11 00:52 WebServiceRef.java
+-rw-r--r-- 1 dmitriy dmitriy 1124 May 11 00:52 WebServiceRefs.java
+
+./java/org:
+total 4
+drwxrwxr-x 6 dmitriy dmitriy 4096 May 22 21:17 apache
+
+./java/org/apache:
+total 16
+drwxr-xr-x  6 dmitriy dmitriy 4096 May 23 17:54 el
+drwxr-xr-x 12 dmitriy dmitriy 4096 May 23 18:13 jasper
+drwxr-xr-x  3 dmitriy dmitriy 4096 May 22 21:17 juli
+drwxrwxr-x  3 dmitriy dmitriy 4096 May 23 17:59 tomcat
+
+./java/org/apache/el:
+total 68
+-rw-r--r-- 1 dmitriy dmitriy  2735 Mar 31 09:05 ExpressionFactoryImpl.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 lang
+-rw-r--r-- 1 dmitriy dmitriy  2510 May 11 00:52 Messages_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  3847 May 11 00:52 Messages.properties
+-rw-r--r-- 1 dmitriy dmitriy 12526 May 11 00:52 MethodExpressionImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  3479 May 11 00:52 MethodExpressionLiteral.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 parser
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 stream
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 util
+-rw-r--r-- 1 dmitriy dmitriy  9807 May 11 00:52 ValueExpressionImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  4240 May 11 00:52 ValueExpressionLiteral.java
+
+./java/org/apache/el/lang:
+total 80
+-rw-r--r-- 1 dmitriy dmitriy 13094 May 11 00:52 ELArithmetic.java
+-rw-r--r-- 1 dmitriy dmitriy 24549 May 11 00:52 ELSupport.java
+-rw-r--r-- 1 dmitriy dmitriy  4327 May 11 00:52 EvaluationContext.java
+-rw-r--r-- 1 dmitriy dmitriy 11668 May 11 00:52 ExpressionBuilder.java
+-rw-r--r-- 1 dmitriy dmitriy  2196 May 11 00:52 FunctionMapperFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  5908 May 11 00:52 FunctionMapperImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  1966 May 11 00:52 VariableMapperFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  2074 May 11 00:52 VariableMapperImpl.java
+
+./java/org/apache/el/parser:
+total 464
+-rw-r--r-- 1 dmitriy dmitriy  1215 May 11 00:52 ArithmeticNode.java
+-rw-r--r-- 1 dmitriy dmitriy  1500 May 11 00:52 AstAnd.java
+-rw-r--r-- 1 dmitriy dmitriy  1616 May 11 00:52 AstAssign.java
+-rw-r--r-- 1 dmitriy dmitriy  1306 May 11 00:52 AstBracketSuffix.java
+-rw-r--r-- 1 dmitriy dmitriy  1622 May 11 00:52 AstChoice.java
+-rw-r--r-- 1 dmitriy dmitriy  1827 May 11 00:52 AstCompositeExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1644 May 11 00:52 AstConcatenation.java
+-rw-r--r-- 1 dmitriy dmitriy  1791 May 11 00:52 AstDeferredExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1429 May 11 00:52 AstDiv.java
+-rw-r--r-- 1 dmitriy dmitriy  1611 May 11 00:52 AstDotSuffix.java
+-rw-r--r-- 1 dmitriy dmitriy  1788 May 11 00:52 AstDynamicExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  2027 May 11 00:52 AstEmpty.java
+-rw-r--r-- 1 dmitriy dmitriy  1401 May 11 00:52 AstEqual.java
+-rw-r--r-- 1 dmitriy dmitriy  1266 May 11 00:52 AstFalse.java
+-rw-r--r-- 1 dmitriy dmitriy  1836 May 11 00:52 AstFloatingPoint.java
+-rw-r--r-- 1 dmitriy dmitriy  8924 May 11 00:52 AstFunction.java
+-rw-r--r-- 1 dmitriy dmitriy  1615 May 11 00:52 AstGreaterThanEqual.java
+-rw-r--r-- 1 dmitriy dmitriy  1584 May 11 00:52 AstGreaterThan.java
+-rw-r--r-- 1 dmitriy dmitriy  8281 May 11 00:52 AstIdentifier.java
+-rw-r--r-- 1 dmitriy dmitriy  1796 May 11 00:52 AstInteger.java
+-rw-r--r-- 1 dmitriy dmitriy  6370 May 11 00:52 AstLambdaExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1656 May 11 00:52 AstLambdaParameters.java
+-rw-r--r-- 1 dmitriy dmitriy  1606 May 11 00:52 AstLessThanEqual.java
+-rw-r--r-- 1 dmitriy dmitriy  1575 May 11 00:52 AstLessThan.java
+-rw-r--r-- 1 dmitriy dmitriy  1669 May 11 00:52 AstListData.java
+-rw-r--r-- 1 dmitriy dmitriy  2100 May 11 00:52 AstLiteralExpression.java
+-rw-r--r-- 1 dmitriy dmitriy  1852 May 11 00:52 AstMapData.java
+-rw-r--r-- 1 dmitriy dmitriy  1100 May 11 00:52 AstMapEntry.java
+-rw-r--r-- 1 dmitriy dmitriy  1939 May 11 00:52 AstMethodParameters.java
+-rw-r--r-- 1 dmitriy dmitriy  1437 May 11 00:52 AstMinus.java
+-rw-r--r-- 1 dmitriy dmitriy  1426 May 11 00:52 AstMod.java
+-rw-r--r-- 1 dmitriy dmitriy  1434 May 11 00:52 AstMult.java
+-rw-r--r-- 1 dmitriy dmitriy  2788 May 11 00:52 AstNegative.java
+-rw-r--r-- 1 dmitriy dmitriy  1411 May 11 00:52 AstNotEqual.java
+-rw-r--r-- 1 dmitriy dmitriy  1521 May 11 00:52 AstNot.java
+-rw-r--r-- 1 dmitriy dmitriy  1379 May 11 00:52 AstNull.java
+-rw-r--r-- 1 dmitriy dmitriy  1506 May 11 00:52 AstOr.java
+-rw-r--r-- 1 dmitriy dmitriy  1429 May 11 00:52 AstPlus.java
+-rw-r--r-- 1 dmitriy dmitriy  1599 May 11 00:52 AstSemicolon.java
+-rw-r--r-- 1 dmitriy dmitriy  1660 May 11 00:52 AstSetData.java
+-rw-r--r-- 1 dmitriy dmitriy  2274 May 11 00:52 AstString.java
+-rw-r--r-- 1 dmitriy dmitriy  1262 May 11 00:52 AstTrue.java
+-rw-r--r-- 1 dmitriy dmitriy 13705 May 11 00:52 AstValue.java
+-rw-r--r-- 1 dmitriy dmitriy  1210 May 11 00:52 BooleanNode.java
+-rw-r--r-- 1 dmitriy dmitriy  4364 May 11 00:52 ELParserConstants.java
+-rw-r--r-- 1 dmitriy dmitriy  9267 May 11 00:52 ELParser.html
+-rw-r--r-- 1 dmitriy dmitriy 96728 May 11 00:52 ELParser.java
+-rw-r--r-- 1 dmitriy dmitriy 11870 May 11 00:52 ELParser.jjt
+-rw-r--r-- 1 dmitriy dmitriy 68311 May 11 00:52 ELParserTokenManager.java
+-rw-r--r-- 1 dmitriy dmitriy  2363 May 11 00:52 ELParserTreeConstants.java
+-rw-r--r-- 1 dmitriy dmitriy  3310 May 11 00:52 JJTELParserState.java
+-rw-r--r-- 1 dmitriy dmitriy  2877 May 11 00:52 Node.java
+-rw-r--r-- 1 dmitriy dmitriy   969 May 11 00:52 NodeVisitor.java
+-rw-r--r-- 1 dmitriy dmitriy  6306 May 11 00:52 ParseException.java
+-rw-r--r-- 1 dmitriy dmitriy 12039 May 11 00:52 SimpleCharStream.java
+-rw-r--r-- 1 dmitriy dmitriy  5567 May 11 00:52 SimpleNode.java
+-rw-r--r-- 1 dmitriy dmitriy  4163 May 11 00:52 Token.java
+-rw-r--r-- 1 dmitriy dmitriy  4510 May 11 00:52 TokenMgrError.java
+
+./java/org/apache/el/stream:
+total 24
+-rw-r--r-- 1 dmitriy dmitriy  2193 May 11 00:52 Optional.java
+-rw-r--r-- 1 dmitriy dmitriy  3391 May 11 00:52 StreamELResolverImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 13890 May 11 00:52 Stream.java
+
+./java/org/apache/el/util:
+total 44
+-rw-r--r-- 1 dmitriy dmitriy  1788 May 11 00:52 ConcurrentCache.java
+-rw-r--r-- 1 dmitriy dmitriy  1930 May 11 00:52 Jre9Compat.java
+-rw-r--r-- 1 dmitriy dmitriy  1989 May 11 00:52 JreCompat.java
+-rw-r--r-- 1 dmitriy dmitriy  1617 May 11 00:52 MessageFactory.java
+-rw-r--r-- 1 dmitriy dmitriy 22220 May 11 00:52 ReflectionUtil.java
+-rw-r--r-- 1 dmitriy dmitriy  3959 May 11 00:52 Validation.java
+
+./java/org/apache/jasper:
+total 184
+drwxr-xr-x 3 dmitriy dmitriy  4096 May 23 17:40 compiler
+-rw-r--r-- 1 dmitriy dmitriy  5726 May 11 00:52 Constants.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 el
+-rw-r--r-- 1 dmitriy dmitriy 23694 May 23 18:13 EmbeddedServletOptions.java
+-rw-r--r-- 1 dmitriy dmitriy  1712 May 11 00:52 JasperException.java
+-rw-r--r-- 1 dmitriy dmitriy 62756 May 23 17:35 JspC.java
+-rw-r--r-- 1 dmitriy dmitriy 24591 May 23 18:03 JspCompilationContext.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 optimizations
+-rw-r--r-- 1 dmitriy dmitriy  8660 May 11 00:52 Options.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 resources
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 runtime
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 security
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 18:00 servlet
+drwxr-xr-x 3 dmitriy dmitriy  4096 May 22 21:17 tagplugins
+drwxrwxrwx 2 dmitriy dmitriy  4096 May 23 17:01 tjws
+-rw-r--r-- 1 dmitriy dmitriy   910 May 11 00:52 TrimSpacesOption.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 util
+
+./java/org/apache/jasper/compiler:
+total 976
+-rw-r--r-- 1 dmitriy dmitriy  12242 May 11 00:52 AttributeParser.java
+-rw-r--r-- 1 dmitriy dmitriy   2337 May 11 00:52 BeanRepository.java
+-rwxrwxrwx 1 dmitriy dmitriy  13528 May 23 17:40 BeeCompiler.java
+-rw-r--r-- 1 dmitriy dmitriy   7635 May 11 00:52 Collector.java
+-rw-r--r-- 1 dmitriy dmitriy  23342 May 11 00:52 Compiler.java
+-rw-r--r-- 1 dmitriy dmitriy   4285 May 11 00:52 DefaultErrorHandler.java
+-rw-r--r-- 1 dmitriy dmitriy  11853 May 11 00:52 ELFunctionMapper.java
+-rw-r--r-- 1 dmitriy dmitriy   3664 May 11 00:52 ELInterpreterFactory.java
+-rw-r--r-- 1 dmitriy dmitriy   2189 May 11 00:52 ELInterpreter.java
+-rw-r--r-- 1 dmitriy dmitriy   6667 May 11 00:52 ELNode.java
+-rw-r--r-- 1 dmitriy dmitriy  17682 May 11 00:52 ELParser.java
+-rw-r--r-- 1 dmitriy dmitriy   6653 May 11 00:52 EncodingDetector.java
+-rw-r--r-- 1 dmitriy dmitriy  17951 May 11 00:52 ErrorDispatcher.java
+-rw-r--r-- 1 dmitriy dmitriy   2740 May 11 00:52 ErrorHandler.java
+-rw-r--r-- 1 dmitriy dmitriy 174174 May 11 00:52 Generator.java
+-rw-r--r-- 1 dmitriy dmitriy   8118 May 11 00:52 ImplicitTagLibraryInfo.java
+-rw-r--r-- 1 dmitriy dmitriy   1816 May 11 00:52 JarScannerFactory.java
+-rw-r--r-- 1 dmitriy dmitriy   2289 May 11 00:52 JasperTagInfo.java
+-rw-r--r-- 1 dmitriy dmitriy   8028 May 11 00:52 JavacErrorDetail.java
+-rw-r--r-- 1 dmitriy dmitriy  19166 May 11 00:52 JspConfig.java
+-rw-r--r-- 1 dmitriy dmitriy  53803 May 11 00:52 JspDocumentParser.java
+-rw-r--r-- 1 dmitriy dmitriy  20095 May 11 00:52 JspReader.java
+-rw-r--r-- 1 dmitriy dmitriy  21084 May 11 00:52 JspRuntimeContext.java
+-rw-r--r-- 1 dmitriy dmitriy  34213 May 11 00:52 JspUtil.java
+-rw-r--r-- 1 dmitriy dmitriy   2763 May 11 00:52 Localizer.java
+-rw-r--r-- 1 dmitriy dmitriy   3675 May 11 00:52 Mark.java
+-rw-r--r-- 1 dmitriy dmitriy   1933 May 11 00:52 NewlineReductionServletWriter.java
+-rw-r--r-- 1 dmitriy dmitriy  76854 May 11 00:52 Node.java
+-rw-r--r-- 1 dmitriy dmitriy  26598 May 11 00:52 PageDataImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  19936 May 11 00:52 PageInfo.java
+-rw-r--r-- 1 dmitriy dmitriy  21849 May 11 00:52 ParserController.java
+-rw-r--r-- 1 dmitriy dmitriy  68997 May 11 00:52 Parser.java
+-rw-r--r-- 1 dmitriy dmitriy   5623 May 11 00:52 ScriptingVariabler.java
+-rw-r--r-- 1 dmitriy dmitriy   4079 May 11 00:52 ServletWriter.java
+-rw-r--r-- 1 dmitriy dmitriy   1208 May 11 00:52 SmapInput.java
+-rw-r--r-- 1 dmitriy dmitriy  13820 May 11 00:52 SmapStratum.java
+-rw-r--r-- 1 dmitriy dmitriy  28114 May 11 00:52 SmapUtil.java
+-rw-r--r-- 1 dmitriy dmitriy   7055 May 11 00:52 StringInterpreterFactory.java
+-rw-r--r-- 1 dmitriy dmitriy   2109 May 11 00:52 StringInterpreter.java
+-rw-r--r-- 1 dmitriy dmitriy   4847 May 11 00:52 TagConstants.java
+-rw-r--r-- 1 dmitriy dmitriy  30307 May 11 00:52 TagFileProcessor.java
+-rw-r--r-- 1 dmitriy dmitriy  15504 May 11 00:52 TagLibraryInfoImpl.java
+drwxr-xr-x 2 dmitriy dmitriy   4096 May 22 21:17 tagplugin
+-rw-r--r-- 1 dmitriy dmitriy   9894 May 11 00:52 TagPluginManager.java
+-rw-r--r-- 1 dmitriy dmitriy   4165 May 11 00:52 TextOptimizer.java
+-rw-r--r-- 1 dmitriy dmitriy   7637 May 11 00:52 TldCache.java
+-rw-r--r-- 1 dmitriy dmitriy  84130 May 11 00:52 Validator.java
+
+./java/org/apache/jasper/compiler/tagplugin:
+total 12
+-rw-r--r-- 1 dmitriy dmitriy 4895 May 11 00:52 TagPluginContext.java
+-rw-r--r-- 1 dmitriy dmitriy 1375 May 11 00:52 TagPlugin.java
+
+./java/org/apache/jasper/el:
+total 80
+-rw-r--r-- 1 dmitriy dmitriy 5061 May 11 00:52 ELContextImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 2572 May 11 00:52 ELContextWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy 4258 May 11 00:52 ELResolverImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 2427 May 11 00:52 ExpressionEvaluatorImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 1576 May 11 00:52 ExpressionImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 1297 May 11 00:52 FunctionMapperImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 9811 May 11 00:52 JasperELResolver.java
+-rw-r--r-- 1 dmitriy dmitriy 1091 May 11 00:52 JspELException.java
+-rw-r--r-- 1 dmitriy dmitriy 4487 May 11 00:52 JspMethodExpression.java
+-rw-r--r-- 1 dmitriy dmitriy 1151 May 11 00:52 JspMethodNotFoundException.java
+-rw-r--r-- 1 dmitriy dmitriy 1176 May 11 00:52 JspPropertyNotFoundException.java
+-rw-r--r-- 1 dmitriy dmitriy 1184 May 11 00:52 JspPropertyNotWritableException.java
+-rw-r--r-- 1 dmitriy dmitriy 5802 May 11 00:52 JspValueExpression.java
+-rw-r--r-- 1 dmitriy dmitriy 1311 May 11 00:52 VariableResolverImpl.java
+
+./java/org/apache/jasper/optimizations:
+total 16
+-rw-r--r-- 1 dmitriy dmitriy 11637 May 11 00:52 ELInterpreterTagSetters.java
+-rw-r--r-- 1 dmitriy dmitriy  1511 May 11 00:52 StringInterpreterEnum.java
+
+./java/org/apache/jasper/resources:
+total 252
+-rw-r--r-- 1 dmitriy dmitriy  6987 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy  7666 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy 30545 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy 39194 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy 41122 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy 42732 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy 34113 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy  3590 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy  2531 May 11 00:52 LocalStrings_ru.properties
+-rw-r--r-- 1 dmitriy dmitriy 31439 May 11 00:52 LocalStrings_zh_CN.properties
+
+./java/org/apache/jasper/runtime:
+total 192
+-rw-r--r-- 1 dmitriy dmitriy 22974 May 11 00:52 BodyContentImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  2129 May 11 00:52 ExceptionUtils.java
+-rw-r--r-- 1 dmitriy dmitriy  2500 May 11 00:52 HttpJspBase.java
+-rw-r--r-- 1 dmitriy dmitriy  1464 May 11 00:52 InstanceManagerFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  4649 May 11 00:52 JspApplicationContextImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 19955 May 11 00:52 JspContextWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy  7112 May 11 00:52 JspFactoryImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  2204 May 11 00:52 JspFragmentHelper.java
+-rw-r--r-- 1 dmitriy dmitriy 42208 May 11 00:52 JspRuntimeLibrary.java
+-rw-r--r-- 1 dmitriy dmitriy  1463 May 11 00:52 JspSourceDependent.java
+-rw-r--r-- 1 dmitriy dmitriy  1280 May 11 00:52 JspSourceImports.java
+-rw-r--r-- 1 dmitriy dmitriy 18193 May 11 00:52 JspWriterImpl.java
+-rw-r--r-- 1 dmitriy dmitriy 23001 May 11 00:52 PageContextImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  5508 May 11 00:52 ProtectedFunctionMapper.java
+-rw-r--r-- 1 dmitriy dmitriy  2494 May 11 00:52 ServletResponseWrapperInclude.java
+-rw-r--r-- 1 dmitriy dmitriy  5767 May 11 00:52 TagHandlerPool.java
+
+./java/org/apache/jasper/security:
+total 8
+-rw-r--r-- 1 dmitriy dmitriy 2738 May 11 00:52 SecurityClassLoad.java
+-rw-r--r-- 1 dmitriy dmitriy 1504 May 11 00:52 SecurityUtil.java
+
+./java/org/apache/jasper/servlet:
+total 100
+-rw-r--r-- 1 dmitriy dmitriy  4037 May 23 18:00 JasperInitializer.java
+-rw-r--r-- 1 dmitriy dmitriy  6126 May 11 00:52 JasperLoader.java
+-rw-r--r-- 1 dmitriy dmitriy 22390 May 11 00:52 JspCServletContext.java
+-rw-r--r-- 1 dmitriy dmitriy 15501 May 11 00:52 JspServlet.java
+-rw-r--r-- 1 dmitriy dmitriy 23221 May 11 00:52 JspServletWrapper.java
+-rw-r--r-- 1 dmitriy dmitriy  1869 May 11 00:52 mbeans-descriptors.xml
+-rw-r--r-- 1 dmitriy dmitriy  2134 May 11 00:52 TldPreScanned.java
+-rw-r--r-- 1 dmitriy dmitriy 16015 May 11 00:52 TldScanner.java
+
+./java/org/apache/jasper/tagplugins:
+total 4
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 22 21:17 jstl
+
+./java/org/apache/jasper/tagplugins/jstl:
+total 24
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 22 21:17 core
+-rw-r--r-- 1 dmitriy dmitriy  2917 May 11 00:52 tagPlugins.xml
+-rw-r--r-- 1 dmitriy dmitriy 12675 May 11 00:52 Util.java
+
+./java/org/apache/jasper/tagplugins/jstl/core:
+total 108
+-rw-r--r-- 1 dmitriy dmitriy  2781 May 11 00:52 Catch.java
+-rw-r--r-- 1 dmitriy dmitriy  1358 May 11 00:52 Choose.java
+-rw-r--r-- 1 dmitriy dmitriy 13998 May 11 00:52 ForEach.java
+-rw-r--r-- 1 dmitriy dmitriy  5415 May 11 00:52 ForTokens.java
+-rw-r--r-- 1 dmitriy dmitriy  2216 May 11 00:52 If.java
+-rw-r--r-- 1 dmitriy dmitriy 23106 May 11 00:52 Import.java
+-rw-r--r-- 1 dmitriy dmitriy  1272 May 11 00:52 Otherwise.java
+-rw-r--r-- 1 dmitriy dmitriy  5159 May 11 00:52 Out.java
+-rw-r--r-- 1 dmitriy dmitriy  3824 May 11 00:52 Param.java
+-rw-r--r-- 1 dmitriy dmitriy  3512 May 11 00:52 Redirect.java
+-rw-r--r-- 1 dmitriy dmitriy  1707 May 11 00:52 Remove.java
+-rw-r--r-- 1 dmitriy dmitriy  9188 May 11 00:52 Set.java
+-rw-r--r-- 1 dmitriy dmitriy  4215 May 11 00:52 Url.java
+-rw-r--r-- 1 dmitriy dmitriy  2032 May 11 00:52 When.java
+
+./java/org/apache/jasper/tjws:
+total 4
+-rwxrwxrwx 1 dmitriy dmitriy 1678 May 22 18:53 SimpleInstanceManager.java
+
+./java/org/apache/jasper/util:
+total 16
+-rw-r--r-- 1 dmitriy dmitriy 9843 May 11 00:52 FastRemovalDequeue.java
+-rw-r--r-- 1 dmitriy dmitriy 4060 May 11 00:52 UniqueAttributesImpl.java
+
+./java/org/apache/juli:
+total 96
+-rw-r--r-- 1 dmitriy dmitriy  7956 May 11 00:52 AsyncFileHandler.java
+-rw-r--r-- 1 dmitriy dmitriy 28219 May 11 00:52 ClassLoaderLogManager.java
+-rw-r--r-- 1 dmitriy dmitriy  6649 May 11 00:52 DateFormatCache.java
+-rw-r--r-- 1 dmitriy dmitriy 20527 May 11 00:52 FileHandler.java
+-rw-r--r-- 1 dmitriy dmitriy  3646 May 11 00:52 JdkLoggerFormatter.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 17:55 logging
+-rw-r--r-- 1 dmitriy dmitriy 10090 May 11 00:52 OneLineFormatter.java
+-rw-r--r-- 1 dmitriy dmitriy  1416 May 11 00:52 VerbatimFormatter.java
+-rw-r--r-- 1 dmitriy dmitriy  2590 May 11 00:52 WebappProperties.java
+
+./java/org/apache/juli/logging:
+total 36
+-rw-r--r-- 1 dmitriy dmitriy 6083 May 11 00:52 DirectJDKLog.java
+-rw-r--r-- 1 dmitriy dmitriy 2094 May 11 00:52 LogConfigurationException.java
+-rw-r--r-- 1 dmitriy dmitriy 9754 Mar 31 09:05 LogFactory.java
+-rw-r--r-- 1 dmitriy dmitriy 6991 May 11 00:52 Log.java
+-rw-r--r-- 1 dmitriy dmitriy 1562 May 11 00:52 package.html
+
+./java/org/apache/tomcat:
+total 48
+-rw-r--r--  1 dmitriy dmitriy 2944 May 11 00:52 ContextBind.java
+-rw-r--r--  1 dmitriy dmitriy 1436 May 11 00:52 InstanceManagerBindings.java
+-rw-r--r--  1 dmitriy dmitriy 2229 May 11 00:52 InstanceManager.java
+-rw-r--r--  1 dmitriy dmitriy 3411 May 11 00:52 InstrumentableClassLoader.java
+-rw-r--r--  1 dmitriy dmitriy 4743 May 11 00:52 Jar.java
+-rw-r--r--  1 dmitriy dmitriy 1632 May 11 00:52 JarScanFilter.java
+-rw-r--r--  1 dmitriy dmitriy 2951 May 11 00:52 JarScannerCallback.java
+-rw-r--r--  1 dmitriy dmitriy 1905 May 11 00:52 JarScanner.java
+-rw-r--r--  1 dmitriy dmitriy  907 May 11 00:52 JarScanType.java
+-rw-r--r--  1 dmitriy dmitriy  979 May 11 00:52 PeriodicEventListener.java
+drwxrwxr-x 11 dmitriy dmitriy 4096 May 23 17:12 util
+
+./java/org/apache/tomcat/util:
+total 140
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:52 buf
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 17:12 compat
+drwxr-xr-x 5 dmitriy dmitriy  4096 May 23 16:52 descriptor
+-rw-r--r-- 1 dmitriy dmitriy 28371 May 11 00:52 Diagnostics.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:52 digester
+-rw-r--r-- 1 dmitriy dmitriy  2468 May 11 00:52 ExceptionUtils.java
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:53 file
+-rw-r--r-- 1 dmitriy dmitriy 24460 May 11 00:52 IntrospectionUtils.java
+-rw-r--r-- 1 dmitriy dmitriy   933 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy   982 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy   990 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  2014 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  1978 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  2017 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1829 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy   889 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy   914 May 11 00:52 LocalStrings_ru.properties
+-rw-r--r-- 1 dmitriy dmitriy  1780 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  3033 May 11 00:52 MultiThrowable.java
+drwxrwxr-x 2 dmitriy dmitriy  4096 May 23 16:53 net
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:54 res
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:54 scan
+drwxr-xr-x 2 dmitriy dmitriy  4096 May 23 16:54 security
+-rw-r--r-- 1 dmitriy dmitriy  1693 May 11 00:52 XReflectionIntrospectionUtils.java
+
+./java/org/apache/tomcat/util/buf:
+total 264
+-rw-r--r-- 1 dmitriy dmitriy  4530 May 11 00:52 AbstractChunk.java
+-rw-r--r-- 1 dmitriy dmitriy  3057 May 11 00:52 Ascii.java
+-rw-r--r-- 1 dmitriy dmitriy  2885 May 11 00:52 Asn1Parser.java
+-rw-r--r-- 1 dmitriy dmitriy  3159 May 11 00:52 Asn1Writer.java
+-rw-r--r-- 1 dmitriy dmitriy  9854 May 11 00:52 B2CConverter.java
+-rw-r--r-- 1 dmitriy dmitriy  1610 May 11 00:52 ByteBufferHolder.java
+-rw-r--r-- 1 dmitriy dmitriy  5699 May 11 00:52 ByteBufferUtils.java
+-rw-r--r-- 1 dmitriy dmitriy 25666 May 11 00:52 ByteChunk.java
+-rw-r--r-- 1 dmitriy dmitriy  7339 May 11 00:52 C2BConverter.java
+-rw-r--r-- 1 dmitriy dmitriy 18069 May 11 00:52 CharChunk.java
+-rw-r--r-- 1 dmitriy dmitriy 16884 May 11 00:52 CharsetCache.java
+-rw-r--r-- 1 dmitriy dmitriy  2010 May 11 00:52 CharsetUtil.java
+-rw-r--r-- 1 dmitriy dmitriy  1747 May 11 00:52 EncodedSolidusHandling.java
+-rw-r--r-- 1 dmitriy dmitriy  4092 May 11 00:52 HexUtils.java
+-rw-r--r-- 1 dmitriy dmitriy   866 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  1947 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  2062 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  2062 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1724 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy  1651 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy 15748 May 11 00:52 MessageBytes.java
+-rw-r--r-- 1 dmitriy dmitriy  1627 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy 23159 May 11 00:52 StringCache.java
+-rw-r--r-- 1 dmitriy dmitriy  2996 May 11 00:52 StringUtils.java
+-rw-r--r-- 1 dmitriy dmitriy 15721 May 11 00:52 UDecoder.java
+-rw-r--r-- 1 dmitriy dmitriy  5332 May 11 00:52 UEncoder.java
+-rw-r--r-- 1 dmitriy dmitriy  7988 May 11 00:52 UriUtil.java
+-rw-r--r-- 1 dmitriy dmitriy 13718 May 11 00:52 Utf8Decoder.java
+-rw-r--r-- 1 dmitriy dmitriy  8368 May 11 00:52 Utf8Encoder.java
+
+./java/org/apache/tomcat/util/compat:
+total 76
+-rw-r--r-- 1 dmitriy dmitriy  3951 May 11 00:52 Jre16Compat.java
+-rw-r--r-- 1 dmitriy dmitriy  9833 May 11 00:52 Jre9Compat.java
+-rw-r--r-- 1 dmitriy dmitriy 11064 May 11 00:52 JreCompat.java
+-rw-r--r-- 1 dmitriy dmitriy  2095 May 11 00:52 JrePlatform.java
+-rw-r--r-- 1 dmitriy dmitriy  1843 May 11 00:52 JreVendor.java
+-rw-r--r-- 1 dmitriy dmitriy   930 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy   963 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy  1045 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  1819 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  1967 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  1906 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1643 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy   928 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy  1579 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  1520 May 11 00:52 TLS.java
+
+./java/org/apache/tomcat/util/descriptor:
+total 68
+-rw-r--r-- 1 dmitriy dmitriy 1067 May 11 00:52 Constants.java
+-rw-r--r-- 1 dmitriy dmitriy 7871 May 11 00:52 DigesterFactory.java
+-rw-r--r-- 1 dmitriy dmitriy 1482 May 11 00:52 InputSourceUtil.java
+-rw-r--r-- 1 dmitriy dmitriy 6074 May 11 00:52 LocalResolver.java
+-rw-r--r-- 1 dmitriy dmitriy  925 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy 1310 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy 1364 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy 1362 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy 1216 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy 1171 May 11 00:52 LocalStrings_zh_CN.properties
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 23 16:52 tagplugin
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 23 16:52 tld
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 23 16:52 web
+-rw-r--r-- 1 dmitriy dmitriy 2551 May 11 00:52 XmlErrorHandler.java
+-rw-r--r-- 1 dmitriy dmitriy 3984 May 11 00:52 XmlIdentifiers.java
+
+./java/org/apache/tomcat/util/descriptor/tagplugin:
+total 4
+-rw-r--r-- 1 dmitriy dmitriy 3374 May 11 00:52 TagPluginParser.java
+
+./java/org/apache/tomcat/util/descriptor/tld:
+total 76
+-rw-r--r-- 1 dmitriy dmitriy  3943 May 11 00:52 ImplicitTldRuleSet.java
+-rw-r--r-- 1 dmitriy dmitriy   886 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy   894 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy   901 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy   875 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy   856 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy   934 May 11 00:52 package-info.java
+-rw-r--r-- 1 dmitriy dmitriy  2098 May 11 00:52 TagFileXml.java
+-rw-r--r-- 1 dmitriy dmitriy  3413 May 11 00:52 TaglibXml.java
+-rw-r--r-- 1 dmitriy dmitriy  3348 May 11 00:52 TagXml.java
+-rw-r--r-- 1 dmitriy dmitriy  4069 May 11 00:52 TldParser.java
+-rw-r--r-- 1 dmitriy dmitriy  5830 May 11 00:52 TldResourcePath.java
+-rw-r--r-- 1 dmitriy dmitriy 17461 May 11 00:52 TldRuleSet.java
+-rw-r--r-- 1 dmitriy dmitriy  1477 May 11 00:52 ValidatorXml.java
+
+./java/org/apache/tomcat/util/descriptor/web:
+total 472
+-rw-r--r-- 1 dmitriy dmitriy   3184 May 11 00:52 ApplicationParameter.java
+-rw-r--r-- 1 dmitriy dmitriy   1049 May 11 00:52 Constants.java
+-rw-r--r-- 1 dmitriy dmitriy   4233 May 11 00:52 ContextEjb.java
+-rw-r--r-- 1 dmitriy dmitriy   3495 May 11 00:52 ContextEnvironment.java
+-rw-r--r-- 1 dmitriy dmitriy   6105 May 11 00:52 ContextHandler.java
+-rw-r--r-- 1 dmitriy dmitriy   4246 May 11 00:52 ContextLocalEjb.java
+-rw-r--r-- 1 dmitriy dmitriy   2806 May 11 00:52 ContextResourceEnvRef.java
+-rw-r--r-- 1 dmitriy dmitriy   5307 May 11 00:52 ContextResource.java
+-rw-r--r-- 1 dmitriy dmitriy   3475 May 11 00:52 ContextResourceLink.java
+-rw-r--r-- 1 dmitriy dmitriy  10490 May 11 00:52 ContextService.java
+-rw-r--r-- 1 dmitriy dmitriy   2481 May 11 00:52 ContextTransaction.java
+-rw-r--r-- 1 dmitriy dmitriy   4184 May 11 00:52 ErrorPage.java
+-rw-r--r-- 1 dmitriy dmitriy   5202 May 11 00:52 FilterDef.java
+-rw-r--r-- 1 dmitriy dmitriy   7198 May 11 00:52 FilterMap.java
+-rw-r--r-- 1 dmitriy dmitriy   5606 May 11 00:52 FragmentJarScannerCallback.java
+-rw-r--r-- 1 dmitriy dmitriy   1073 May 11 00:52 Injectable.java
+-rw-r--r-- 1 dmitriy dmitriy   1603 May 11 00:52 InjectionTarget.java
+-rw-r--r-- 1 dmitriy dmitriy   1801 May 11 00:52 JspConfigDescriptorImpl.java
+-rw-r--r-- 1 dmitriy dmitriy   3610 May 11 00:52 JspPropertyGroupDescriptorImpl.java
+-rw-r--r-- 1 dmitriy dmitriy   4131 May 11 00:52 JspPropertyGroup.java
+-rw-r--r-- 1 dmitriy dmitriy   1245 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy   1020 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy   2132 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy   7150 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy   7136 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy   7982 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy   6453 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy    966 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy    897 May 11 00:52 LocalStrings_ru.properties
+-rw-r--r-- 1 dmitriy dmitriy   5724 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy   6369 May 11 00:52 LoginConfig.java
+-rw-r--r-- 1 dmitriy dmitriy   4191 May 11 00:52 mbeans-descriptors.xml
+-rw-r--r-- 1 dmitriy dmitriy   4411 May 11 00:52 MessageDestination.java
+-rw-r--r-- 1 dmitriy dmitriy   3639 May 11 00:52 MessageDestinationRef.java
+-rw-r--r-- 1 dmitriy dmitriy   3934 May 11 00:52 MultipartDef.java
+-rw-r--r-- 1 dmitriy dmitriy   1520 May 11 00:52 NamingResources.java
+-rw-r--r-- 1 dmitriy dmitriy   1212 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy   6277 May 11 00:52 ResourceBase.java
+-rw-r--r-- 1 dmitriy dmitriy  10913 May 11 00:52 SecurityCollection.java
+-rw-r--r-- 1 dmitriy dmitriy  25191 May 11 00:52 SecurityConstraint.java
+-rw-r--r-- 1 dmitriy dmitriy   2202 May 11 00:52 SecurityRoleRef.java
+-rw-r--r-- 1 dmitriy dmitriy   6809 May 11 00:52 ServletDef.java
+-rw-r--r-- 1 dmitriy dmitriy   3308 May 11 00:52 SessionConfig.java
+-rw-r--r-- 1 dmitriy dmitriy   2318 May 11 00:52 TaglibDescriptorImpl.java
+-rw-r--r-- 1 dmitriy dmitriy  62299 May 11 00:52 WebRuleSet.java
+-rw-r--r-- 1 dmitriy dmitriy 104761 May 11 00:52 WebXml.java
+-rw-r--r-- 1 dmitriy dmitriy   5363 May 11 00:52 WebXmlParser.java
+-rw-r--r-- 1 dmitriy dmitriy   1545 May 11 00:52 XmlEncodingBase.java
+
+./java/org/apache/tomcat/util/digester:
+total 276
+-rw-r--r-- 1 dmitriy dmitriy  2325 May 11 00:52 AbstractObjectCreationFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  4684 May 11 00:52 ArrayStack.java
+-rw-r--r-- 1 dmitriy dmitriy 16382 May 11 00:52 CallMethodRule.java
+-rw-r--r-- 1 dmitriy dmitriy  6487 May 11 00:52 CallParamRule.java
+-rw-r--r-- 1 dmitriy dmitriy 66931 May 11 00:52 Digester.java
+-rw-r--r-- 1 dmitriy dmitriy  1321 May 11 00:52 DocumentProperties.java
+-rw-r--r-- 1 dmitriy dmitriy  2816 May 11 00:52 EnvironmentPropertySource.java
+-rw-r--r-- 1 dmitriy dmitriy  6050 May 11 00:52 FactoryCreateRule.java
+-rw-r--r-- 1 dmitriy dmitriy   891 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy   970 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  2268 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  2454 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  2413 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1961 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy   907 May 11 00:52 LocalStrings_ru.properties
+-rw-r--r-- 1 dmitriy dmitriy  1890 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  5354 May 11 00:52 ObjectCreateRule.java
+-rw-r--r-- 1 dmitriy dmitriy  2089 May 11 00:52 ObjectCreationFactory.java
+-rw-r--r-- 1 dmitriy dmitriy 58020 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  5522 May 11 00:52 Rule.java
+-rw-r--r-- 1 dmitriy dmitriy  7331 May 11 00:52 RulesBase.java
+-rw-r--r-- 1 dmitriy dmitriy  2113 May 11 00:52 RuleSet.java
+-rw-r--r-- 1 dmitriy dmitriy  3059 May 11 00:52 Rules.java
+-rw-r--r-- 1 dmitriy dmitriy  4324 May 11 00:52 ServiceBindingPropertySource.java
+-rw-r--r-- 1 dmitriy dmitriy  5828 May 11 00:52 SetNextRule.java
+-rw-r--r-- 1 dmitriy dmitriy  4771 May 11 00:52 SetPropertiesRule.java
+-rw-r--r-- 1 dmitriy dmitriy  1829 May 11 00:52 SystemPropertySource.java
+
+./java/org/apache/tomcat/util/file:
+total 28
+-rw-r--r-- 1 dmitriy dmitriy 2559 May 11 00:52 ConfigFileLoader.java
+-rw-r--r-- 1 dmitriy dmitriy 5954 May 11 00:52 ConfigurationSource.java
+-rw-r--r-- 1 dmitriy dmitriy 8596 May 11 00:52 Matcher.java
+-rw-r--r-- 1 dmitriy dmitriy  971 May 11 00:52 package.html
+
+./java/org/apache/tomcat/util/net:
+total 4
+-rw-r--r-- 1 dmitriy dmitriy 1883 May 11 00:52 Constants.java
+
+./java/org/apache/tomcat/util/res:
+total 12
+-rw-r--r-- 1 dmitriy dmitriy 10675 May 11 00:52 StringManager.java
+
+./java/org/apache/tomcat/util/scan:
+total 116
+-rw-r--r-- 1 dmitriy dmitriy  9216 May 11 00:52 AbstractInputStreamJar.java
+-rw-r--r-- 1 dmitriy dmitriy  1467 May 11 00:52 Constants.java
+-rw-r--r-- 1 dmitriy dmitriy  2555 May 11 00:52 JarFactory.java
+-rw-r--r-- 1 dmitriy dmitriy  6623 May 11 00:52 JarFileUrlJar.java
+-rw-r--r-- 1 dmitriy dmitriy  2208 May 11 00:52 JarFileUrlNestedJar.java
+-rw-r--r-- 1 dmitriy dmitriy  1112 May 11 00:52 LocalStrings_cs.properties
+-rw-r--r-- 1 dmitriy dmitriy  1119 May 11 00:52 LocalStrings_de.properties
+-rw-r--r-- 1 dmitriy dmitriy  1216 May 11 00:52 LocalStrings_es.properties
+-rw-r--r-- 1 dmitriy dmitriy  1612 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy  1845 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy  1800 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy  1527 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy   944 May 11 00:52 LocalStrings_pt_BR.properties
+-rw-r--r-- 1 dmitriy dmitriy  1468 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy  1764 May 11 00:52 NonClosingJarInputStream.java
+-rw-r--r-- 1 dmitriy dmitriy  1019 May 11 00:52 package.html
+-rw-r--r-- 1 dmitriy dmitriy  3881 May 11 00:52 ReferenceCountedJar.java
+-rw-r--r-- 1 dmitriy dmitriy  8690 May 11 00:52 StandardJarScanFilter.java
+-rw-r--r-- 1 dmitriy dmitriy 18935 May 11 00:52 StandardJarScanner.java
+-rw-r--r-- 1 dmitriy dmitriy  1690 May 11 00:52 UrlJar.java
+
+./java/org/apache/tomcat/util/security:
+total 60
+-rw-r--r-- 1 dmitriy dmitriy 4305 May 11 00:52 ConcurrentMessageDigest.java
+-rw-r--r-- 1 dmitriy dmitriy 5182 May 11 00:52 Escape.java
+-rw-r--r-- 1 dmitriy dmitriy 2810 May 11 00:52 KeyStoreUtil.java
+-rw-r--r-- 1 dmitriy dmitriy 1110 May 11 00:52 LocalStrings_fr.properties
+-rw-r--r-- 1 dmitriy dmitriy 1139 May 11 00:52 LocalStrings_ja.properties
+-rw-r--r-- 1 dmitriy dmitriy 1107 May 11 00:52 LocalStrings_ko.properties
+-rw-r--r-- 1 dmitriy dmitriy 1066 May 11 00:52 LocalStrings.properties
+-rw-r--r-- 1 dmitriy dmitriy 1054 May 11 00:52 LocalStrings_zh_CN.properties
+-rw-r--r-- 1 dmitriy dmitriy 2008 May 11 00:52 MD5Encoder.java
+-rw-r--r-- 1 dmitriy dmitriy 1860 May 11 00:52 PermissionCheck.java
+-rw-r--r-- 1 dmitriy dmitriy 1077 May 11 00:52 PrivilegedGetTccl.java
+-rw-r--r-- 1 dmitriy dmitriy 2354 May 11 00:52 PrivilegedSetAccessControlContext.java
+-rw-r--r-- 1 dmitriy dmitriy 1322 May 11 00:52 PrivilegedSetTccl.java
+
+./test:
+total 4
+drwxr-xr-x 3 dmitriy dmitriy 4096 May 23 16:59 META-INF
+
+./test/META-INF:
+total 4
+drwxr-xr-x 2 dmitriy dmitriy 4096 May 23 16:59 services
+
+./test/META-INF/services:
+total 4
+-rw-r--r-- 1 dmitriy dmitriy 872 May 11 00:52 javax.servlet.ServletContainerInitializer
+dmitriy@dmitri

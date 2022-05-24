@@ -86,7 +86,7 @@ public class SelectorAcceptor implements Acceptor {
 				} else
 					readyItor = null;
 			} catch (IOException ioe) {
-				throw new Error("Can't recover from io", ioe);
+				throw new IOError(ioe);
 			}
 		} while (true);
 	}
