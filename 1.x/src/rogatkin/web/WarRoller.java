@@ -131,6 +131,8 @@ public class WarRoller implements WarDeployer {
 		    String en = ze.getName();
 		    if (File.separatorChar == '/')
 			en = en.replace('\\', File.separatorChar);
+		    if (en.contains("../") || en.contains("/..")) 
+		    	throw new IOException("The file name " + en + " contains .. which can lead to a Path Traversal vulnerability");
 		    File outFile = new File(deployDir, en);
 		    if (ze.isDirectory()) {
 			outFile.mkdirs();
