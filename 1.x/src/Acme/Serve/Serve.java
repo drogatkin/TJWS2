@@ -27,7 +27,7 @@
 // fine Java utilities: http://www.acme.com/java/
 //
 
-// All enhancements Copyright (C)1998-2022 by Dmitriy Rogatkin
+// All enhancements Copyright (C)1998-2023 by Dmitriy Rogatkin
 // This version is compatible with JSDK 3.1
 // http://tjws.sourceforge.net
 // 
@@ -1747,7 +1747,7 @@ public class Serve implements ServletContext, Serializable {
     public static interface Identification {
 	public static final String serverName = "D. Rogatkin's TJWS (+Android, JSR340, JSR356, Java 17) https://github.com/drogatkin/TJWS2.git";
 
-	public static final String serverVersion = "Version 1.119 (nightly)";
+	public static final String serverVersion = "Version 1.119";
 
 	public static final String serverUrl = "http://tjws.sourceforge.net";
 

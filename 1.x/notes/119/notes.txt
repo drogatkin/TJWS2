@@ -1,0 +1,7 @@
+TJWS release 1.119
+
+There are no changes from the previous release. However JASPER integration was
+updated for 7, 8, and 9 versions of the former. 
+The latest movement in the servlet technology didn't bring anything interesting.
+Oracle moved all servlet support to the Jakarta group. It issued changes in the package name for 
+the standard servlet library, but luckily for TJWS, there are no changes in servlet 3.1.

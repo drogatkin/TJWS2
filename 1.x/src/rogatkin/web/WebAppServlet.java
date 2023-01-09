@@ -2118,7 +2118,7 @@ public class WebAppServlet extends HttpServlet implements ServletContext {
 
 	@Override
 	public String getServerInfo() {
-		return "TJWS/J2EE container, Copyright &copy; 2010 - 2022 Dmitriy Rogatkin";
+		return "TJWS/J2EE container, Copyright &copy; 2010 - 2023 Dmitriy Rogatkin";
 	}
 
 	@Override
