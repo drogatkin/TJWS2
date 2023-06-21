@@ -125,8 +125,8 @@ And allow a regular user to modify it :
 
 > sudo chown orangepi /usr/local/share/java/webapps
 
-You can copy TJWS jar/zip files now. It can be done using scp command or downloading lib files using wget or curl. I use wget because  I have always a machine running TJWS and it’s the easiest way. 
-The following files required to run TJWS as application server:
+You can copy TJWS jar/zip files now. It can be done using `scp` command or downloading lib files using `wget` or `curl`. I use `wget` because  I have always a machine running TJWS and it’s the easiest way. 
+The following files required to run TJWS as an application server:
 
 | Name   | Comment |
 | -------- | ------- |
@@ -152,7 +152,7 @@ The following files required to run TJWS as application server:
 | wskt.jar | TJWS WebSocket |
 
 
-Copy starting server script `tjwserv-op` to directory `/usr/local/tjws`. Make sure that the script has an execution permission.
+Copy starting server script `tjwserv-op` [3] to directory `/usr/local/tjws`. Make sure that the script has an execution permission.
 
 
 ## Running TJWS as a service
@@ -160,7 +160,7 @@ Copy starting server script `tjwserv-op` to directory `/usr/local/tjws`. Make su
 It is the preferred way of running of TJWS because it starts automatically at a boot time of a machine. There are two ways of running a service in Linux: part of **init.d** or **systemd** process.
  Both methods are described in TJWS documentation. I remind just the systemd method because it is the preferred method nowadays.
 
-Copy tjwserv.service from TJWS source bin directory to `/usr/lib/systemd/system` of the target machine. For example:
+Copy `tjwserv.service` [2] from TJWS source bin directory  to `/usr/lib/systemd/system` of the target machine. For example:
 
 > sudo cp tjwserv.service /usr/lib/systemd/system/
 
@@ -183,9 +183,9 @@ Even if you install M.2 drive for Orange-pi , then using an external USB drive c
 
 Create a directory which presents a mount point, for example:
 
-sudo mkdir /media/exhdd
+> sudo mkdir /media/exhdd
 
-Mount the drive using command:
+Name of the directory can be arbitrary valid Linux path. Mount the drive using command:
 
 > sudo mount /dev/sda1 /media/exhdd
 
@@ -204,5 +204,7 @@ Note that if you use any GUI, then more likely automatic mount will be assured b
 
 ## References
 1. [Guide to run TJWS on SBC](https://tjws.sourceforge.net/arch-raspi-java8.html) ([source of the file you can find at](https://github.com/drogatkin/TJWS2/blob/master/1.x/html/arch-raspi-java8.html))
+2. [tjwserv.service](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv)
+3. [tjwserv-op](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv-op)
 
 
