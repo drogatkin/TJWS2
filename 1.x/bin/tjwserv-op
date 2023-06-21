@@ -1,0 +1,61 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          tjwserv
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     1 2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start TJWS at boot time
+# Description:       Enable service provided by TJWS.
+### END INIT INFO
+
+RETVAL=0;
+
+JDK_HOME=/var/cache/jdk-17.0.7
+# $(readlink -f /usr/bin/java | xargs dirname | xargs dirname)
+tjws=/usr/local/tjws
+cp=$tjws/lib/javax.servlet-api-3.1.0.jar:$tjws/lib/war.jar:$tjws/lib/webserver.jar:$tjws/lib/app.jar:$tjws/lib/class-scanner.jar:$tjws/lib/wskt.jar:$tjws/lib/javax.websocket-client-api.jar:$tjws/lib/javax.websocket-api-1.1.jar:$tjws/lib/jasper.jar
+corba_path=$tjws/lib
+corba=$corba_path/antlr-2.7.2.jar:$corba_path/idl.jar:$corba_path/jacorb-3.9.jar:$corba_path/jacorb-omgapi-3.9.jar:$corba_path/jacorb-services-3.9.jar:$corba_path/picocontainer-1.2.jar:$corba_path/slf4j-api-1.7.14.jar:$corba_path/slf4j-jdk14-1.7.14.jar:$corba_path/wrapper-3.1.0.jar:$tjws/lib/stub.jar
+
+log=/var/log/tjws
+webapps=/usr/local/share/java/webapps
+
+tjws_cmd=$JDK_HOME/bin/java\ -cp\ $cp:$corba\ -Dtjws.webappdir=$webapps\ -Dtjws.wardeploy.dynamically\ -Djava.security.egd=file:/dev/urandom\ rogatkin.app.Main\ -nohup\ -a\ $tjws/aliases\ -p\ 80\ -l\ -c\ cgi-bin\ -d\ $log\ -g\ 10000\ -acceptorImpl\ Acme.Serve.SelectorAcceptor
+
+start() {
+echo "Starting TJWS"
+export LC_ALL=en_US.UTF-8  
+export LANG=en_US.UTF-8
+# remove ending '&' when used as a service run script
+$tjws_cmd
+}
+
+stop() {
+echo "Stopping TJWS"
+ps -ef | grep java | grep rogatkin.app |awk '{print $2}' | xargs kill >/dev/null 2>&1
+}
+
+restart() {
+stop
+start
+}
+
+case "$1" in
+start)
+  start
+;;
+stop)
+  stop
+;;
+restart)
+  restart
+;;
+*)
+
+echo $"Usage: $0 {start|stop|restart}"
+exit 1
+esac
+
+exit $RETVAL
