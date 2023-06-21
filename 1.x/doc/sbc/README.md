@@ -85,7 +85,7 @@ Most of my server software using Java. So the first step is loading JVM to the m
 
 > wget https://download.oracle.com/java/17/latest/jdk-17_linux-aarch64_bin.tar.gz
 
-You can install also the current OpenJDK JVM using `sudo apt install java`. However if you do the Oracle JMV install, I install downloaded .gz using: 
+You can install also the current OpenJDK JVM using `sudo apt install java`. However if you do the Oracle JVM install, I install downloaded .gz using: 
 
 > sudo tar -xzf jdk-17_linux-aarch64_bin.tar.gz -C /var/cache
 
@@ -93,7 +93,7 @@ Or open the archive and then move it in the target directory:
 
 > sudo mv jdk-17.0.7 /var/cache
 
-Very unlikely you run Java on this machine directly, so I didn't provide instruction how to simplify that.
+Very unlikely you run Java on this machine directly, so I don't provide instructions how to simplify that.
 
 ## TJWS
 
@@ -126,100 +126,30 @@ And allow a regular user to modify it :
 > sudo chown orangepi /usr/local/share/java/webapps
 
 You can copy TJWS jar/zip files now. It can be done using scp command or downloading lib files using wget or curl. I use wget because  I have always a machine running TJWS and it’s the easiest way. 
-The following files required to run TJWS:
-
-antlr-2.7.2.jar
-
-app.jar
-
-
-
-
-class-scanner.jar
-
-
-
-
-conn_chk.jar
-
-
-
-
-idl.jar
-
-
-
-
-jacorb-3.9.jar
-
-
-
-
-jacorb-omgapi-3.9.jar
-
-
-
-
-jacorb-services-3.9.jar
-
-
-
-
-jasper.jar    jasper-8.5.78
-
-
-javax.servlet-api-3.1.0.jar
-
-
-
-
-javax.websocket-api-1.1.jar
-
-
-
-
-picocontainer-1.2.jar
-
-
-
-
-servlet-api-2.3.jar
-
-
-
-
-slf4j-api-1.7.14.jar
-
-
-
-
-slf4j-jdk14-1.7.14.jar
-
-
-
-
-stub.jar
-
-
-
-
-war.jar
-
-
-
-
-webserver.jar
-
-
-
-
-wrapper-3.1.0.jar
-
-
-
-
-wskt.jar
-
+The following files required to run TJWS as application server:
+
+| Name   | Comment |
+| -------- | ------- |
+| antlr-2.7.2.jar | CORBA AS |
+| app.jar | TJWS AS |
+| class-scanner.jar | TJWS WebSocket |
+| conn_chk.jar | TJWS JDBC |
+| idl.jar | CORBA AS |
+| jacorb-3.9.jar | CORBA AS |
+| jacorb-omgapi-3.9.jar | CORBA AS |
+| jacorb-services-3.9.jar | CORBA AS |
+| jasper.jar  | JSP jasper-8.5.78 |
+| javax.servlet-api-3.1.0.jar | Servlet API |
+| javax.websocket-api-1.1.jar | WebSocket API |
+| picocontainer-1.2.jar | CORBA AS |
+| servlet-api-2.3.jar | Old servlet API |
+| slf4j-api-1.7.14.jar | CORBA AS |
+| slf4j-jdk14-1.7.14.jar | CORBA AS |
+| stub.jar | CORBA AS |
+| war.jar | TJWS war deployment |
+| webserver.jar | TJWS |
+| wrapper-3.1.0.jar | CORBA AS |
+| wskt.jar | TJWS WebSocket |
 
 
 Copy starting server script `tjwserv-op` to directory `/usr/local/tjws`. Make sure that the script has an execution permission.
