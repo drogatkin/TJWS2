@@ -38,7 +38,7 @@ You can copy an image now using:
 
 > sudo dd bs=4M of=/dev/mmcblk0 if=/home/dmitriy/Downloads/Orangepi5_1.1.6_ubuntu_focal_server_linux5.10.110.img
 
-**Important**, do not specify partition number as **p1** in this case. Execute sync after you finish copying. If your Linux has GUI,
+**Important**, do not specify partition number as **p1** in the device name. Execute `sync` after you finish copying. If your Linux has GUI,
  then you can use the standard image writer. Do the right mouse click on an image file in the file explorer. Select Open with other
  application and then select the image writer. Follow on screen instructions then.
 
@@ -185,7 +185,7 @@ Create a directory which presents a mount point, for example:
 
 > sudo mkdir /media/exhdd
 
-Name of the directory can be arbitrary valid Linux path. Mount the drive using command:
+Name of the directory can be an arbitrary valid Linux path. Mount the drive using command:
 
 > sudo mount /dev/sda1 /media/exhdd
 
