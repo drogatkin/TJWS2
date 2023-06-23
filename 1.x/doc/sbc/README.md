@@ -85,7 +85,7 @@ Most of my server software using Java. So the first step is loading JVM to the m
 
 > wget https://download.oracle.com/java/17/latest/jdk-17_linux-aarch64_bin.tar.gz
 
-You can install also the current OpenJDK JVM using `sudo apt install java`. However if you do the Oracle JVM install, I install downloaded .gz using: 
+You can install also the current OpenJDK JVM using `sudo apt install default-jdk`. However if you do the Oracle JVM install, I install downloaded .gz using: 
 
 > sudo tar -xzf jdk-17_linux-aarch64_bin.tar.gz -C /var/cache
 
@@ -94,6 +94,13 @@ Or open the archive and then move it in the target directory:
 > sudo mv jdk-17.0.7 /var/cache
 
 Very unlikely you run Java on this machine directly, so I don't provide instructions how to simplify that.
+
+**Note**: if you play sound  from Java, then currently Oracle JVM has a problem with that. You will need to install OpenJDK then as described above. 
+To assure that a particular audio card is used for your Java playback, create file `.asoundrc` in `$HOME` directory (/root for a service) and put one line there:
+
+> pcm.!default "plughw:1,0"
+
+Use a desired output card number, for example card number 1 for HDMI.
 
 ## TJWS
 
