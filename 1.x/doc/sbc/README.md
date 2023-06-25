@@ -81,7 +81,7 @@ You can also use the config utility for that mentioned above.
 
 ## Java
 
-Most of my server software using Java. So the first step is loading JVM to the machine. I would recommend to install Oracle 17 . You can download the JVM archive in the home directory using command;
+Most of my server software using Java. So the first step is loading JVM to the machine. I would recommend to install Oracle JVM 17 . You can download the JVM archive in the home directory using command;
 
 > wget https://download.oracle.com/java/17/latest/jdk-17_linux-aarch64_bin.tar.gz
 
@@ -101,6 +101,9 @@ To assure that a particular audio card is used for your Java playback, create fi
 > pcm.!default "plughw:1,0"
 
 Use a desired output card number, for example card number 1 for HDMI.
+
+Using Java 11 from Orange Pi Ubuntu distribution will require to add `-Djava.awt.headless=true` in the Java command.
+
 
 ## TJWS
 
