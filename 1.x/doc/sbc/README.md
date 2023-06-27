@@ -48,7 +48,7 @@ A good news that most Orange-pi OSes will resize OS micro SD card storage to SD 
 You can change some system settings using the utility *orangepi-config*. The utility can take care of several tasks mentioned below.
 
 ## ssh
-Although a server box is accessed remotely, it’s recommended to have a monitor and a keyboard connected to the Orange Pi box. You need a knowledge of a host name and password for remote connection. Default values are:
+Although a server box is accessed remotely, it’s recommended to have a monitor and a keyboard connected to the Orange Pi box. You need a knowledge of a host name and password for a remote connection. Default values are:
 
 > host: orangepi5
 
@@ -214,7 +214,7 @@ Note that if you use any GUI, then more likely automatic mount will be assured b
 
 ## References
 1. [Guide to run TJWS on SBC](https://tjws.sourceforge.net/arch-raspi-java8.html) ([source of the file you can find at](https://github.com/drogatkin/TJWS2/blob/master/1.x/html/arch-raspi-java8.html))
-2. [tjwserv.service](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv)
+2. [tjwserv.service](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv.service)
 3. [tjwserv-op](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv-op)
 
 
