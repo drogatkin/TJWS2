@@ -62,6 +62,8 @@ to change password.
 
 You will need to modify files `/etc/hostname` and then `/etc/hosts` to specify a new hostname.  Reboot the system to get changes applied.
 
+Change `hostname` in file `/etc/rc.conf` for **FreeBSD**.
+
 ## Timezone
 
 The OS image came with timezone preset in China region. You can modify it to your region using command:
@@ -77,6 +79,10 @@ Name of your timezone you can validate using:
 > timedatectl list-timezones
 
 You can also use the config utility for that mentioned above.
+
+Setting timezone in  **FreeBSD** uses the command:
+
+> tzsetup America/Los_Angeles
 
 
 ## Java
@@ -103,6 +109,16 @@ To assure that a particular audio card is used for your Java playback, create fi
 Use a desired output card number, for example card number 1 for HDMI.
 
 Using Java 11 from Orange Pi Ubuntu distribution will require to add `-Djava.awt.headless=true` in the Java command.
+
+You can install only OpenJDK Java when you use FreeBSD. Switch to `root` using `su`. Issue:
+
+> pkg search ^openjdk
+
+And then install a desired version from the list using:
+
+> pkg install openjdk8
+
+And then follow on screen instructions.
 
 
 ## TJWS
@@ -161,8 +177,11 @@ The following files required to run TJWS as an application server:
 | wrapper-3.1.0.jar | CORBA AS |
 | wskt.jar | TJWS WebSocket |
 
+**Note** that you do not need CORBA 3rd party libraries when you use Java 8.
 
-Copy starting server script `tjwserv-op` [3] to directory `/usr/local/tjws`. Make sure that the script has an execution permission.
+Copy starting server script `tjwserv-op` [3] to directory `/usr/local/tjws`. Make sure that the script has an execution permission. For example:
+
+> chmod +x tjwserv-op
 
 
 ## Running TJWS as a service
@@ -211,6 +230,20 @@ You need to edit `/etc/fstab` to make the mount permanent. Add a line like:
 
 Note that if you use any GUI, then more likely automatic mount will be assured by GUI underline functionality. And finally if you connect several devices and do not want to mess up which one is which especially if you do remount, then you can use UUID of the disk instead of /dev/sdaX, e.g. UUID=f46df6fd-d541-441c-b2a5-29f8e4af2aa4. UUID and other disk identifications can be found under /dev/disk.  UUID will be also displayed in a result of command `lsblk`.
 
+## FreeBSD notes
+Generally all said above is applied for FreeBSD. Since there is no `bash`, scripts have to use `#!/bin/sh`. FreeBSD has no `sudo` by default, so most settings will require switching to `root` using `su`. You can install also `sudo`.
+
+### NTP in FreeBSD
+Edit
+
+> nano /etc/rc.conf
+
+Add lines: 
+
+    ntpd_enable="YES"
+    ntpd_sync_on_start="YES"
+
+You may need also to edit `/etc/ntp.conf` to specify your regional NTP server.
 
 ## References
 1. [Guide to run TJWS on SBC](https://tjws.sourceforge.net/arch-raspi-java8.html) ([source of the file you can find at](https://github.com/drogatkin/TJWS2/blob/master/1.x/html/arch-raspi-java8.html))
