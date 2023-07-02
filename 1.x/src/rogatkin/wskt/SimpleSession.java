@@ -39,6 +39,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.Buffer;
 import java.nio.channels.ByteChannel;
 import java.security.Principal;
 import java.util.Arrays;
@@ -174,8 +175,8 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 
 	void parseFrame() {
 		int lim = buf.position();
-		buf.reset();
-		buf.limit(lim);
+		((Buffer)buf).reset();
+		((Buffer)buf).limit(lim);
 		// buf.flip();
 		int avail;
 		boolean forceOp = false;
@@ -365,12 +366,12 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 		if (__parseDebugOn)
 			container.log("Exited %b", buf.hasRemaining());
 		if (buf.hasRemaining()) {
-			buf.mark();
-			buf.position(lim);
-			buf.limit(buf.capacity());
+			((Buffer)buf).mark();
+			((Buffer)buf).position(lim);
+			((Buffer)buf).limit(buf.capacity());
 		} else {
-			buf.clear();
-			buf.mark();
+			((Buffer)buf).clear();
+			((Buffer)buf).mark();
 		}
 	}
 
@@ -1531,7 +1532,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					mb[p] = (byte) (mb[p] ^ (mask >> (8 * (3 - mp++ % 4)) & 255));
 			}
 			bb.put(mb);
-			bb.flip();
+			((Buffer)bb).flip();
 			if (__debugOn)
 				container.log("Create frame %s of %d %s hdr: 0%x%x", text, bb.remaining(), bb, bb.get(0), bb.get(1));
 			return bb;
