@@ -36,7 +36,7 @@ $tjws_cmd &
 
 tjws_stop() {
 echo "Stopping TJWS"
-ps -efa | grep java | grep rogatkin.app |awk '{print $2}' | xargs kill >/dev/null 2>&1
+ps -auxww | grep java | grep rogatkin.app |awk '{print $2}' | xargs kill >/dev/null 2>&1
 }
 
 tjws_restart() {
