@@ -443,7 +443,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 					bb.putShort((short) reason.getCloseCode().getCode());
 					if (reason.getReasonPhrase().length() > 0)
 						bb.put(reason.getReasonPhrase().getBytes());
-					bb.flip();
+					((Buffer)bb).flip();
 					b = new byte[bb.remaining()];
 					bb.put(b);
 				}
@@ -1461,7 +1461,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			if (data.length > 125)
 				throw new IllegalArgumentException("Control frame data length can't exceed 125");
 			ByteBuffer bb = prepreFrameHeader(op, data.length, true, true);
-			bb.put(data).flip();
+			((Buffer)bb.put(data)).flip();
 			sendBuffer(bb, true);
 		}
 
@@ -1469,7 +1469,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 			//System.err.printf("Sending %d bytes as final %b as first %b%n",
 			//	bbp.remaining(), fin, first);
 			ByteBuffer bb = prepreFrameHeader((byte) 2, bbp.remaining(), fin, first);
-			bb.put(bbp).flip();
+			((Buffer)bb.put(bbp)).flip();
 			//System.err.printf("Send frame %s of %d %s 0%x %x %x %x %n", bbp,
 			//	bb.remaining(), bb, bb.get(0), bb.get(1), bb.get(2),
 			//bb.get(3));
@@ -1478,7 +1478,7 @@ public class SimpleSession implements Session, AsyncCallback, Runnable {
 
 		ByteBuffer createFrame(boolean ping, ByteBuffer bbp) {
 			ByteBuffer bb = prepreFrameHeader((byte) (ping ? 0x9 : 0xa), bbp.remaining(), true, true);
-			bb.put(bbp).flip();
+			((Buffer)bb.put(bbp)).flip();
 			return bb;
 		}
 

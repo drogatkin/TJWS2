@@ -205,6 +205,20 @@ If you are willing to delete the service, then execute:
 
 > sudo systemctl disable tjwserv
 
+**Note for FreeBSD** 
+
+FreeBSD uses the approach similar to `init.d`. Copy the service script to directory `rc.d`. Or directory `/usr/local/etc/rc.d` can be used for ports.
+
+> \# cp tjwserv /etc/rc.d
+
+Start the service using:
+
+> \# service tjwserv start
+
+Add below line in `/etc/rc.conf` to make the service start at the boot time:
+
+    tjwserv_enable="YES"
+
 ## Connecting USB drive
 
 Even if you install M.2 drive for Orange-pi , then using an external USB drive can be useful. Unless you use a GUI version of Linux, you need to mount USB  drive manually.
@@ -236,7 +250,7 @@ Generally all said above is applied for FreeBSD. Since there is no `bash`, scrip
 ### NTP in FreeBSD
 Edit
 
-> nano /etc/rc.conf
+> \# nano /etc/rc.conf
 
 Add lines: 
 
