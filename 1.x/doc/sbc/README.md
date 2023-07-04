@@ -151,7 +151,7 @@ And allow a regular user to modify it :
 
 > sudo chown orangepi /usr/local/share/java/webapps
 
-You can copy TJWS jar/zip files now. It can be done using `scp` command or downloading lib files using `wget` or `curl`. I use `wget` because  I have always a machine running TJWS and it’s the easiest way. 
+You can copy TJWS jar/zip files now. It can be done using `scp` command, or downloading lib files using `wget` or `curl`. I use `wget` because  I have always a machine running TJWS and it’s the easiest way. 
 The following files required to run TJWS as an application server:
 
 | Name   | Comment |
@@ -207,7 +207,7 @@ If you are willing to delete the service, then execute:
 
 **Note for FreeBSD** 
 
-FreeBSD uses the approach similar to `init.d`. Copy the service script to directory `rc.d`. Or directory `/usr/local/etc/rc.d` can be used for ports.
+FreeBSD uses the approach similar to `init.d`. Copy the service script [4] to directory `rc.d`. Or directory `/usr/local/etc/rc.d` can be used for ports.
 
 > \# cp tjwserv /etc/rc.d
 
@@ -263,5 +263,6 @@ You may need also to edit `/etc/ntp.conf` to specify your regional NTP server.
 1. [Guide to run TJWS on SBC](https://tjws.sourceforge.net/arch-raspi-java8.html) ([source of the file you can find at](https://github.com/drogatkin/TJWS2/blob/master/1.x/html/arch-raspi-java8.html))
 2. [tjwserv.service](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv.service)
 3. [tjwserv-op](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv-op)
+4. [tjwserv FreeBSD version](https://github.com/drogatkin/TJWS2/blob/master/1.x/bin/tjwserv(freebsd))
 
 

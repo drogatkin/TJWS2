@@ -1,0 +1,4 @@
+TJWS  version 1.120
+
+1. Java 8 compatibility for WebSocket without recompiling
+
