@@ -52,6 +52,8 @@ Although a server box is accessed remotely, it’s recommended to have a monitor
 
 > host: orangepi5
 
+> user: orangepi
+
 > password: orangepi
 
 It is aligned with default values for Raspberry Pi. Obviously, you can modify the values at your preference after the first run of Ubuntu. Use command:
@@ -62,7 +64,21 @@ to change password.
 
 You will need to modify files `/etc/hostname` and then `/etc/hosts` to specify a new hostname.  Reboot the system to get changes applied.
 
-Change `hostname` in file `/etc/rc.conf` for **FreeBSD**.
+FreeBSD default credentials are:
+
+> host: generic
+
+> user: freebsd
+
+> password: freebsd
+
+And:
+
+> user: root
+
+> password: root
+
+Edit  file `/etc/rc.conf` to change `hostname` for **FreeBSD**.
 
 ## Timezone
 
