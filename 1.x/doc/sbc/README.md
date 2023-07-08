@@ -11,7 +11,9 @@ so share some spare e-mail address with them when do a purchase.
 Although Orange Pi website designed well and uses a responsive approach, it’s making difficult to see details on a phone. It is also not obvious how to find a download
  page for the SBC software. I provide a direct [link](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-pi-5.html).
 You can obtain different flavors of Linux or Android there. Using Google drive for most downloads isn’t a good idea, because it will require you to login with some Google account
- and doesn’t work for mobile devices. However you need to deal with that. I downloaded Ubuntu server edition since plan to use the computer as a server. 
+ and doesn’t work for mobile devices. However you need to deal with that. I downloaded Ubuntu server edition since plan to use the computer as a server.
+
+You can also try [FreeBSD](https://www.freebsd.org/where/), especially if you plan a server use. Select the right image accordingly your *sbc* chip vendor. 
 
 ## Preparing micro SD card
 Orange Pi 5 can use micro SD card or M.2 drive as a boot source. I tried a micro SD  card first. Writing OS image on SD card is quite easy on Linux systems.
@@ -42,13 +44,15 @@ You can copy an image now using:
  then you can use the standard image writer. Do the right mouse click on an image file in the file explorer. Select Open with other
  application and then select the image writer. Follow on screen instructions then.
 
+Writing an OS image on SSD/M.2 disk is the same as for a micro SD card. Use `orangepi-config` to make it bootable then.
+
 ## Resizing the card
 
 A good news that most Orange-pi OSes will resize OS micro SD card storage to SD card capacity automatically at the first run. My first use case of Orange-pi is a server machine. So when I powered the machine at first time, it booted and then resized the SD card.
-You can change some system settings using the utility *orangepi-config*. The utility can take care of several tasks mentioned below.
+You can change some system settings using the utility `orangepi-config`. The utility can take care of several tasks mentioned below.
 
 ## ssh
-Although a server box is accessed remotely, it’s recommended to have a monitor and a keyboard connected to the Orange Pi box. You need a knowledge of a host name and password for a remote connection. Default values are:
+Although a server box is accessed remotely, it’s recommended to have a monitor and a keyboard connected to the Orange Pi box. You need a knowledge of a host name and a password for a remote connection. Default values are:
 
 > host: orangepi5
 
@@ -96,7 +100,7 @@ Name of your timezone you can validate using:
 
 You can also use the config utility for that mentioned above.
 
-Setting timezone in  **FreeBSD** uses the command:
+Use `tzsetup` to change a timezone on   **FreeBSD** like below:
 
 > tzsetup America/Los_Angeles
 
@@ -107,7 +111,7 @@ Most of my server software using Java. So the first step is loading JVM to the m
 
 > wget https://download.oracle.com/java/17/latest/jdk-17_linux-aarch64_bin.tar.gz
 
-You can install also the current OpenJDK JVM using `sudo apt install default-jdk`. However if you do the Oracle JVM install, I install downloaded .gz using: 
+You can install also the current OpenJDK JVM using `sudo apt install default-jdk`, execution of `sudo apt update` can be required prior. However if you do the Oracle JVM install, I install downloaded .gz using: 
 
 > sudo tar -xzf jdk-17_linux-aarch64_bin.tar.gz -C /var/cache
 
