@@ -13,4 +13,4 @@ tjws=/usr/local/tjws/lib
 # use Open JDK to launch Java without path, note that Open JDK may have no tools.jar, same true for JDK > 10
 tools=${JAVA_HOME}/lib/tools.jar
 
-java -cp $tjws/war.jar:$tjws/webserver.jar:$tjws/class-scanner.jar:$tjws/wskt.jar:$tjws/app.jar:$tjws/jasper.jar:$tjws/javax.servlet-api-3.1.0.jar:$tjws/javax.websocket-api-1.1.jar:$tools -Dtjws.wardeploy.dynamically -Dtjws.webappdir=/usr/local/share/java/webapps rogatkin.app.Main -a ./aliases.properties -p 8000 -l -c cgi-bin -acceptorImpl Acme.Serve.SelectorAcceptor
+java -cp $tjws/war.jar:$tjws/webserver.jar:$tjws/class-scanner.jar:$tjws/wskt.jar:$tjws/app.jar:$tjws/jasper.jar:$tjws/javax.servlet-api-3.1.0.jar:$tjws/javax.websocket-api-1.1.jar:$tools -Dtjws.wardeploy.dynamically -Dtjws.webappdir=/usr/local/share/java/webapps -Djava.naming.provider.url=http://localhost:1222 rogatkin.app.Main -a ./aliases.properties -p 8080 -l -c cgi-bin -acceptorImpl Acme.Serve.SelectorAcceptor

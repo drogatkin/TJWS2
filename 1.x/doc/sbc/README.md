@@ -40,8 +40,10 @@ You can copy an image now using:
 
 > sudo dd bs=4M of=/dev/mmcblk0 if=/home/dmitriy/Downloads/Orangepi5_1.1.6_ubuntu_focal_server_linux5.10.110.img
 
-**Important**, do not specify partition number as **p1** in the device name. Execute `sync` after you finish copying. If your Linux has GUI,
- then you can use the standard image writer. Do the right mouse click on an image file in the file explorer. Select Open with other
+**Important**, do not specify partition number as **p1** in the device name. Execute `sync` after you finish copying. 
+
+If your Linux has GUI,
+ then you can use the standard **disk image writer**. Do the right mouse click on an image file in the file explorer. Select Open with other
  application and then select the image writer. Follow on screen instructions then.
 
 Writing an OS image on SSD/M.2 disk is the same as for a micro SD card. Use `orangepi-config` to make it bootable then.
@@ -68,9 +70,7 @@ to change password.
 
 You will need to modify files `/etc/hostname` and then `/etc/hosts` to specify a new hostname.  Reboot the system to get changes applied.
 
-FreeBSD default credentials are:
-
-> host: generic
+FreeBSD default host is `generic`, and credentials are:
 
 > user: freebsd
 
@@ -83,6 +83,10 @@ And:
 > password: root
 
 Edit  file `/etc/rc.conf` to change `hostname` for **FreeBSD**.
+
+When you do frequent reassigning IP to the host name, the following command can help in keys update:
+
+> ssh-keygen -R *hostname*
 
 ## Timezone
 
@@ -122,9 +126,11 @@ Or open the archive and then move it in the target directory:
 Very unlikely you run Java on this machine directly, so I don't provide instructions how to simplify that.
 
 **Note**: if you play sound  from Java, then currently Oracle JVM has a problem with that. You will need to install OpenJDK then as described above. 
-To assure that a particular audio card is used for your Java playback, create file `.asoundrc` in `$HOME` directory (/root for a service) and put one line there:
+Create file `.asoundrc` in `$HOME` directory (/root for a service) and put one line there:
 
 > pcm.!default "plughw:1,0"
+
+to assure that a particular audio card is used for your Java playback.
 
 Use a desired output card number, for example card number 1 for HDMI.
 
@@ -199,7 +205,7 @@ The following files required to run TJWS as an application server:
 
 **Note** that you do not need CORBA 3rd party libraries when you use Java 8.
 
-Copy starting server script `tjwserv-op` [3] to directory `/usr/local/tjws`. Make sure that the script has an execution permission. For example:
+Copy starting server script `tjwserv-op` [3] to directory `/usr/local/tjws`. Make sure that the script has an execution permission. You can add the permission like that:
 
 > chmod +x tjwserv-op
 
