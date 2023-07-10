@@ -7,6 +7,9 @@ It costs $85 for 8Gb version. Raspberry Pi costs $75 for the same amount of memo
  So I decide to give it a try. The delivery took about 3 weeks from AliExpress. It should be much faster from Amazon. AliExpress will start heavily spam you after you did a purchase, 
 so share some spare e-mail address with them when do a purchase. 
 
+**Update**: as on *July, 7 2023*, you can find at least 50 RPi 4 8Gb in Bay Area stores. So certainly, there is no anymore a shortage of RPi 4 . If it happened a month
+ early, perhaps there was no reason to write this document. I hope we will have RPi 5 in 2024, making its purchase an actual again. 
+
 ## Where to get software
 Although Orange Pi website designed well and uses a responsive approach, it’s making difficult to see details on a phone. It is also not obvious how to find a download
  page for the SBC software. I provide a direct [link](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-pi-5.html).
