@@ -131,7 +131,7 @@ Very unlikely you run Java on this machine directly, so I don't provide instruct
 **Note**: if you play sound  from Java, then currently Oracle JVM has a problem with that. You will need to install OpenJDK then as described above. 
 Create file `.asoundrc` in `$HOME` directory (/root for a service) and put one line there:
 
-> pcm.!default "plughw:1,0"
+    pcm.!default "plughw:1,0"
 
 to assure that a particular audio card is used for your Java playback.
 
