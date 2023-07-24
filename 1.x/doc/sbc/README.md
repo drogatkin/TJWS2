@@ -12,6 +12,10 @@ so share some spare e-mail address with them when do a purchase.
 
 **Update**: as on July, 13 2023,  RPi 4 8Gb was again out of stock in Bay Area stores. However you can pick it in stores in Southern California. 
 
+
+**Update**: as on Jul 23, 2023 around 130 of RPi 4 8Gb were in Bay Area stores. Less storage models were available even for online ordering. So I think
+the shortage finally got over.
+
 ## Where to get software
 Although Orange Pi website designed well and uses a responsive approach, it’s making difficult to see details on a phone. It is also not obvious how to find a download
  page for the SBC software. I provide a direct [link](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-pi-5.html).
