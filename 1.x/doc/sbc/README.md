@@ -14,7 +14,7 @@ so share some spare e-mail address with them when do a purchase.
 
 
 **Update**: as on Jul 23, 2023 around 130 of RPi 4 8Gb were in Bay Area stores. Less storage models were available even for online ordering. So I think
-the shortage finally got over.
+the shortage finally is over.
 
 ## Where to get software
 Although Orange Pi website designed well and uses a responsive approach, it’s making difficult to see details on a phone. It is also not obvious how to find a download
@@ -53,7 +53,7 @@ You can copy an image now using:
 
 If your Linux has GUI,
  then you can use the standard **disk image writer**. Do the right mouse click on an image file in the file explorer. Select Open with other
- application and then select the image writer. Follow on screen instructions then.
+ application and then select the disk image writer. Follow the on screen instructions then.
 
 Writing an OS image on SSD/M.2 disk is the same as for a micro SD card. Use `orangepi-config` to make it bootable then.
 
