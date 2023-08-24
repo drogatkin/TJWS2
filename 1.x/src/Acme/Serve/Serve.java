@@ -1848,6 +1848,8 @@ public class Serve implements ServletContext, Serializable {
 	public final static String FORWARDED_HOST =  "X-Forwarded-Host".toLowerCase();
 	
 	public final static String FORWARDED_SERVER = "X-Forwarded-Server".toLowerCase();
+	
+	public final static String ACCESS_LOG_FORMAT = "{0}:{9,number,#} {1} {2} [{3,date,dd/MMM/yyyy:HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#} {8,number} {10} {11}";
 
 	private static final Map EMPTYHASHTABLE = new Hashtable();
 
@@ -1969,11 +1971,13 @@ public class Serve implements ServletContext, Serializable {
 	    headerdateformat.setTimeZone(tz);
 	    rfc850DateFmt.setTimeZone(tz);
 	    asciiDateFmt.setTimeZone(tz);
-	    if (serve.isAccessLogged()) {
-		// note format string must be not null
-		accessFmt = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
+	    // TODO maybe using lazy initialization approach
+	    if (serve.arguments.get(ARG_ACCESS_LOG_FMT) != null)
+			// note format string must be not null
+			accessFmt = new MessageFormat((String) serve.arguments.get(ARG_ACCESS_LOG_FMT));
+	    else
+	    	accessFmt = new MessageFormat(ACCESS_LOG_FORMAT);
 		logPlaceholders = new Object[12];
-	    }
 	    try {
 		in = new ServeInputStream(socket.getInputStream(), this);
 		out = new ServeOutputStream(socket.getOutputStream(), this);

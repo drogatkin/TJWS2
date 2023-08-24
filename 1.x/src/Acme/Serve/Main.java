@@ -151,7 +151,7 @@ public class Main extends Serve {
 			} else if (args[argn].startsWith("-l")) {
 				arguments
 						.put(ARG_ACCESS_LOG_FMT,
-								"{0}:{9,number,#} {1} {2} [{3,date,dd/MMM/yyyy:HH:mm:ss Z}] \"{4} {5} {6}\" {7,number,#} {8,number} {10} {11}");
+								Serve.ServeConnection.ACCESS_LOG_FORMAT);
 				if (args[argn].length() > 2) {
 					arguments.put(ARG_LOG_OPTIONS, args[argn].substring(2).toUpperCase());
 					if (args[argn].indexOf('f') >= 0 && argn < argc-1) {
